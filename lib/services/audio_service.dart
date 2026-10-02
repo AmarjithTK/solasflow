@@ -131,8 +131,7 @@ class AudioService {
 
   Future<void> _stopNotification(int revision) => _enqueue(() async {
     if (_disposed || revision != _notificationRevision) return;
-    await _notificationPlayer.pause();
-    await _notificationPlayer.seek(Duration.zero);
+    await _notificationPlayer.stop();
   });
 
   Future<void> _enqueue(Future<void> Function() operation) {

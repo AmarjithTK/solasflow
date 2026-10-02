@@ -6,7 +6,7 @@ flutter="$HOME/flutter/bin/flutter"
 for command in git bsdtar makepkg fakeroot zstd flock pacman sudo gdbus nohup; do
   command -v "$command" >/dev/null || { printf 'Missing existing tool: %s\n' "$command" >&2; exit 1; }
 done
-[[ -x "$flutter" && -f "$root/.dart_tool/package_config.json" ]] || {
+[[ -x "$flutter" && -f "$root/.dart_tool/package_config.json" && -f "$root/.dart_tool/package_graph.json" ]] || {
   printf 'The existing Flutter SDK and resolved project dependencies are required.\n' >&2
   exit 1
 }
@@ -32,7 +32,7 @@ phase snapshot
 printf '[APP] Preparing the current working source without touching the running build.\n'
 cd "$root"
 git ls-files -z | bsdtar -c -f - --null -T - | bsdtar -x -f - -C "$snapshot"
-cp "$root/.dart_tool/package_config.json" "$snapshot/.dart_tool/"
+cp "$root/.dart_tool/package_config.json" "$root/.dart_tool/package_graph.json" "$snapshot/.dart_tool/"
 if [[ -f "$root/.flutter-plugins-dependencies" ]]; then
   cp "$root/.flutter-plugins-dependencies" "$snapshot/"
 fi
@@ -41,7 +41,7 @@ exec 9>/tmp/flutter-build.lock
 flock -n 9 || { printf 'Another Flutter/Android build holds the shared lock; no build was started.\n' >&2; exit 1; }
 phase building
 printf '[APP] Building a fresh Linux release using the existing SDK; no pub get or tests.\n'
-(cd "$snapshot" && "$flutter" build linux --release --no-pub)
+(cd "$snapshot" && "$flutter" build linux --release --no-pub) 2>&1 | tee "$work/build.log"
 version="$(pkgver)"
 printf 'source %q\npkgver=%q\nBUILDDIR=%q\nPKGDEST=%q\nSRCDEST=%q\nLOGDEST=%q\noptions=(!strip !debug)\nCOMPRESSZST=(zstd -c -T2 -3 -)\n' \
   "$root/packaging/arch/PKGBUILD" "$version" "$work" "$work" "$work" "$work" > "$work/PKGBUILD"
