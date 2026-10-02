@@ -1818,6 +1818,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Future<void> _dismissFinishedTimer() async {
     if (!mounted) return;
     _stopMobileRingtone();
+    await _audioService.stopNotification();
     _timerRuntime = TimerRuntime.idle().copyWith(
       revision: _timerRuntime.revision + 1,
     );
@@ -3261,144 +3262,157 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Future<int?> _showNormalTimerFinishedDialog() async {
     final customController = TextEditingController();
     String? inputError;
+    const actionStyle = ButtonStyle(
+      minimumSize: WidgetStatePropertyAll(Size(0, 64)),
+      padding: WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+      textStyle: WidgetStatePropertyAll(
+        TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+    );
+    const presetStyle = ButtonStyle(
+      padding: WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      ),
+      textStyle: WidgetStatePropertyAll(
+        TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+    );
 
     final selectedMinutes = await showDialog<int>(
       context: context,
       useRootNavigator: true,
-      barrierDismissible: true,
-      builder: (dialogContext) {
-        return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700),
-          child: AlertDialog(
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 24,
-            ),
-            title: const Text('Timer finished'),
-            contentPadding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-            content: StatefulBuilder(
-              builder: (context, setDialogState) {
-                return SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          final repeatMinutes =
-                              (_lastFinishedTimerDurationSeconds ~/ 60)
-                                  .clamp(1, 720)
-                                  .toInt();
-                          Navigator.of(dialogContext).pop(repeatMinutes);
-                        },
-                        icon: const Icon(Icons.replay_rounded),
-                        label: const Text('Repeat Same Timer'),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Start New Preset Timer',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          const double minChipWidth = 72;
-                          const double spacing = 8;
-                          int columns =
-                              ((constraints.maxWidth + spacing) /
-                                      (minChipWidth + spacing))
-                                  .floor();
-                          if (columns < 2) columns = 2;
-                          final rows =
-                              (_timerFinishedPresetMinutes.length / columns)
-                                  .ceil();
-                          return Column(
-                            children: List.generate(rows, (rowIndex) {
-                              final start = rowIndex * columns;
-                              final end = (start + columns).clamp(
-                                0,
-                                _timerFinishedPresetMinutes.length,
-                              );
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: rowIndex < rows - 1 ? spacing : 0,
-                                ),
-                                child: Row(
-                                  children: [
-                                    for (int i = start; i < end; i++)
-                                      Expanded(
-                                        child: Padding(
-                                          padding: EdgeInsets.only(
-                                            right: i < end - 1 ? spacing : 0,
-                                          ),
-                                          child: ActionChip(
-                                            label: Center(
-                                              child: Text(
-                                                '${_timerFinishedPresetMinutes[i]} min',
-                                              ),
-                                            ),
-                                            onPressed: () =>
-                                                Navigator.of(dialogContext).pop(
-                                                  _timerFinishedPresetMinutes[i],
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    // Pad incomplete rows
-                                    for (int i = end; i < start + columns; i++)
-                                      const Expanded(child: SizedBox()),
-                                  ],
-                                ),
-                              );
-                            }),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: customController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Custom duration (minutes)',
-                          errorText: inputError,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          void startCustomTimer() {
+            final minutes = int.tryParse(customController.text.trim());
+            if (minutes == null || minutes < 1 || minutes > 720) {
+              setDialogState(() {
+                inputError = 'Enter a value between 1 and 720';
+              });
+              return;
+            }
+            Navigator.of(dialogContext).pop(minutes);
+          }
+
+          return Dialog.fullscreen(
+            child: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Timer finished',
+                          style: Theme.of(context).textTheme.headlineSmall,
                         ),
-                        onSubmitted: (_) {
-                          final minutes = int.tryParse(
-                            customController.text.trim(),
-                          );
-                          if (minutes == null || minutes < 1 || minutes > 720) {
-                            setDialogState(() {
-                              inputError = 'Enter a value between 1 and 720';
-                            });
-                            return;
-                          }
-                          Navigator.of(dialogContext).pop(minutes);
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: () {
+                                    final repeatMinutes =
+                                        (_lastFinishedTimerDurationSeconds ~/
+                                                60)
+                                            .clamp(1, 720)
+                                            .toInt();
+                                    Navigator.of(
+                                      dialogContext,
+                                    ).pop(repeatMinutes);
+                                  },
+                                  icon: const Icon(Icons.replay_rounded),
+                                  label: const Text('Repeat Same Timer'),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Start New Preset Timer',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 10),
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: _timerFinishedPresetMinutes.length,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                                        maxCrossAxisExtent: 120,
+                                        mainAxisExtent: 48,
+                                        crossAxisSpacing: 8,
+                                        mainAxisSpacing: 8,
+                                      ),
+                                  itemBuilder: (context, index) {
+                                    final minutes =
+                                        _timerFinishedPresetMinutes[index];
+                                    return OutlinedButton(
+                                      style: presetStyle,
+                                      onPressed: () => Navigator.of(
+                                        dialogContext,
+                                      ).pop(minutes),
+                                      child: Text('$minutes min'),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: customController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    labelText: 'Custom duration (minutes)',
+                                    errorText: inputError,
+                                  ),
+                                  onSubmitted: (_) => startCustomTimer(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 64,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: actionStyle,
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(),
+                                  child: const Text(
+                                    'Close timer',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: FilledButton(
+                                  style: actionStyle,
+                                  onPressed: startCustomTimer,
+                                  child: const Text(
+                                    'Start custom',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Exit / Close Timer'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final minutes = int.tryParse(customController.text.trim());
-                  if (minutes == null || minutes < 1 || minutes > 720) {
-                    return;
-                  }
-                  Navigator.of(dialogContext).pop(minutes);
-                },
-                child: const Text('Start custom'),
-              ),
-            ],
-          ), // AlertDialog
-        ); // ConstrainedBox
-      },
+          );
+        },
+      ),
     );
 
     customController.dispose();
@@ -3541,7 +3555,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       icon: const Icon(Icons.close_rounded),
-                      label: const Text('Exit / Close Timer'),
+                      label: const Text('Close timer'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: fg,
                         side: BorderSide(color: outline),

@@ -167,6 +167,8 @@ Import copies model data into app-owned storage and persists separate English/Ma
 
 **Settings → Dark theme** switches the whole app between the fixed light and dark palettes immediately and saves the choice across launches. Settings, clock, timer, stopwatch, dialogs, and navigation follow the selected theme. **Dark fullscreen** remains a separate fullscreen-focus preference; Drive Mode is always dark. No wallpaper-derived or Material You dynamic colors are used.
 
+The normal **Timer finished** dialog fills the app window. Presets use uniform buttons; **Close timer** and **Start custom** share an equal-width, equal-height footer row. Close timer stops the timer alert and dismisses the timer without quitting the app.
+
 ### Linux window and background operation
 
 - Starts at approximately **400×860**, centered and clamped to the monitor work area; remains resizable for landscape use.
@@ -184,6 +186,14 @@ makepkg -si
 ```
 
 The `solasflow-git` package builds the Linux release from the current `master` branch and declares its GTK/GStreamer runtime dependencies. `makepkg` installs the package with pacman when `-i` is supplied.
+
+To build and install the current working source with the existing `$HOME/flutter` SDK:
+
+```bash
+./packaging/arch/install-fresh.sh
+```
+
+Run this in a terminal. It builds an isolated source snapshot without `pub get` or tests, packages it using the existing installation layout, and prompts for `sudo pacman -U`. It does not install toolchains or missing dependencies. After installation, exit the old running app when prompted, then press Enter to launch `/opt/solasflow/solasflow`. The package and logs remain under `build/arch/install.*`; no existing per-user launcher is overwritten.
 
 ### Debian, Ubuntu, Fedora, and other distributions
 
