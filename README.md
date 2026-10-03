@@ -59,6 +59,11 @@
 - `Resume Last`
 - `Toggle Speech`
 
+### Android Home Screen Widgets
+- `Live Realtime Clock`: Live wall-clock display with real-time seconds ticking natively via Android `TextClock` without battery-draining polling alarms. Includes live date, tap-to-open Clock view, and quick 1-tap jump to fullscreen Focus Mode.
+- `Timer Presets`: 15 quick-start buttons (`1m` to `90m`) to immediately initiate a timer session.
+- `Speech Controls`: Master audio toggle and direct fullscreen clock launcher.
+
 ### Persistence
 - Preferences are persisted with `shared_preferences`, including:
 	- sound + volume choices

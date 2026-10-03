@@ -161,5 +161,6 @@ class MainActivity : FlutterActivity() {
             .commit()
         TimerPresetsWidget.updateAllWidgets(applicationContext)
         SpeechControlsWidget.updateAllWidgets(applicationContext)
+        LiveClockWidget.updateAllWidgets(applicationContext)
     }
 }

@@ -2189,6 +2189,22 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
 
     switch (type) {
+      case 'open_app':
+      case 'open_clock':
+        setState(() {
+          currentTabIndex = 0;
+        });
+        break;
+      case 'open_fullscreen_clock_direct':
+        setState(() {
+          currentTabIndex = 0;
+        });
+        _openFullscreenFocus(
+          specificMode: FullscreenFocusMode.clock,
+          forceHorizontal: true,
+          startImmersive: true,
+        );
+        break;
       case 'resume_last':
         await _handleQuickAction('resume_last');
         break;
