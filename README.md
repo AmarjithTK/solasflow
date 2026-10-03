@@ -166,6 +166,8 @@ Linux x64 keeps the Sherpa v1.12.34 C API in a reusable worker isolate: selected
 
 Download a **trusted, Sherpa-converted** Piper/VITS voice or English Kokoro model folder, then choose **Settings → Local offline model → Model language → Import folder**. HF source weights and arbitrary ONNX exports cannot be loaded directly. The folder needs exactly one self-contained `.onnx` file with Sherpa metadata and `tokens.txt`; Kokoro additionally needs matching `voices.bin` and an English `lexicon-us-en.txt` or `lexicon.txt`. Compatible bundled eSpeak data is reused unless the folder supplies its own regular `espeak-ng-data` files. External ONNX tensors, symlinks, unsupported formats, and mismatched languages are rejected before installation.
 
+**Model language** also selects and saves the app's speech language. It stays synchronized with **Language list**, so an explicit Malayalam choice survives leaving Settings and restarting the app instead of resetting to English.
+
 Import copies model data into app-owned storage and persists separate English/Malayalam selections; it does not execute downloaded scripts. **Use built-in voice** clears the selected import. A native model is still trusted input, not a sandbox for malicious model files. Model redistribution must respect each model's license. Runtime attribution and corresponding-source links are in `assets/tts/Sherpa-runtime-NOTICE.txt` and `assets/tts/espeak-ng-LICENSE.txt`; distributors of the GPLv3 eSpeak runtime/data must also satisfy its corresponding-source obligations.
 
 ### App appearance

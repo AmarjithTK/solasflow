@@ -109,7 +109,8 @@ class SettingsPanel extends ConsumerStatefulWidget {
 }
 
 class _SettingsPanelState extends ConsumerState<SettingsPanel> {
-  String _desktopModelLanguage = 'en';
+  String get _desktopModelLanguage =>
+      ref.read(settingsProvider).voiceListMode == 'malayalam' ? 'ml' : 'en';
   bool _modelOperationBusy = false;
 
   Future<void> _changeDesktopModel({required bool clear}) async {
@@ -263,20 +264,26 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             style: TextStyle(fontSize: 12),
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: _desktopModelLanguage,
+          InputDecorator(
             decoration: const InputDecoration(labelText: 'Model language'),
-            items: const [
-              DropdownMenuItem(value: 'en', child: Text('English')),
-              DropdownMenuItem(value: 'ml', child: Text('Malayalam')),
-            ],
-            onChanged: _modelOperationBusy
-                ? null
-                : (value) {
-                    if (value != null) {
-                      setState(() => _desktopModelLanguage = value);
-                    }
-                  },
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _desktopModelLanguage,
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(value: 'en', child: Text('English')),
+                  DropdownMenuItem(value: 'ml', child: Text('Malayalam')),
+                ],
+                onChanged: _modelOperationBusy
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        widget.onVoiceListModeChanged(
+                          value == 'ml' ? 'malayalam' : 'english',
+                        );
+                      },
+              ),
+            ),
           ),
           const SizedBox(height: 8),
           ValueListenableBuilder<String>(
@@ -325,7 +332,8 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             ],
           ),
           const Text(
-            'Voice test also selects this speech language. System-only mode bypasses offline models.',
+            'Model language also sets and saves your speech language. '
+            'System-only mode bypasses offline models.',
             style: TextStyle(fontSize: 11),
           ),
         ],
