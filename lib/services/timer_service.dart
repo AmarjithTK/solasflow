@@ -28,6 +28,17 @@ class TimerService {
     return '$hStr:$m:$s.$ms $ampm';
   }
 
+  /// Begin the next interval when the scheduler actually fires.
+  ///
+  /// Using [firedAt] avoids catching up against an old deadline after a
+  /// delayed callback, which could make the following announcement early.
+  DateTime nextClockAnnouncementAt({
+    required DateTime firedAt,
+    required int intervalMinutes,
+  }) {
+    return firedAt.add(Duration(minutes: intervalMinutes));
+  }
+
   /// Convert time to natural spoken English (for TTS announcements)
   /// Examples:
   ///   - 3:00 AM → "3 o'clock AM"

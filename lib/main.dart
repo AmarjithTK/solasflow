@@ -2818,7 +2818,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
         'lateness=${firedAt.difference(due).inMilliseconds}ms',
       );
       if (clockSpeakTime) speakClock(timeToWords());
-      _nextClockAt = firedAt.add(Duration(minutes: clockIntervalMins));
+      _nextClockAt = _timerService.nextClockAnnouncementAt(
+        firedAt: firedAt,
+        intervalMinutes: clockIntervalMins,
+      );
       _scheduleNextClockAnnouncement();
     });
   }
