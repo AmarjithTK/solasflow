@@ -2730,6 +2730,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _handleNightUsageStateChange(state);
     if (state == AppLifecycleState.resumed) {
+      if (clockOn) _scheduleNextClockAnnouncement();
       _dispatchExternal(() async {
         if (timerInterval == null ||
             _timerRuntime.status != TimerRuntimeStatus.running) {
@@ -2804,6 +2805,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void _scheduleNextClockAnnouncement() {
+    clockTimer?.cancel();
     final due = _nextClockAt;
     if (due == null || !clockOn) return;
     final now = DateTime.now();

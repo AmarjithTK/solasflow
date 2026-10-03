@@ -6,7 +6,7 @@
 
 ### Speaking Clock
 - Shows a live digital clock with large, readable typography.
-- Speaks the current time at a configurable interval (`1, 2, 5, 10, 15, 20, 30, 60` minutes).
+- Speaks the current time at a configurable interval (`1, 2, 5, 10, 15, 20, 30, 60` minutes); after returning to the app, the next announcement is re-armed against the original cadence.
 - Optional motivational quote after each spoken time.
 - Quote category options:
 	- `General`
@@ -44,7 +44,7 @@
 	- Start fullscreen in horizontal orientation
 
 ### Notification + background behavior
-- Foreground service keeps timer/clock state alive in background.
+- Foreground service keeps timer/clock state alive in background. Android may defer app speech while the app is backgrounded or the device is suspended; clock speech scheduling is re-armed on resume.
 - Notification buttons can control timer and clock speech state.
 - App provides full-exit behavior that stops timer/clock/audio and foreground service.
 
