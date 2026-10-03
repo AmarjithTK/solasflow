@@ -6,7 +6,7 @@
 
 ### Speaking Clock
 - Shows a live digital clock with large, readable typography.
-- Speaks the current time at a configurable interval (`1, 2, 5, 10, 15, 20, 30, 60` minutes); each next interval is measured from the scheduler's actual firing time, so delayed callbacks do not cause catch-up announcements or shortened follow-up intervals.
+- Speaks the current time at a configurable interval (`1, 2, 5, 10, 15, 20, 30, 60` minutes); each next interval is measured from the scheduler's actual firing time, and its deadline survives app restarts. Pending clock messages are coalesced; stalled TTS operations time out so later speech can continue.
 - Optional motivational quote after each spoken time.
 - Quote category options:
 	- `General`

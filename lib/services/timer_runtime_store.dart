@@ -10,6 +10,7 @@ import 'settings_service.dart';
 class TimerRuntimeStore {
   static const String stopwatchKey = 'StopwatchRuntimeV1';
   static const String runtimeKey = 'TimerRuntimeV1';
+  static const String clockNextAtKey = 'ClockNextAtEpochMsV1';
 
   static Future<void> _writeTail = Future<void>.value();
 
@@ -80,6 +81,36 @@ class TimerRuntimeStore {
             throw StateError(
               'SharedPreferences rejected stopwatch runtime write',
             );
+          }
+        });
+    return _writeTail;
+  }
+
+  Future<DateTime?> loadClockNextAt() async {
+    await _writeTail;
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      await prefs.reload();
+    } catch (_) {}
+    final epochMs = prefs.getInt(clockNextAtKey);
+    return epochMs == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(epochMs);
+  }
+
+  Future<void> saveClockNextAt(DateTime? dueAt) {
+    final epochMs = dueAt?.millisecondsSinceEpoch;
+    _writeTail = _writeTail
+        .catchError((Object error, StackTrace stackTrace) {
+          debugPrint('Previous runtime write failed: $error');
+        })
+        .then((_) async {
+          final prefs = await SharedPreferences.getInstance();
+          final written = epochMs == null
+              ? await prefs.remove(clockNextAtKey)
+              : await prefs.setInt(clockNextAtKey, epochMs);
+          if (!written) {
+            throw StateError('SharedPreferences rejected clock deadline write');
           }
         });
     return _writeTail;

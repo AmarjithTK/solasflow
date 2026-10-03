@@ -1903,8 +1903,18 @@ class _MainScreenState extends ConsumerState<MainScreen>
     unawaited(_refreshTodaySummary());
     await _restoreTimerRuntime();
     await _restoreStopwatchRuntime();
+    final savedClockDeadline = await _timerRuntimeStore.loadClockNextAt();
     if (!mounted) return;
-    if (clockOn) startClock();
+    if (clockOn) {
+      if (savedClockDeadline == null) {
+        startClock();
+      } else {
+        _nextClockAt = savedClockDeadline;
+        _scheduleNextClockAnnouncement();
+      }
+    } else {
+      _persistClockDeadline(null);
+    }
     await _initializeForegroundNotification();
     if (!mounted) return;
     _bootstrapReady = true;
@@ -2446,7 +2456,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
     if (forceRebind) {
       final previous = flutterTts;
-      await previous.stop();
+      await previous.stop().timeout(const Duration(seconds: 5), onTimeout: () {});
       flutterTts = FlutterTts();
       _voiceSessionManager.resetSession();
       _ttsReady = false;
@@ -2795,6 +2805,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
     return _timerService.timeToWords(DateTime.now());
   }
 
+  void _persistClockDeadline(DateTime? dueAt) {
+    unawaited(
+      _timerRuntimeStore
+          .saveClockNextAt(dueAt)
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint('[STATE] Failed to persist clock deadline: $error');
+          }),
+    );
+  }
+
   void startClock() {
     stopClock();
     if (!clockOn) return;
@@ -2808,6 +2828,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     clockTimer?.cancel();
     final due = _nextClockAt;
     if (due == null || !clockOn) return;
+    _persistClockDeadline(due);
     final now = DateTime.now();
     final delay = due.isAfter(now) ? due.difference(now) : Duration.zero;
     clockTimer = Timer(delay, () {
@@ -2830,6 +2851,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     clockTimer?.cancel();
     clockTimer = null;
     _nextClockAt = null;
+    _persistClockDeadline(null);
     unawaited(_reconcileForeground(force: true));
   }
 
@@ -2859,9 +2881,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
       isStillValid: () => clockOn && clockSpeakTime,
       onFire: () {
         debugPrint('[CLOCK] Queuing announcement at ${DateTime.now()}');
+        speechQueue.removeWhere((item) => item.isClockAnnouncement);
         final repeatCount = clockSpeakRepeatCount.clamp(1, 3);
         for (var i = 0; i < repeatCount; i++) {
-          speechQueue.add(SpeechItem(text, delayMs: i == 0 ? 0 : 350));
+          speechQueue.add(
+            SpeechItem(
+              text,
+              isClockAnnouncement: true,
+              delayMs: i == 0 ? 0 : 350,
+            ),
+          );
         }
         if (motivationOn) {
           final quoteText = _nextQuoteForCategory(motivationCategory);
@@ -2869,6 +2898,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             SpeechItem(
               quoteText,
               isQuote: true,
+              isClockAnnouncement: true,
               delayMs: motivationDelaySeconds * 1000,
             ),
           );
@@ -3847,8 +3877,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
               if (needsStart) clockOn = true;
               _lsSave();
             });
-            if (needsStart) startClock();
-            if (nowOn) speakClock(timeToWords());
+            if (needsStart) {
+              startClock();
+            } else if (nowOn) {
+              speakClock(timeToWords());
+            }
           },
           onClockSpeakRepeatCountChanged: (val) {
             if (val == null) return;

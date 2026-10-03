@@ -586,12 +586,19 @@ class SpeechService {
     final generation = _desktopSpeechGeneration;
     Process? process;
     try {
-      process = await Process.start(executable, args);
-      _externalSpeechProcess = process;
-      if (generation != _desktopSpeechGeneration) process.kill();
-      final stdoutDone = process.stdout.drain<void>();
-      final stderrDone = utf8.decoder.bind(process.stderr).join();
-      final exitCode = await process.exitCode;
+      final child = await Process.start(executable, args);
+      process = child;
+      if (generation != _desktopSpeechGeneration) child.kill();
+      final stdoutDone = child.stdout.drain<void>();
+      final stderrDone = utf8.decoder.bind(child.stderr).join();
+      final exitCode = await child.exitCode.timeout(
+        const Duration(seconds: 45),
+        onTimeout: () {
+          debugPrint('[ERROR] Speech process timed out: $executable');
+          child.kill();
+          return -1;
+        },
+      );
       await stdoutDone;
       final stderr = (await stderrDone).trim();
       if (exitCode != 0 && stderr.isNotEmpty) {
@@ -1165,7 +1172,13 @@ class SpeechService {
       await _setMediaVolumeToMax();
     }
 
-    await flutterTts.speak(item.text);
+    await flutterTts.speak(item.text).timeout(
+      const Duration(seconds: 45),
+      onTimeout: () {
+        debugPrint('[ERROR] TTS completion timed out');
+        throw TimeoutException('Speech completion timed out');
+      },
+    );
 
     _setEngineStatus(
       'system',
