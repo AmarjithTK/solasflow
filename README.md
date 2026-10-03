@@ -167,7 +167,7 @@ Import copies model data into app-owned storage and persists separate English/Ma
 
 **Settings → Dark theme** switches the whole app between the fixed light and dark palettes immediately and saves the choice across launches. Settings, clock, timer, stopwatch, dialogs, and navigation follow the selected theme. **Dark fullscreen** remains a separate fullscreen-focus preference; Drive Mode is always dark. No wallpaper-derived or Material You dynamic colors are used.
 
-The normal **Timer finished** dialog fills the app window. Presets use uniform buttons; **Close timer** and **Start custom** share an equal-width, equal-height footer row. Close timer stops the timer alert and dismisses the timer without quitting the app.
+The normal **Timer finished** dialog fills the app window. Presets use uniform buttons; **Close timer** and **Start custom** share an equal-width footer row with compact 48 px height. The fullscreen-focus completion view also uses a 48 px-high Close timer button. Close timer stops the timer alert and dismisses the timer without quitting the app.
 
 ### Linux window and background operation
 

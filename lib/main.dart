@@ -3263,7 +3263,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final customController = TextEditingController();
     String? inputError;
     const actionStyle = ButtonStyle(
-      minimumSize: WidgetStatePropertyAll(Size(0, 64)),
+      minimumSize: WidgetStatePropertyAll(Size(0, 48)),
       padding: WidgetStatePropertyAll(
         EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
@@ -3375,7 +3375,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                         ),
                         const SizedBox(height: 16),
                         SizedBox(
-                          height: 64,
+                          height: 48,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -3551,7 +3551,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 48,
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       icon: const Icon(Icons.close_rounded),
