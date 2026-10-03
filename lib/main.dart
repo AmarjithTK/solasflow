@@ -2812,14 +2812,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final delay = due.isAfter(now) ? due.difference(now) : Duration.zero;
     clockTimer = Timer(delay, () {
       if (!mounted || !clockOn) return;
+      final firedAt = DateTime.now();
+      debugPrint(
+        '[CLOCK] Interval fired at $firedAt; deadline=$due; '
+        'lateness=${firedAt.difference(due).inMilliseconds}ms',
+      );
       if (clockSpeakTime) speakClock(timeToWords());
-      final interval = Duration(minutes: clockIntervalMins);
-      var next = due.add(interval);
-      final current = DateTime.now();
-      while (!next.isAfter(current)) {
-        next = next.add(interval);
-      }
-      _nextClockAt = next;
+      _nextClockAt = firedAt.add(Duration(minutes: clockIntervalMins));
       _scheduleNextClockAnnouncement();
     });
   }
@@ -2856,6 +2855,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       markSpoke: () => lastClockSpoke = DateTime.now().millisecondsSinceEpoch,
       isStillValid: () => clockOn && clockSpeakTime,
       onFire: () {
+        debugPrint('[CLOCK] Queuing announcement at ${DateTime.now()}');
         final repeatCount = clockSpeakRepeatCount.clamp(1, 3);
         for (var i = 0; i < repeatCount; i++) {
           speechQueue.add(SpeechItem(text, delayMs: i == 0 ? 0 : 350));
