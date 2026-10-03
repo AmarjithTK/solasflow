@@ -24,6 +24,9 @@ class SettingsPanel extends ConsumerStatefulWidget {
   final Future<void> Function(String directory, String language)
   onImportDesktopModel;
   final Future<void> Function(String language) onClearDesktopModel;
+  final ValueListenable<String> selectedMalayalamVoice;
+  final Future<void> Function(String voice) onMalayalamVoiceChanged;
+  final Future<void> Function() onPreviewMalayalamVoice;
   final String sleepStartLabel;
   final String sleepEndLabel;
   final ValueChanged<String?> onSoundChanged;
@@ -68,6 +71,9 @@ class SettingsPanel extends ConsumerStatefulWidget {
     required this.customModelStatus,
     required this.onImportDesktopModel,
     required this.onClearDesktopModel,
+    required this.selectedMalayalamVoice,
+    required this.onMalayalamVoiceChanged,
+    required this.onPreviewMalayalamVoice,
     required this.sleepStartLabel,
     required this.sleepEndLabel,
     required this.onSoundChanged,
@@ -133,6 +139,105 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     } finally {
       if (mounted) setState(() => _modelOperationBusy = false);
     }
+  }
+
+  Future<void> _runMalayalamVoiceOperation({String? voice}) async {
+    if (_modelOperationBusy) return;
+    setState(() => _modelOperationBusy = true);
+    try {
+      if (voice == null) {
+        await widget.onPreviewMalayalamVoice();
+      } else {
+        await widget.onMalayalamVoiceChanged(voice);
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Malayalam voice ${voice == null ? 'preview' : 'selection'} failed: $error',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _modelOperationBusy = false);
+    }
+  }
+
+  Widget _malayalamVoiceCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Malayalam offline voice (Linux x64)',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<String>(
+            valueListenable: widget.selectedMalayalamVoice,
+            builder: (context, voice, _) => InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Built-in Malayalam voice',
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: voice,
+                  isExpanded: true,
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'meera',
+                      child: Text('Meera (female, default)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'arjun',
+                      child: Text('Arjun (male)'),
+                    ),
+                  ],
+                  onChanged: _modelOperationBusy
+                      ? null
+                      : (value) {
+                          if (value != null) {
+                            _runMalayalamVoiceOperation(voice: value);
+                          }
+                        },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'An imported Malayalam model overrides this built-in choice until you '
+            'pick a built-in voice again. Clearing the import restores the selected voice.',
+            style: TextStyle(fontSize: 12),
+          ),
+          if (_modelOperationBusy) ...[
+            const SizedBox(height: 8),
+            const LinearProgressIndicator(),
+          ],
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _modelOperationBusy
+                ? null
+                : () => _runMalayalamVoiceOperation(),
+            icon: const Icon(Icons.volume_up_outlined),
+            label: const Text('Preview Malayalam'),
+          ),
+          const Text(
+            'Preview always samples the active offline Malayalam voice without changing '
+            'your speech language or engine settings. System-only mode bypasses offline '
+            'voices for ordinary announcements, not this preview.',
+            style: TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _desktopModelCard(BuildContext context) {
@@ -599,6 +704,11 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
               child: _desktopModelCard(context),
+            ),
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+              child: _malayalamVoiceCard(context),
             ),
           _settingsOption(
             context,
