@@ -11,6 +11,14 @@ done
   exit 1
 }
 
+clean_reinstall=false
+if [[ $# == 1 && "$1" == --clean-reinstall ]]; then
+  clean_reinstall=true
+elif (( $# > 0 )); then
+  printf 'Usage: %s [--clean-reinstall]\n' "$0" >&2
+  exit 2
+fi
+
 # Reuse the existing package layout without altering the project's PKGBUILD.
 source "$root/packaging/arch/PKGBUILD"
 pacman -T "${depends[@]}" || {
@@ -53,12 +61,6 @@ packages=("$work"/*.pkg.tar.*)
 [[ ${#packages[@]} == 1 && -f "${packages[0]}" ]] || { printf 'Expected one completed Arch package.\n' >&2; exit 1; }
 printf '%s\n' "${packages[0]}" > "$work/package-path"
 
-phase awaiting-password
-printf '\n[APP] Installing only the local Solas Flow package. Enter your password in this terminal when sudo asks.\n'
-sudo pacman -U -- "${packages[0]}"
-pacman -Q "$pkgname"
-phase installed
-
 app_running() {
   local owner
   owner="$(gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
@@ -67,15 +69,50 @@ app_running() {
 }
 if app_running; then
   phase awaiting-app-exit
-  printf '\n[APP] Installation succeeded. Use the Exit/power button in the existing app to close it gracefully.\n'
-  printf 'This is a one-time restart to load the installed build; the Close timer button does not quit the app.\n'
-  read -r -p 'After exiting the existing app, press Enter to launch the installed build: ' _
+  printf '\n[APP] Use the Exit/power button in the existing app before replacing its installation.\n'
+  printf 'Close timer does not quit the app. Settings and downloaded voice models will be retained.\n'
+  read -r -p 'After exiting the existing app, press Enter to continue: ' _
   if app_running; then
-    printf 'The existing app is still running. Exit it, then launch /opt/solasflow/solasflow.\n' >&2
+    printf 'The existing app is still running; no installation files were removed.\n' >&2
     exit 1
   fi
 fi
+if $clean_reinstall; then
+  phase removing
+  printf '\n[APP] Removing the existing Solas Flow package before reinstalling. Dependencies and user data are retained.\n'
+  if pacman -Q "$pkgname" >/dev/null 2>&1; then
+    sudo pacman -R -- "$pkgname"
+  fi
+  sudo rm -rf -- /opt/solasflow
+fi
+
+phase awaiting-password
+printf '\n[APP] Installing only the local Solas Flow package. Enter your password in this terminal when sudo asks.\n'
+sudo pacman -U -- "${packages[0]}"
+pacman -Q "$pkgname"
+phase installed
+
+# Retire the per-user installation that otherwise shadows the system launcher.
+share_dir="${XDG_DATA_HOME:-"$HOME/.local/share"}"
+rm -rf -- "$HOME/.local/opt/solasflow"
+rm -f -- "$share_dir/applications/com.atherpulse.solasflow.desktop"
+for size in 48 128 256 512; do
+  rm -f -- "$share_dir/icons/hicolor/${size}x${size}/apps/solasflow.png"
+done
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$share_dir/applications"
+fi
+if command -v kbuildsycoca6 >/dev/null 2>&1; then
+  kbuildsycoca6 --noincremental
+elif command -v kbuildsycoca5 >/dev/null 2>&1; then
+  kbuildsycoca5 --noincremental
+fi
+phase launcher-refreshed
+
+if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+  export GDK_BACKEND=wayland
+fi
 nohup /opt/solasflow/solasflow > "$work/app.log" 2>&1 < /dev/null &
 printf '%s\n' "$!" > "$work/app.pid"
-phase launched
-printf '\n[APP] Fresh installed build launched. Package and logs retained at %s\n' "$work"
+phase launch-requested
+printf '\n[APP] Installed build launch requested. Package and runtime logs retained at %s\n' "$work"

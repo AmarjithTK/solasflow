@@ -193,7 +193,15 @@ To build and install the current working source with the existing `$HOME/flutter
 ./packaging/arch/install-fresh.sh
 ```
 
-Run this in a terminal. It builds an isolated source snapshot without `pub get` or tests, packages it using the existing installation layout, and prompts for `sudo pacman -U`. It does not install toolchains or missing dependencies. After installation, exit the old running app when prompted, then press Enter to launch `/opt/solasflow/solasflow`. The package and logs remain under `build/arch/install.*`; no existing per-user launcher is overwritten.
+Run this in a terminal. It builds an isolated source snapshot without `pub get` or tests, packages it using the existing installation layout, and prompts for `sudo pacman -U`. It does not install toolchains or missing dependencies. Exit any running Solas Flow app when prompted before replacing its installation. After successful installation, it removes the obsolete per-user bundle, launcher, and icons so the application menu uses `/opt/solasflow/solasflow`, then refreshes the desktop caches and requests launch. Settings and downloaded voice models are retained. The package and logs remain under `build/arch/install.*`.
+
+For a complete application removal followed by reinstallation, use:
+
+```bash
+./packaging/arch/install-fresh.sh --clean-reinstall
+```
+
+This builds the replacement package first, then removes the existing `solasflow-git` package and remaining `/opt/solasflow` installation files before installing the new package. Confirm the removal and installation prompts in the terminal; dependencies and user data are not removed.
 
 ### Debian, Ubuntu, Fedora, and other distributions
 
