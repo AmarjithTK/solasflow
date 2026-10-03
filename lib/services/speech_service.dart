@@ -256,7 +256,6 @@ class SpeechService {
     if (!Platform.isLinux) {
       throw UnsupportedError('Bundled Malayalam voice selection is Linux-only');
     }
-    await stopDesktopSpeech();
     await _desktopOffline.selectMalayalamVoice(voice);
   }
 

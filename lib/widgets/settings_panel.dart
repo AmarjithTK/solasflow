@@ -187,28 +187,25 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               decoration: const InputDecoration(
                 labelText: 'Built-in Malayalam voice',
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: voice,
-                  isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'meera',
-                      child: Text('Meera (female, default)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'arjun',
-                      child: Text('Arjun (male)'),
-                    ),
-                  ],
-                  onChanged: _modelOperationBusy
-                      ? null
-                      : (value) {
-                          if (value != null) {
-                            _runMalayalamVoiceOperation(voice: value);
-                          }
-                        },
-                ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Meera (female)'),
+                    selected: voice == 'meera',
+                    onSelected: _modelOperationBusy
+                        ? null
+                        : (_) => _runMalayalamVoiceOperation(voice: 'meera'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Arjun (male)'),
+                    selected: voice == 'arjun',
+                    onSelected: _modelOperationBusy
+                        ? null
+                        : (_) => _runMalayalamVoiceOperation(voice: 'arjun'),
+                  ),
+                ],
               ),
             ),
           ),

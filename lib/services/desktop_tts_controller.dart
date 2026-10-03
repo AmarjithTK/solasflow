@@ -207,8 +207,7 @@ class DesktopTtsController {
     try {
       await initialize();
       final model = _builtIn('ml', malayalamVoice: voice);
-      status.value = 'Loading and validating ${model['name']}…';
-      await engine.warm(library, model);
+      status.value = 'Selecting ${model['name']}…';
       if (_closed) {
         throw StateError('Speech service was closed during selection');
       }
