@@ -14,7 +14,6 @@ void main() {
       ),
     );
     final customModelStatus = ValueNotifier('Using bundled voices');
-    final malayalamVoice = ValueNotifier('meera');
     var downloadRequests = 0;
     var cancelRequests = 0;
 
@@ -35,9 +34,6 @@ void main() {
               customModelStatus: customModelStatus,
               onImportDesktopModel: (_, _) async {},
               onClearDesktopModel: (_) async {},
-              selectedMalayalamVoice: malayalamVoice,
-              onMalayalamVoiceChanged: (_) async {},
-              onPreviewMalayalamVoice: () async {},
               sleepStartLabel: '10:00 PM',
               sleepEndLabel: '7:00 AM',
               onSoundChanged: (_) {},

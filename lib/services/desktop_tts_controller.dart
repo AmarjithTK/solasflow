@@ -17,8 +17,6 @@ class DesktopTtsController {
   final status = ValueNotifier<String>(
     'Built-in English and Malayalam voices selected',
   );
-  final _selectedMalayalamVoice = ValueNotifier<String>('meera');
-  ValueListenable<String> get selectedMalayalamVoice => _selectedMalayalamVoice;
   final _selected = <String, Map<String, dynamic>>{};
   Future<void>? _initializing;
   bool _changing = false;
@@ -103,32 +101,25 @@ class DesktopTtsController {
       );
     }
     final preferences = await SharedPreferences.getInstance();
-    var savedModelWarning = false;
     for (final language in ['en', 'ml']) {
       var folder = preferences.getString('desktop_tts_model_$language');
       if (folder == null) continue;
       if (language == 'ml') {
-        // Keep the built-in choice and any import in one atomic preference.
         if (folder.startsWith('builtin:')) {
-          final voice = folder.substring('builtin:'.length);
-          if (voice == 'meera' || voice == 'arjun') {
-            _selectedMalayalamVoice.value = voice;
-          } else {
-            savedModelWarning = true;
-            status.value = 'Invalid saved Malayalam voice; Meera will be used';
-          }
+          await preferences.remove('desktop_tts_model_ml');
           continue;
         }
-        final selection = folder.split('|');
-        if (selection.length == 2 &&
-            (selection[1] == 'meera' || selection[1] == 'arjun')) {
-          folder = selection[0];
-          _selectedMalayalamVoice.value = selection[1];
+        final separator = folder.lastIndexOf('|');
+        if (separator > 0) {
+          final voice = folder.substring(separator + 1);
+          if (voice == 'meera' || voice == 'arjun') {
+            folder = folder.substring(0, separator);
+            await preferences.setString('desktop_tts_model_ml', folder);
+          }
         }
       }
       if (!RegExp(r'^(en|ml)-[0-9]+$').hasMatch(folder) ||
           !folder.startsWith('$language-')) {
-        savedModelWarning = true;
         status.value =
             'Invalid saved $language model selection; built-in voice will be used';
         continue;
@@ -140,12 +131,11 @@ class DesktopTtsController {
           sharedData,
         );
       } catch (error) {
-        savedModelWarning = true;
         status.value =
             'Saved $language model is unavailable: $error. Clear or import it again.';
       }
     }
-    if (!savedModelWarning) _refreshStatus();
+    if (_selected.isNotEmpty) _refreshStatus();
   }
 
   void _refreshStatus() {
@@ -153,14 +143,7 @@ class DesktopTtsController {
         .map((language) {
           final label = language == 'en' ? 'English' : 'Malayalam';
           final model = _selected[language];
-          final builtInName = language == 'en'
-              ? 'built-in voice'
-              : 'Piper Malayalam ${_selectedMalayalamVoice.value == 'arjun' ? 'Arjun' : 'Meera'} (built-in)';
-          if (model == null) return '$label: $builtInName';
-          final fallback = language == 'ml'
-              ? ' (imported; built-in fallback: ${_selectedMalayalamVoice.value == 'arjun' ? 'Arjun' : 'Meera'})'
-              : '';
-          return '$label: ${model['name']}$fallback';
+          return '$label: ${model == null ? 'built-in voice' : model['name']}';
         })
         .join('\n');
   }
@@ -168,18 +151,8 @@ class DesktopTtsController {
   Map<String, dynamic>? selected(String language) => _selected[language];
   Future<Map<String, dynamic>> builtIn(String language) async {
     await initialize();
-    return _builtIn(language, malayalamVoice: _selectedMalayalamVoice.value);
-  }
-
-  Map<String, dynamic> _builtIn(
-    String language, {
-    required String malayalamVoice,
-  }) {
-    final slot = language == 'ml' && malayalamVoice == 'arjun'
-        ? 'backup'
-        : 'primary';
-    final model = '$bundledModelsDirectory/$language/$slot/model.onnx';
-    final tokens = '$bundledModelsDirectory/$language/$slot/tokens.txt';
+    final model = '$bundledModelsDirectory/$language/primary/model.onnx';
+    final tokens = '$bundledModelsDirectory/$language/primary/tokens.txt';
     if (!File(model).existsSync() || !File(tokens).existsSync()) {
       throw StateError('The bundled $language voice is missing');
     }
@@ -190,53 +163,8 @@ class DesktopTtsController {
       'tokens': tokens,
       'data': sharedData,
       'speaker': 0,
-      'name': language == 'en'
-          ? 'Piper English'
-          : 'Piper Malayalam ${malayalamVoice == 'arjun' ? 'Arjun' : 'Meera'}',
+      'name': language == 'en' ? 'Piper English' : 'Piper Malayalam Meera',
     };
-  }
-
-  Future<void> selectMalayalamVoice(String voice) async {
-    if (voice != 'meera' && voice != 'arjun') {
-      throw ArgumentError('Choose meera or arjun');
-    }
-    if (_changing) {
-      throw StateError('A model change is already running');
-    }
-    _changing = true;
-    try {
-      await initialize();
-      final model = _builtIn('ml', malayalamVoice: voice);
-      status.value = 'Selecting ${model['name']}…';
-      if (_closed) {
-        throw StateError('Speech service was closed during selection');
-      }
-      final preferences = await SharedPreferences.getInstance();
-      if (!await preferences.setString(
-        'desktop_tts_model_ml',
-        'builtin:$voice',
-      )) {
-        throw StateError('Unable to persist Malayalam voice selection');
-      }
-      final previous = _selected.remove('ml');
-      _selectedMalayalamVoice.value = voice;
-      _refreshStatus();
-      if (previous != null) {
-        try {
-          await Directory(
-            File(previous['model'] as String).parent.path,
-          ).delete(recursive: true);
-        } catch (error) {
-          status.value =
-              '${status.value}\nUnable to remove the unused imported model: $error';
-        }
-      }
-    } catch (error) {
-      status.value = 'Malayalam voice selection failed: $error';
-      rethrow;
-    } finally {
-      _changing = false;
-    }
   }
 
   Future<void> importModel(String directory, String language) async {
@@ -293,12 +221,9 @@ class DesktopTtsController {
       await engine.warm(library, imported);
       if (_closed) throw StateError('Speech service was closed during import');
       final preferences = await SharedPreferences.getInstance();
-      final savedSelection = language == 'ml'
-          ? '$folder|${_selectedMalayalamVoice.value}'
-          : folder;
       if (!await preferences.setString(
         'desktop_tts_model_$language',
-        savedSelection,
+        folder,
       )) {
         throw StateError('Unable to persist model selection');
       }
@@ -332,17 +257,11 @@ class DesktopTtsController {
     _changing = true;
     try {
       await initialize();
-      await engine.unload(library, language);
       final preferences = await SharedPreferences.getInstance();
-      final saved = language == 'ml'
-          ? await preferences.setString(
-              'desktop_tts_model_ml',
-              'builtin:${_selectedMalayalamVoice.value}',
-            )
-          : await preferences.remove('desktop_tts_model_$language');
-      if (!saved) {
+      if (!await preferences.remove('desktop_tts_model_$language')) {
         throw StateError('Unable to clear saved model selection');
       }
+      await engine.unload(library, language);
       final previous = _selected.remove(language);
       if (previous != null) {
         await Directory(

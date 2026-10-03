@@ -3,20 +3,29 @@ set -euo pipefail
 
 root="$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")"
 flutter="$HOME/flutter/bin/flutter"
-for command in git bsdtar makepkg fakeroot zstd flock pacman sudo gdbus nohup; do
-  command -v "$command" >/dev/null || { printf 'Missing existing tool: %s\n' "$command" >&2; exit 1; }
-done
 [[ -x "$flutter" && -f "$root/.dart_tool/package_config.json" && -f "$root/.dart_tool/package_graph.json" ]] || {
   printf 'The existing Flutter SDK and resolved project dependencies are required.\n' >&2
   exit 1
 }
 
 clean_reinstall=false
+use_polkit=false
 if [[ $# == 1 && "$1" == --clean-reinstall ]]; then
   clean_reinstall=true
+elif [[ $# == 1 && "$1" == --polkit ]]; then
+  use_polkit=true
 elif (( $# > 0 )); then
-  printf 'Usage: %s [--clean-reinstall]\n' "$0" >&2
+  printf 'Usage: %s [--clean-reinstall | --polkit]\n' "$0" >&2
   exit 2
+fi
+
+for command in git bsdtar makepkg fakeroot zstd flock pacman gdbus nohup; do
+  command -v "$command" >/dev/null || { printf 'Missing existing tool: %s\n' "$command" >&2; exit 1; }
+done
+if $use_polkit; then
+  command -v pkexec >/dev/null || { printf 'Missing existing tool: pkexec\n' >&2; exit 1; }
+else
+  command -v sudo >/dev/null || { printf 'Missing existing tool: sudo\n' >&2; exit 1; }
 fi
 
 # Reuse the existing package layout without altering the project's PKGBUILD.
@@ -86,9 +95,15 @@ if $clean_reinstall; then
   sudo rm -rf -- /opt/solasflow
 fi
 
-phase awaiting-password
-printf '\n[APP] Installing only the local Solas Flow package. Enter your password in this terminal when sudo asks.\n'
-sudo pacman -U -- "${packages[0]}"
+if $use_polkit; then
+  phase awaiting-polkit
+  printf '\n[APP] Installing the local Solas Flow package through Polkit.\n'
+  pkexec pacman --noconfirm -U -- "${packages[0]}"
+else
+  phase awaiting-password
+  printf '\n[APP] Installing only the local Solas Flow package. Enter your password in this terminal when sudo asks.\n'
+  sudo pacman -U -- "${packages[0]}"
+fi
 pacman -Q "$pkgname"
 phase installed
 

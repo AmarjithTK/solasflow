@@ -24,8 +24,6 @@ class SpeechService {
     _desktopModelsDirectory(),
   );
   ValueNotifier<String> get customModelStatus => _desktopOffline.status;
-  ValueListenable<String> get selectedMalayalamVoice =>
-      _desktopOffline.selectedMalayalamVoice;
 
   static const String _sherpaModelsReleaseTag = 'tts-models';
   static const String _kokoroArchiveName =
@@ -252,12 +250,6 @@ class SpeechService {
     await _desktopOffline.clearModel(language);
   }
 
-  Future<void> selectMalayalamVoice(String voice) async {
-    if (!Platform.isLinux) {
-      throw UnsupportedError('Bundled Malayalam voice selection is Linux-only');
-    }
-    await _desktopOffline.selectMalayalamVoice(voice);
-  }
 
   Future<Map<String, dynamic>> _persistentModel(String language) async {
     await _desktopOffline.initialize();

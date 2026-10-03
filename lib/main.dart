@@ -1196,12 +1196,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
               _speechService.importDesktopModel(directory, language: language),
           onClearDesktopModel: (language) =>
               _speechService.clearDesktopModel(language),
-          selectedMalayalamVoice: _speechService.selectedMalayalamVoice,
-          onMalayalamVoiceChanged: (voice) async {
-            _cancelPendingSpeech();
-            await _speechService.selectMalayalamVoice(voice);
-          },
-          onPreviewMalayalamVoice: _previewMalayalamVoice,
           onTestSpeech: _testSpeech,
           voices: settingsVoices,
           availableEngines: _installedEngines,
@@ -2378,53 +2372,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
   }
 
-  Future<void> _previewMalayalamVoice() async {
-    if (_isAudioMuted()) {
-      throw StateError('Speech is muted. Enable speech before previewing.');
-    }
-    _cancelPendingSpeech();
-    await _stopTts();
-    if (!mounted) return;
-    final generation = _speechGeneration;
-    setState(() => isSpeechActive = true);
-    debugPrint(
-      '[UI] Malayalam preview voice=${_speechService.selectedMalayalamVoice.value}',
-    );
-    try {
-      await _audioService.setSpeechDucking(true);
-      if (!mounted || generation != _speechGeneration || _isAudioMuted()) {
-        return;
-      }
-      await _speechService.speakItem(
-        flutterTts: flutterTts,
-        item: SpeechItem(
-          'നമസ്കാരം. ഇത് മലയാളം ശബ്ദ പരിശോധനയാണ്. '
-          'ഇപ്പോൾ സമയം പത്ത് മണി. ഇരുപത് മിനിറ്റ് ടൈമർ ആരംഭിക്കാൻ തയ്യാറാണ്.',
-          language: 'ml',
-        ),
-        speakVolume: speakVolume,
-        maximumSpeechVolume: maximumSpeechVolume,
-        preferredVoice: null,
-        useMalayalamNuance: true,
-        speechEngineMode: 'sherpa_only',
-      );
-      if (generation != _speechGeneration) return;
-      debugPrint(
-        '[STATE] Malayalam preview ${_speechService.lastEngineDetail}',
-      );
-      if (_speechService.lastEngineUsed != 'sherpa') {
-        throw StateError(_speechService.lastEngineDetail);
-      }
-    } finally {
-      if (generation == _speechGeneration) {
-        await _audioService.setSpeechDucking(false);
-        if (mounted) {
-          setState(() => isSpeechActive = false);
-          unawaited(drainQueue());
-        }
-      }
-    }
-  }
 
   Future<void> _stopTts() async {
     try {
