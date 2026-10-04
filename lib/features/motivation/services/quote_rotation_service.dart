@@ -9,10 +9,10 @@
 // - Provide both list-based and map-based query interfaces
 //
 // Behavior:
-// - Quotes cycle in order: index 0, 1, 2, ..., N-1, 0, 1, ...
-// - Separate index maintained for each key (category)
-// - Empty lists return fallback quote immediately
-// - Missing categories fall back to default (e.g., 'General')
+// - Quotes follow list order and do not repeat until the list is exhausted.
+// - Separate index maintained for each scoped category key.
+// - Empty lists return fallback quote immediately.
+// - Missing categories fall back to default (e.g., 'General').
 //
 // Example:
 // ```dart
@@ -69,21 +69,25 @@ class QuoteRotationService {
   /// - quotesByCategory: Map of all available category → quotes lists
   /// - fallbackCategory: Category to use if requested category not found
   /// - fallbackQuote: Returned if fallbackCategory also empty or missing
-  ///
+  /// - rotationScope: Optional namespace keeping language/list cycles separate
   /// Returns: Next quote from requested or fallback category
   String nextQuoteFromMap({
     required String category,
     required Map<String, List<String>> quotesByCategory,
     required String fallbackCategory,
     required String fallbackQuote,
+    String rotationScope = '',
   }) {
     final normalizedCategory = quotesByCategory.containsKey(category)
         ? category
         : fallbackCategory;
 
     final categoryQuotes = quotesByCategory[normalizedCategory] ?? const [];
+    final key = rotationScope.isEmpty
+        ? normalizedCategory
+        : '$rotationScope:$normalizedCategory';
     return nextQuoteForList(
-      key: normalizedCategory,
+      key: key,
       quotes: categoryQuotes,
       fallbackQuote: fallbackQuote,
     );

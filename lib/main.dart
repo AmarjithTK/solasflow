@@ -2920,7 +2920,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (useMalayalam) {
       final categoryQuotes = _malayalamTtsService.quotesForCategory(category);
       return _quoteRotationService.nextQuoteForList(
-        key: category,
+        key: 'malayalam:$category',
         quotes: categoryQuotes,
         fallbackQuote: _malayalamTtsService.defaultQuote(),
       );
@@ -2931,6 +2931,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       quotesByCategory: quotesByCategory,
       fallbackCategory: 'General',
       fallbackQuote: 'Stay steady and use this moment well.',
+      rotationScope: 'english',
     );
   }
 
