@@ -17,7 +17,7 @@
 	- `Historic Figures`
 - Motivation delay options (`5, 10, 20, 30, 40, 60` seconds).
 
-- Quote catalogs are expanded across all categories: English lists contain 12–55 quotes, with 25 quotes in each Malayalam speech category. Quotes play sequentially without repeats until their category-and-language list is exhausted. Malayalam quotes without bundled recordings use the available speech engine.
+- Quote catalogs are expanded across all categories: English lists contain 12–55 quotes, with 25 quotes in each Malayalam speech category. Quotes play sequentially without repeats until their category-and-language list is exhausted. The 145 expanded Malayalam quotes use one shared Aoede recording per phrase, including when another Malayalam voice is selected.
 
 ### Timer
 - Adjustable duration (`1` to `120` minutes).

@@ -337,6 +337,34 @@ class MalayalamTtsService {
     'ഇന്നത്തെ നമ്മുടെ പ്രവർത്തിയാണ് നമ്മുടെ ഭാവിയെ തീരുമാനിക്കുന്നത്.': 'general_5',
   };
 
+  late final Map<String, String> _sharedQuoteFileMap =
+      _buildSharedQuoteFileMap();
+
+  Map<String, String> _buildSharedQuoteFileMap() {
+    const categories = [
+      'Focus',
+      'Discipline',
+      'Calm',
+      'Positivity',
+      'Historic Figures',
+      'General Malayalam',
+      'General',
+    ];
+    final files = <String, String>{};
+    for (final category in categories) {
+      final quotes = quotesForCategory(category);
+      final slug = category.toLowerCase().replaceAll(' ', '_');
+      for (var index = 0; index < quotes.length; index++) {
+        final quote = quotes[index];
+        if (_quoteFileMap.containsKey(quote) || files.containsKey(quote)) {
+          continue;
+        }
+        files[quote] = '${slug}_${(index + 1).toString().padLeft(2, '0')}';
+      }
+    }
+    return files;
+  }
+
   List<String>? resolveAudioClips(String text, {String voiceId = 'female_1'}) {
     final trimmed = text.trim();
     final voice = resolveVoiceId({'id': voiceId, 'name': voiceId});
@@ -394,6 +422,11 @@ class MalayalamTtsService {
     for (final entry in _quoteFileMap.entries) {
       if (trimmed == entry.key || trimmed.startsWith(entry.key)) {
         return ['audio/malayalam/$voice/quotes/${entry.value}.mp3'];
+      }
+    }
+    for (final entry in _sharedQuoteFileMap.entries) {
+      if (trimmed == entry.key || trimmed.startsWith(entry.key)) {
+        return ['audio/malayalam/shared_quotes/${entry.value}.mp3'];
       }
     }
 
