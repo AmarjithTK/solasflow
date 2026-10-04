@@ -149,13 +149,21 @@ class DesktopTtsController {
   }
 
   Map<String, dynamic>? selected(String language) => _selected[language];
-  Future<Map<String, dynamic>> builtIn(String language) async {
+  Future<Map<String, dynamic>> builtIn(
+    String language, {
+    String voiceVariant = 'primary',
+  }) async {
     await initialize();
-    final model = '$bundledModelsDirectory/$language/primary/model.onnx';
-    final tokens = '$bundledModelsDirectory/$language/primary/tokens.txt';
+    final variant = (voiceVariant == 'backup') ? 'backup' : 'primary';
+    final model = '$bundledModelsDirectory/$language/$variant/model.onnx';
+    final tokens = '$bundledModelsDirectory/$language/$variant/tokens.txt';
     if (!File(model).existsSync() || !File(tokens).existsSync()) {
-      throw StateError('The bundled $language voice is missing');
+      throw StateError('The bundled $language voice ($variant) is missing');
     }
+    final isPrimary = variant == 'primary';
+    final name = language == 'en'
+        ? (isPrimary ? 'Piper English Lessac' : 'Piper English Ryan')
+        : (isPrimary ? 'Piper Malayalam Meera' : 'Piper Malayalam Arjun');
     return {
       'language': language,
       'type': 'vits',
@@ -163,7 +171,7 @@ class DesktopTtsController {
       'tokens': tokens,
       'data': sharedData,
       'speaker': 0,
-      'name': language == 'en' ? 'Piper English' : 'Piper Malayalam Meera',
+      'name': name,
     };
   }
 

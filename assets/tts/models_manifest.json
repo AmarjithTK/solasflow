@@ -19,7 +19,7 @@
   },
   "models": [
     {
-      "id": "kokoro_v1_1_af_maple",
+      "id": "kokoro_en_bella",
       "language": "en",
       "tier": "primary",
       "modelType": "kokoro",
@@ -28,10 +28,51 @@
       "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
       "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
       "dataDir": "assets/tts/models/espeak-ng-data",
-      "lexiconPath": "assets/tts/models/en/kokoro/lexicon-us-en.txt",
-      "speakerId": 0,
-      "voiceName": "af_maple",
-      "description": "Kokoro v1.1 INT8 natural US English (af_maple)"
+      "speakerId": 1,
+      "voiceName": "af_bella",
+      "description": "Kokoro v0.19 US English Female (Bella)"
+    },
+    {
+      "id": "kokoro_en_adam",
+      "language": "en",
+      "tier": "primary",
+      "modelType": "kokoro",
+      "platforms": ["linux"],
+      "modelPath": "assets/tts/models/en/kokoro/model.int8.onnx",
+      "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
+      "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
+      "dataDir": "assets/tts/models/espeak-ng-data",
+      "speakerId": 5,
+      "voiceName": "am_adam",
+      "description": "Kokoro v0.19 US English Male (Adam)"
+    },
+    {
+      "id": "kokoro_en_emma",
+      "language": "en",
+      "tier": "primary",
+      "modelType": "kokoro",
+      "platforms": ["linux"],
+      "modelPath": "assets/tts/models/en/kokoro/model.int8.onnx",
+      "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
+      "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
+      "dataDir": "assets/tts/models/espeak-ng-data",
+      "speakerId": 7,
+      "voiceName": "bf_emma",
+      "description": "Kokoro v0.19 UK English Female (Emma)"
+    },
+    {
+      "id": "kokoro_en_george",
+      "language": "en",
+      "tier": "primary",
+      "modelType": "kokoro",
+      "platforms": ["linux"],
+      "modelPath": "assets/tts/models/en/kokoro/model.int8.onnx",
+      "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
+      "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
+      "dataDir": "assets/tts/models/espeak-ng-data",
+      "speakerId": 9,
+      "voiceName": "bm_george",
+      "description": "Kokoro v0.19 UK English Male (George)"
     },
     {
       "id": "en_primary",

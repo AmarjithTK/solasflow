@@ -27,10 +27,10 @@ class SpeechService {
 
   static const String _sherpaModelsReleaseTag = 'tts-models';
   static const String _kokoroArchiveName =
-      'kokoro-int8-multi-lang-v1_1.tar.bz2';
+      'kokoro-int8-en-v0_19.tar.bz2';
   static const String _kokoroArchiveSha256 =
-      'a1e94694776049035c4f2c6529f003aaece993c76aae9a78995831c3c4dcafc6';
-  static const int _kokoroArchiveSize = 147031220;
+      'c9f0dd393615805b0bab050c340834d5e684e732aec91c0e860cd30e982c08bd';
+  static const int _kokoroArchiveSize = 103248205;
   late final ValueNotifier<SpeechModelDownloadStatus> kokoroDownloadStatus =
       ValueNotifier(
         SpeechModelDownloadStatus(
@@ -251,37 +251,96 @@ class SpeechService {
   }
 
 
-  Future<Map<String, dynamic>> _persistentModel(String language) async {
+  Future<Map<String, dynamic>> _persistentModel(
+    String language, {
+    Map<dynamic, dynamic>? preferredVoice,
+  }) async {
     await _desktopOffline.initialize();
     final imported = _desktopOffline.selected(language);
     if (imported != null) return imported;
-    if (language == 'en' && _kokoroModelInstalled()) {
+
+    final voiceName = preferredVoice?['name']?.toString() ?? '';
+    final voiceNameLower = voiceName.toLowerCase();
+
+    if (language == 'ml') {
+      final variant = (voiceNameLower.contains('arjun') || voiceNameLower.contains('male'))
+          ? 'backup'
+          : 'primary';
+      return _desktopOffline.builtIn('ml', voiceVariant: variant);
+    }
+
+    final isPiperRequested = preferredVoice?['backend'] == 'piper' ||
+        voiceNameLower.contains('piper');
+
+    if (!isPiperRequested && _kokoroModelInstalled()) {
+      final kokoroDir = _kokoroModelDirectory();
+      final lexiconFile = _joinPath(kokoroDir, 'lexicon-us-en.txt');
+      final lexicon = _fileExists(lexiconFile) ? lexiconFile : '';
+
+      int speaker = 0;
+      if (preferredVoice?['speaker'] is int) {
+        speaker = preferredVoice!['speaker'] as int;
+      } else if (voiceNameLower.contains('adam')) {
+        speaker = 5;
+      } else if (voiceNameLower.contains('michael')) {
+        speaker = 6;
+      } else if (voiceNameLower.contains('george')) {
+        speaker = 9;
+      } else if (voiceNameLower.contains('lewis')) {
+        speaker = 10;
+      } else if (voiceNameLower.contains('bella')) {
+        speaker = 1;
+      } else if (voiceNameLower.contains('sarah')) {
+        speaker = 3;
+      } else if (voiceNameLower.contains('nicole')) {
+        speaker = 2;
+      } else if (voiceNameLower.contains('sky')) {
+        speaker = 4;
+      } else if (voiceNameLower.contains('emma')) {
+        speaker = 7;
+      } else if (voiceNameLower.contains('isabella')) {
+        speaker = 8;
+      } else if (voiceNameLower.contains('sol')) {
+        speaker = 1;
+      } else if (voiceNameLower.contains('vale')) {
+        speaker = 2;
+      }
+
+      final label = voiceName.isNotEmpty ? voiceName : 'Kokoro English';
       return {
         'language': 'en',
         'type': 'kokoro',
-        'model': _joinPath(_kokoroModelDirectory(), 'model.int8.onnx'),
-        'tokens': _joinPath(_kokoroModelDirectory(), 'tokens.txt'),
-        'voices': _joinPath(_kokoroModelDirectory(), 'voices.bin'),
-        'lexicon': _joinPath(_kokoroModelDirectory(), 'lexicon-us-en.txt'),
-        'data': _joinPath(_kokoroModelDirectory(), 'espeak-ng-data'),
-        'speaker': 0,
-        'name': 'Kokoro v1.1 INT8 English (Maple)',
+        'model': _joinPath(kokoroDir, 'model.int8.onnx'),
+        'tokens': _joinPath(kokoroDir, 'tokens.txt'),
+        'voices': _joinPath(kokoroDir, 'voices.bin'),
+        'lexicon': lexicon,
+        'data': _joinPath(kokoroDir, 'espeak-ng-data'),
+        'speaker': speaker,
+        'name': label,
       };
     }
-    return _desktopOffline.builtIn(language);
+
+    final variant = (voiceNameLower.contains('ryan') || voiceNameLower.contains('male'))
+        ? 'backup'
+        : 'primary';
+    return _desktopOffline.builtIn('en', voiceVariant: variant);
   }
 
   Future<bool> _speakPersistentLinux({
     required String text,
     required bool useMalayalamNuance,
     required double volume,
+    Map<dynamic, dynamic>? preferredVoice,
   }) async {
     final generation = _desktopSpeechGeneration;
     final outFile = File(
       '${Directory.systemTemp.path}/solasflow_${DateTime.now().microsecondsSinceEpoch}.wav',
     );
     try {
-      final model = await _persistentModel(useMalayalamNuance ? 'ml' : 'en');
+      final model = await _persistentModel(
+        useMalayalamNuance ? 'ml' : 'en',
+        preferredVoice: preferredVoice,
+      );
       if (generation != _desktopSpeechGeneration) return true;
       await _desktopOffline.engine.synthesize(
         _desktopOffline.library,
@@ -316,6 +375,72 @@ class SpeechService {
     }
   }
 
+  List<Map<dynamic, dynamic>> desktopVoices() {
+    final list = <Map<dynamic, dynamic>>[];
+
+    // Built-in Piper Malayalam voices
+    list.add({
+      'name': 'Piper Malayalam Meera',
+      'locale': 'ml-IN',
+      'gender': 'female',
+      'backend': 'piper',
+    });
+    list.add({
+      'name': 'Piper Malayalam Arjun',
+      'locale': 'ml-IN',
+      'gender': 'male',
+      'backend': 'piper',
+    });
+
+    // Kokoro voices if installed
+    if (_kokoroModelInstalled()) {
+      list.add({
+        'name': 'Kokoro Bella (US Female)',
+        'locale': 'en-US',
+        'gender': 'female',
+        'speaker': 1,
+        'backend': 'kokoro',
+      });
+      list.add({
+        'name': 'Kokoro Adam (US Male)',
+        'locale': 'en-US',
+        'gender': 'male',
+        'speaker': 5,
+        'backend': 'kokoro',
+      });
+      list.add({
+        'name': 'Kokoro Emma (UK Female)',
+        'locale': 'en-GB',
+        'gender': 'female',
+        'speaker': 7,
+        'backend': 'kokoro',
+      });
+      list.add({
+        'name': 'Kokoro George (UK Male)',
+        'locale': 'en-GB',
+        'gender': 'male',
+        'speaker': 9,
+        'backend': 'kokoro',
+      });
+    }
+
+    // Built-in Piper English voices
+    list.add({
+      'name': 'Piper English Lessac',
+      'locale': 'en-US',
+      'gender': 'female',
+      'backend': 'piper',
+    });
+    list.add({
+      'name': 'Piper English Ryan',
+      'locale': 'en-US',
+      'gender': 'male',
+      'backend': 'piper',
+    });
+
+    return list;
+  }
+
   String _kokoroModelDirectory() {
     return _joinPath(
       _joinPath(_joinPath(_linuxRuntimeBaseDir(), 'assets/tts/models'), 'en'),
@@ -328,7 +453,6 @@ class SpeechService {
       'model.int8.onnx',
       'tokens.txt',
       'voices.bin',
-      'lexicon-us-en.txt',
       'espeak-ng-data/phontab',
       'espeak-ng-data/en_dict',
     ].every((name) => _fileExists(_joinPath(_kokoroModelDirectory(), name)));
@@ -382,7 +506,6 @@ class SpeechService {
       'model.int8.onnx',
       'tokens.txt',
       'voices.bin',
-      'lexicon-us-en.txt',
     ];
     final tmpRoot =
         '${Directory.systemTemp.path}${Platform.pathSeparator}solasflow_sherpa_bootstrap';
@@ -403,7 +526,7 @@ class SpeechService {
         );
         _setEngineStatus(
           'kokoro_downloading',
-          'Downloading Kokoro English voice (140 MiB)',
+          'Downloading Kokoro English voices (103 MiB, 4 variations)',
         );
         await _downloadToFile(
           url:
@@ -432,7 +555,10 @@ class SpeechService {
       await extractPath.create(recursive: true);
       await _extractTarBz2(archivePath, extractDir);
 
-      final sourceDir = _joinPath(extractDir, 'kokoro-int8-multi-lang-v1_1');
+      var sourceDir = _joinPath(extractDir, 'kokoro-int8-en-v0_19');
+      if (!_dirExists(sourceDir)) {
+        sourceDir = _joinPath(extractDir, 'kokoro-int8-multi-lang-v1_1');
+      }
       if (!installedFiles.every(
         (name) => _fileExists(_joinPath(sourceDir, name)),
       )) {
@@ -489,7 +615,7 @@ class SpeechService {
       );
       _setEngineStatus(
         'kokoro_ready',
-        'Kokoro v1.1 INT8 ready (US English, Maple)',
+        'Kokoro v0.19 ready (US/UK English, 4 voice variations)',
       );
     } catch (error) {
       if (_kokoroCancelRequested) {
@@ -791,6 +917,7 @@ class SpeechService {
     required String text,
     required bool useMalayalamNuance,
     required double volume,
+    Map<dynamic, dynamic>? preferredVoice,
   }) async {
     if (!(Platform.isLinux || Platform.isWindows)) return false;
     if (Platform.isLinux) {
@@ -798,6 +925,7 @@ class SpeechService {
         text: text,
         useMalayalamNuance: useMalayalamNuance,
         volume: volume,
+        preferredVoice: preferredVoice,
       );
     }
 
@@ -1098,6 +1226,7 @@ class SpeechService {
           text: item.text,
           useMalayalamNuance: useMalayalamNuance,
           volume: ttsVolume,
+          preferredVoice: preferredVoice,
         );
         if (sherpaOk) return;
       }

@@ -4,6 +4,7 @@ class SpeechItem {
   final bool isClockAnnouncement;
   final int delayMs;
   final String? language; // 'en' or 'ml' - set at enqueue time for consistency
+  final Map<dynamic, dynamic>? voice;
 
   SpeechItem(
     this.text, {
@@ -11,5 +12,6 @@ class SpeechItem {
     this.isClockAnnouncement = false,
     this.delayMs = 0,
     this.language,
+    this.voice,
   });
 }

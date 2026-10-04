@@ -331,6 +331,17 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     final isMl = locale.toLowerCase().startsWith('ml');
     if (lower.contains('veena')) return 'Veena';
     if (lower.contains('rishi')) return 'Rishi';
+    if (lower.contains('meera')) return 'Piper Meera (Female)';
+    if (lower.contains('arjun')) return 'Piper Arjun (Male)';
+    if (lower.contains('lessac')) return 'Piper Lessac (Female)';
+    if (lower.contains('ryan')) return 'Piper Ryan (Male)';
+    if (lower.contains('bella')) return 'Kokoro Bella (US Female)';
+    if (lower.contains('adam')) return 'Kokoro Adam (US Male)';
+    if (lower.contains('emma')) return 'Kokoro Emma (UK Female)';
+    if (lower.contains('george')) return 'Kokoro George (UK Male)';
+    if (lower.contains('maple')) return 'Kokoro Maple (US Female)';
+    if (lower.contains('sol')) return 'Kokoro Sol (US Female)';
+    if (lower.contains('vale')) return 'Kokoro Vale (UK Female)';
     if (isMl) {
       if (lower.contains('female')) return 'Malayalam Female';
       if (lower.contains('male')) return 'Malayalam Male';
@@ -341,7 +352,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     if (locale.toLowerCase().startsWith('en-in')) return 'Indian English';
     if (locale.toLowerCase().startsWith('en-us')) return 'US English';
     if (locale.toLowerCase().startsWith('en-gb')) return 'UK English';
-    return 'Standard';
+    return name;
   }
 
   String _speechEngineLabel(String value) {
@@ -378,19 +389,22 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
 
   String _favoriteVoiceLabel() {
     final s = ref.read(settingsProvider);
-    if (s.favoriteVoiceName == null || s.favoriteVoiceLocale == null) {
+    final fav = s.favoriteVoiceName;
+    if (fav == null || fav == '__auto__' || fav == '__rotate__') {
       final lang = s.voiceListMode.toLowerCase();
-      if (lang == 'malayalam') return 'Best voice for Malayalam';
-      if (lang == 'english') return 'Best voice for English';
-      return 'Best voice for selected language';
+      if (lang == 'malayalam') return 'Rotate all Malayalam voices (Default)';
+      if (lang == 'english') return 'Rotate voices (Default)';
+      return 'Rotate voices (Default)';
     }
-    return '${_voiceCharacterName(s.favoriteVoiceName!, s.favoriteVoiceLocale!)} - ${s.favoriteVoiceLocale}';
+    return '${_voiceCharacterName(s.favoriteVoiceName!, s.favoriteVoiceLocale ?? '')} - ${s.favoriteVoiceLocale ?? ''}';
   }
 
   String _favoriteVoiceKey() {
     final s = ref.read(settingsProvider);
-    if (s.favoriteVoiceName == null || s.favoriteVoiceLocale == null) {
-      return '__auto__';
+    if (s.favoriteVoiceName == null ||
+        s.favoriteVoiceName == '__auto__' ||
+        s.favoriteVoiceName == '__rotate__') {
+      return '__rotate__';
     }
     return '${s.favoriteVoiceName}|${s.favoriteVoiceLocale}';
   }
@@ -470,19 +484,17 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
 
     final voiceOptions = <(String, String, String?)>[
       (
-        '__auto__',
+        '__rotate__',
         currentLanguageMode == 'malayalam'
-            ? 'Best voice for Malayalam'
-            : (currentLanguageMode == 'english'
-                  ? 'Best voice for English'
-                  : 'Best voice for selected language'),
-        null,
+            ? 'Rotate all Malayalam voices (Default)'
+            : 'Rotate voices (Different each time)',
+        'Alternates different voices for each announcement',
       ),
       ...languageVoices.map((voice) {
         final name = voice['name']?.toString() ?? 'Unknown';
         final locale = voice['locale']?.toString() ?? 'en';
         final key = '$name|$locale';
-        return (key, '${_voiceCharacterName(name, locale)} - $locale', name);
+        return (key, _voiceCharacterName(name, locale), name);
       }),
     ];
     return Scaffold(

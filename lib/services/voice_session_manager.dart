@@ -23,6 +23,75 @@ class VoiceSessionManager {
   /// The favorite voice locale at the time of caching.
   String? _cachedFavoriteVoiceLocale;
 
+  int _malayalamRotationIndex = 0;
+  int _englishRotationIndex = 0;
+
+  /// Advances and returns the next voice in rotation for the given language.
+  Map<dynamic, dynamic>? nextRotatedVoice({
+    required List<Map<dynamic, dynamic>> voices,
+    required String language,
+  }) {
+    final targetLang = language.toLowerCase();
+    final filtered = voices.where((v) {
+      final loc = (v['locale']?.toString() ?? '').toLowerCase().replaceAll('_', '-');
+      return loc.startsWith(targetLang == 'ml' || targetLang == 'malayalam' ? 'ml' : 'en');
+    }).toList();
+
+    if (filtered.isEmpty) return null;
+
+    if (targetLang == 'ml' || targetLang == 'malayalam') {
+      final voice = filtered[_malayalamRotationIndex % filtered.length];
+      _malayalamRotationIndex = (_malayalamRotationIndex + 1) % filtered.length;
+      return voice;
+    } else {
+      final voice = filtered[_englishRotationIndex % filtered.length];
+      _englishRotationIndex = (_englishRotationIndex + 1) % filtered.length;
+      return voice;
+    }
+  }
+
+  /// Resolves the voice to use for an announcement.
+  /// When Malayalam is active and no specific voice is pinned (or '__rotate__' is chosen),
+  /// it rotates through all available Malayalam voices.
+  Map<dynamic, dynamic>? resolveVoiceForAnnouncement({
+    required List<Map<dynamic, dynamic>> voices,
+    required String voiceListMode,
+    required String? favoriteVoiceName,
+    required String? favoriteVoiceLocale,
+    required bool isMalayalam,
+    required Map<dynamic, dynamic>? Function() fallbackResolver,
+  }) {
+    final isExplicitPinned = favoriteVoiceName != null &&
+        favoriteVoiceName != '__rotate__' &&
+        favoriteVoiceName != '__auto__';
+
+    if (isExplicitPinned) {
+      final match = voices.cast<Map<dynamic, dynamic>?>().firstWhere(
+        (v) =>
+            v?['name']?.toString() == favoriteVoiceName &&
+            (favoriteVoiceLocale == null ||
+                v?['locale']?.toString() == favoriteVoiceLocale),
+        orElse: () => null,
+      );
+      if (match != null) return match;
+    }
+
+    if (isMalayalam) {
+      final rotated = nextRotatedVoice(voices: voices, language: 'ml');
+      if (rotated != null) return rotated;
+    } else if (favoriteVoiceName == '__rotate__') {
+      final rotated = nextRotatedVoice(voices: voices, language: 'en');
+      if (rotated != null) return rotated;
+    }
+
+    return getPreferredVoice(
+      voiceResolver: fallbackResolver,
+      voiceListMode: voiceListMode,
+      favoriteVoiceName: favoriteVoiceName,
+      favoriteVoiceLocale: favoriteVoiceLocale,
+    );
+  }
+
   /// Whether the cache is valid for the current settings.
   bool _isCacheValid({
     required String voiceListMode,

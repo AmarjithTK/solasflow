@@ -258,10 +258,18 @@ class _Runtime {
   Pointer<Void> load(Map<String, dynamic> model) {
     final language = model['language'] as String;
     final key = jsonEncode(
-      Map<String, dynamic>.from(model)..remove('cancelAddress'),
+      Map<String, dynamic>.from(model)
+        ..remove('cancelAddress')
+        ..remove('speaker'),
     );
+    final sid = model['speaker'] as int? ?? 0;
     final previous = _engines[language];
-    if (previous?.key == key) return previous!.handle;
+    if (previous?.key == key) {
+      if (sid < 0 || sid >= speakers(previous!.handle)) {
+        throw StateError('Speaker $sid is unavailable in this model');
+      }
+      return previous.handle;
+    }
     final arena = _Arena();
     try {
       final p = arena.allocate<_Config>(sizeOf<_Config>());

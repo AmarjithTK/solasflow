@@ -66,8 +66,11 @@ class SpeechLanguageService {
     final langVoices = voicesForLanguage();
     if (langVoices.isEmpty) return null;
 
-    // Try favorite voice first
-    if (favoriteVoiceName != null && favoriteVoiceLocale != null) {
+    // Try favorite voice first (if not special key like __rotate__ or __auto__)
+    if (favoriteVoiceName != null &&
+        favoriteVoiceLocale != null &&
+        favoriteVoiceName != '__rotate__' &&
+        favoriteVoiceName != '__auto__') {
       final match = langVoices.cast<Map<dynamic, dynamic>?>().firstWhere(
         (v) =>
             v?['name']?.toString() == favoriteVoiceName &&

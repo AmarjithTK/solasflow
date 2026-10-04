@@ -1305,6 +1305,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 favoriteVoiceName = null;
                 favoriteVoiceLocale = null;
               }
+              _voiceSessionManager.resetSession();
               _lsSave();
             });
             if (speechMasterOn) _applyAudioSettings();
@@ -1329,7 +1330,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           onFavoriteVoiceChanged: (val) {
             debugPrint('[SettingsPanel] onFavoriteVoiceChanged val=$val');
             setState(() {
-              if (val == null || val == '__auto__') {
+              if (val == null || val == '__auto__' || val == '__rotate__') {
                 favoriteVoiceName = null;
                 favoriteVoiceLocale = null;
               } else {
@@ -1339,6 +1340,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                   favoriteVoiceLocale = parts[1];
                 }
               }
+              _voiceSessionManager.resetSession();
               _lsSave();
             });
           },
@@ -1841,6 +1843,18 @@ class _MainScreenState extends ConsumerState<MainScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_maybePromptForKokoroDownload());
     });
+    _speechService.kokoroDownloadStatus.addListener(() {
+      if (mounted &&
+          Platform.isLinux &&
+          _speechService.kokoroDownloadStatus.value.phase ==
+              SpeechModelDownloadPhase.ready) {
+        final dVoices = _speechService.desktopVoices();
+        setState(() {
+          voices = dVoices;
+          _speechLanguageService.allVoices = dVoices;
+        });
+      }
+    });
 
     displayTick = Timer.periodic(const Duration(milliseconds: 250), (_) {
       if (!mounted) return;
@@ -1879,6 +1893,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
     await _audioService.init();
     if (Platform.isLinux) {
+      final dVoices = _speechService.desktopVoices();
+      voices = dVoices;
+      _speechLanguageService.allVoices = dVoices;
       _desktopService.onQuitRequested = () => unawaited(_exitAppFully());
       await _desktopService.initialize();
       if (_speechService.normalizeSpeechEngineMode(speechEngineMode) !=
@@ -2365,10 +2382,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void _testSpeech() {
     final preferredVoice = getPreferredVoice();
-    if (_isMalayalamActive(preferredVoice)) {
-      speak('ഇത് ശബ്ദ പരിശോധനയാണ്. നിങ്ങളുടെ ടൈമർ ആരംഭിക്കാൻ തയ്യാറാണ്.');
+    final isMl = _isMalayalamActive(preferredVoice);
+    final testVoice = _resolveVoiceForNewAnnouncement(useMalayalam: isMl);
+    if (isMl) {
+      speak('ഇത് ശബ്ദ പരിശോധനയാണ്. നിങ്ങളുടെ ടൈമർ ആരംഭിക്കാൻ തയ്യാറാണ്.', voice: testVoice);
     } else {
-      speak('This is a voice test. Your focus timer is ready.');
+      speak('This is a voice test. Your focus timer is ready.', voice: testVoice);
     }
   }
 
@@ -2458,6 +2477,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
         }
         await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
       }
+      if (Platform.isLinux) {
+        final dVoices = _speechService.desktopVoices();
+        if (mounted) {
+          setState(() {
+            voices = dVoices;
+            _speechLanguageService.allVoices = dVoices;
+          });
+        }
+      }
     } finally {
       completer.complete();
       if (identical(_ttsInitInFlight, completer.future)) {
@@ -2501,6 +2529,24 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
   }
 
+  Map<dynamic, dynamic>? _resolveVoiceForNewAnnouncement({
+    required bool useMalayalam,
+  }) {
+    return _voiceSessionManager.resolveVoiceForAnnouncement(
+      voices: voices,
+      voiceListMode: _speechLanguageService.language,
+      favoriteVoiceName: favoriteVoiceName,
+      favoriteVoiceLocale: favoriteVoiceLocale,
+      isMalayalam: useMalayalam,
+      fallbackResolver: () => _speechService.preferredVoice(
+        voices: voices,
+        voiceListMode: _speechLanguageService.language,
+        favoriteVoiceName: favoriteVoiceName,
+        favoriteVoiceLocale: favoriteVoiceLocale,
+      ),
+    );
+  }
+
   Future<void> drainQueue() async {
     if (!mounted || _isAudioMuted()) {
       speechQueue.clear();
@@ -2537,7 +2583,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       }
     }
 
-    final preferredVoice = getPreferredVoice();
+    final activeVoice = item.voice ?? getPreferredVoice();
     try {
       if (Platform.isLinux) {
         await _audioService.setSpeechDucking(true);
@@ -2553,8 +2599,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
         item: item,
         speakVolume: speakVolume,
         maximumSpeechVolume: maximumSpeechVolume,
-        preferredVoice: preferredVoice,
-        useMalayalamNuance: _isMalayalamActive(preferredVoice),
+        preferredVoice: activeVoice,
+        useMalayalamNuance: _isMalayalamActive(activeVoice),
         speechEngineMode: speechEngineMode,
       );
     } catch (error) {
@@ -2563,7 +2609,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         try {
           final rebound = await _ensureTtsReady(forceRebind: true);
           if (rebound && generation == _speechGeneration) {
-            final retryVoice = getPreferredVoice();
+            final retryVoice = item.voice ?? getPreferredVoice();
             await _speechService.speakItem(
               flutterTts: flutterTts,
               item: item,
@@ -2599,7 +2645,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     unawaited(_stopTts());
   }
 
-  void speak(String text) {
+  void speak(String text, {Map<dynamic, dynamic>? voice}) {
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;
@@ -2607,7 +2653,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final pv = getPreferredVoice();
     final useMalayalam = _isMalayalamActive(pv);
     final language = useMalayalam ? 'ml' : 'en';
-    speechQueue.add(SpeechItem(text, language: language));
+    final activeVoice = voice ?? _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
+    speechQueue.add(SpeechItem(text, language: language, voice: activeVoice));
     drainQueue();
   }
 
@@ -2820,6 +2867,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
       speechQueue.clear();
       return;
     }
+    final pv = getPreferredVoice();
+    final useMalayalam = _isMalayalamActive(pv);
+    final clockVoice = _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
     _speakAfterGap(
       text: text,
       getLatestOtherSpoke: () =>
@@ -2836,6 +2886,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
               text,
               isClockAnnouncement: true,
               delayMs: i == 0 ? 0 : 350,
+              language: useMalayalam ? 'ml' : 'en',
+              voice: clockVoice,
             ),
           );
         }
@@ -2847,6 +2899,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
               isQuote: true,
               isClockAnnouncement: true,
               delayMs: motivationDelaySeconds * 1000,
+              language: useMalayalam ? 'ml' : 'en',
+              voice: clockVoice,
             ),
           );
         }
@@ -2881,12 +2935,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
       speechQueue.clear();
       return;
     }
+    final pv = getPreferredVoice();
+    final useMalayalam = _isMalayalamActive(pv);
+    final timerVoice = _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
     _speakAfterGap(
       text: text,
       getLatestOtherSpoke: () =>
           max(max(lastClockSpoke, lastStopwatchSpoke), lastGoalReminderSpoke),
       markSpoke: () => lastTimerSpoke = DateTime.now().millisecondsSinceEpoch,
-      onFire: () => speak(text),
+      onFire: () => speak(text, voice: timerVoice),
     );
   }
 
