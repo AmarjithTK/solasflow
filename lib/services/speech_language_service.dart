@@ -26,15 +26,17 @@ class SpeechLanguageService {
 
   /// Returns voices filtered to the active language.
   List<Map<dynamic, dynamic>> voicesForLanguage() {
+    final studioMl = MalayalamTtsService.voices
+        .map((v) => Map<String, dynamic>.from(v))
+        .toList();
+
+    final ml = allVoices.where((v) {
+      final locale = (v['locale']?.toString() ?? '').toLowerCase().replaceAll('_', '-');
+      return locale.startsWith('ml') && v['backend'] != 'neural_asset';
+    }).toList();
+
     if (_language == 'malayalam') {
-      final ml = allVoices.where((v) {
-        final locale = (v['locale']?.toString() ?? '').toLowerCase().replaceAll('_', '-');
-        return locale.startsWith('ml');
-      }).toList();
-      if (ml.isNotEmpty) return ml;
-      return [
-        {'name': 'Standard Malayalam', 'locale': 'ml-IN'}
-      ];
+      return [...studioMl, ...ml];
     }
     if (_language == 'english') {
       return allVoices.where((v) {
@@ -42,17 +44,14 @@ class SpeechLanguageService {
         return locale.startsWith('en');
       }).toList();
     }
-    // Auto mode: return all voices (Malayalam first, then English)
-    final ml = allVoices.where((v) {
-      final locale = (v['locale']?.toString() ?? '').toLowerCase().replaceAll('_', '-');
-      return locale.startsWith('ml');
-    }).toList();
+    // Auto mode: return all voices (Studio Malayalam first, then system ML, then English)
     final en = allVoices.where((v) {
       final locale = (v['locale']?.toString() ?? '').toLowerCase().replaceAll('_', '-');
       return locale.startsWith('en');
     }).toList();
     return [
-      if (ml.isNotEmpty) ...ml else {'name': 'Standard Malayalam', 'locale': 'ml-IN'},
+      ...studioMl,
+      ...ml,
       ...en,
     ];
   }

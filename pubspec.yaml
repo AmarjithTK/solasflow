@@ -73,6 +73,26 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/audio/
+    - assets/audio/malayalam/female_1/
+    - assets/audio/malayalam/female_1/clock/hours/
+    - assets/audio/malayalam/female_1/clock/minutes/
+    - assets/audio/malayalam/female_1/timer/
+    - assets/audio/malayalam/female_1/quotes/
+    - assets/audio/malayalam/female_2/
+    - assets/audio/malayalam/female_2/clock/hours/
+    - assets/audio/malayalam/female_2/clock/minutes/
+    - assets/audio/malayalam/female_2/timer/
+    - assets/audio/malayalam/female_2/quotes/
+    - assets/audio/malayalam/male_1/
+    - assets/audio/malayalam/male_1/clock/hours/
+    - assets/audio/malayalam/male_1/clock/minutes/
+    - assets/audio/malayalam/male_1/timer/
+    - assets/audio/malayalam/male_1/quotes/
+    - assets/audio/malayalam/male_2/
+    - assets/audio/malayalam/male_2/clock/hours/
+    - assets/audio/malayalam/male_2/clock/minutes/
+    - assets/audio/malayalam/male_2/timer/
+    - assets/audio/malayalam/male_2/quotes/
     - assets/tts/
 
   # An image asset can refer to one or more resolution-specific "variants", see

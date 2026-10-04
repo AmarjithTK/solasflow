@@ -10,7 +10,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../models/speech_item.dart';
 import '../models/speech_model_download_status.dart';
 import 'desktop_tts_controller.dart';
-
+import 'malayalam_tts_service.dart';
 class SpeechService {
   static const MethodChannel _audioChannel = MethodChannel(
     'com.atherpulse.solasflow/audio',
@@ -24,6 +24,7 @@ class SpeechService {
     _desktopModelsDirectory(),
   );
   ValueNotifier<String> get customModelStatus => _desktopOffline.status;
+  final MalayalamTtsService _malayalamTts = MalayalamTtsService();
 
   static const String _sherpaModelsReleaseTag = 'tts-models';
   static const String _kokoroArchiveName =
@@ -377,8 +378,12 @@ class SpeechService {
 
   List<Map<dynamic, dynamic>> desktopVoices() {
     final list = <Map<dynamic, dynamic>>[];
+    // Studio Neural Malayalam voices
+    for (final v in MalayalamTtsService.voices) {
+      list.add(Map<String, dynamic>.from(v));
+    }
 
-    // Built-in Piper Malayalam voices
+    // Built-in Piper Malayalam fallback voices
     list.add({
       'name': 'Piper Malayalam Meera',
       'locale': 'ml-IN',
@@ -439,6 +444,12 @@ class SpeechService {
     });
 
     return list;
+  }
+
+  List<Map<dynamic, dynamic>> malayalamVoices() {
+    return MalayalamTtsService.voices
+        .map((v) => Map<String, dynamic>.from(v))
+        .toList();
   }
 
   String _kokoroModelDirectory() {
@@ -765,6 +776,46 @@ class SpeechService {
         _desktopPlaybackCompleter = null;
       }
     }
+  }
+
+  Future<bool> _playAssetClips(
+    List<String> assetPaths, {
+    required double volume,
+    required int generation,
+  }) async {
+    if (generation != _desktopSpeechGeneration) return true;
+    final player = _desktopTtsPlayer ??= AudioPlayer();
+
+    for (final path in assetPaths) {
+      if (generation != _desktopSpeechGeneration) return true;
+      final completed = Completer<void>();
+      _desktopPlaybackCompleter = completed;
+      final subscription = player.onPlayerComplete.listen((_) {
+        if (!completed.isCompleted) completed.complete();
+      });
+      try {
+        await player.stop();
+        await player.play(
+          AssetSource(path),
+          volume: volume.clamp(0.0, 1.0).toDouble(),
+        );
+        if (generation != _desktopSpeechGeneration) {
+          await player.stop();
+          if (!completed.isCompleted) completed.complete();
+        }
+        await completed.future.timeout(const Duration(seconds: 45));
+        if (generation != _desktopSpeechGeneration) return false;
+      } catch (error) {
+        debugPrint('Unable to play asset speech clip ($path): $error');
+        return false;
+      } finally {
+        await subscription.cancel();
+        if (identical(_desktopPlaybackCompleter, completed)) {
+          _desktopPlaybackCompleter = null;
+        }
+      }
+    }
+    return generation == _desktopSpeechGeneration;
   }
 
   Future<void> stopDesktopSpeech() async {
@@ -1219,6 +1270,22 @@ class SpeechService {
     final ttsVolume = maximumSpeechVolume
         ? (speakVolume + 0.40).clamp(0.0, 1.0).toDouble()
         : speakVolume.clamp(0.0, 1.0).toDouble();
+    if (useMalayalamNuance) {
+      final voiceId = MalayalamTtsService.resolveVoiceId(preferredVoice);
+      final clips = _malayalamTts.resolveAudioClips(item.text, voiceId: voiceId);
+      if (clips != null && clips.isNotEmpty) {
+        final played = await _playAssetClips(
+          clips,
+          volume: ttsVolume,
+          generation: _desktopSpeechGeneration,
+        );
+        if (played) {
+          final voiceName = MalayalamTtsService.voiceDisplayName(voiceId);
+          _setEngineStatus('neural_asset', '$voiceName · Studio Natural Voice');
+          return;
+        }
+      }
+    }
 
     if (Platform.isLinux || Platform.isWindows) {
       if (mode == 'sherpa_only' || mode == 'auto') {

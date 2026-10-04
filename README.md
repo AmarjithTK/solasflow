@@ -51,7 +51,7 @@
 ### Voice and audio settings
 - Nature sound selection (local bundled assets).
 - Separate noise volume and speech volume controls.
-- Voice list mode (`pleasant` vs `all` English voices).
+- Four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux; automatic Malayalam rotation cycles through the four voices.
 - Favorite voice selection.
 
 ### Quick Actions (launcher shortcuts)
@@ -156,7 +156,7 @@ Keep the entire generated `build/linux/x64/release/bundle` directory together wh
 
 Linux bundles offline Sherpa-ONNX, Piper voices for English and Malayalam, and eSpeak-NG language data. On first Linux launch, a consent dialog offers **Accept and download** for the optional 140 MiB INT8 Kokoro v1.1 English model, or **Keep Piper**. No Kokoro bytes are fetched before acceptance. If declined, the download can be started later from **Settings → Kokoro English voice → Download**. The Settings card shows live transfer percentage and byte counts, then SHA-256 verification and installation status; cancel is available during transfer, and failed or cancelled downloads can be retried. English speech continues with bundled Piper until Kokoro is installed, or if the download fails. The verified model is cached under `~/.local/share/solasflow_runtime/assets/tts/models/en/kokoro`. Linux-generated WAV audio plays through the app's GStreamer-backed audio player, rather than relying on `paplay` or `aplay`.
 
-Kokoro v1.1 currently supplies natural-sounding US English (`af_maple`) on Linux; it does not speak Malayalam. Malayalam remains offline through the bundled Piper `ml_IN-meera-medium` voice. Quality differs by language and voice; use **Settings → Test voice** to check the selected language and installed audio output. The upstream [Kokoro model](https://huggingface.co/hexgrad/Kokoro-82M) is Apache-2.0. See `assets/tts/models_manifest.json` for runtime model selection.
+The four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux for clock, timer, and quote announcements. Linux retains Piper Malayalam as a fallback for text without a matching recording; Kokoro v1.1 does not speak Malayalam. Use **Settings → Test voice** to check the selected voice and audio output. See `assets/tts/models_manifest.json` for runtime model selection.
 
 Kokoro installation keeps its matching eSpeak language data with the model. Older caches containing only the weights are treated as incomplete; choose **Download** once to refresh them. Bundled Piper remains available until the refreshed model is ready.
 

@@ -329,6 +329,10 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
   String _voiceCharacterName(String name, String locale) {
     final lower = name.toLowerCase();
     final isMl = locale.toLowerCase().startsWith('ml');
+    if (lower.contains('aoede')) return 'Aoede (Female 1 · Natural)';
+    if (lower.contains('kore')) return 'Kore (Female 2 · Clear)';
+    if (lower.contains('puck')) return 'Puck (Male 1 · Upbeat)';
+    if (lower.contains('charon')) return 'Charon (Male 2 · Deep)';
     if (lower.contains('veena')) return 'Veena';
     if (lower.contains('rishi')) return 'Rishi';
     if (lower.contains('meera')) return 'Piper Meera (Female)';

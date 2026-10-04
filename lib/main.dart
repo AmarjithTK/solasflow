@@ -2394,9 +2394,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Future<void> _stopTts() async {
     try {
-      if (Platform.isLinux || Platform.isWindows) {
-        await _speechService.stopDesktopSpeech();
-      }
+      await _speechService.stopDesktopSpeech();
       if (!Platform.isLinux) await flutterTts.stop();
     } finally {
       if (Platform.isLinux) await _audioService.setSpeechDucking(false);
@@ -2463,15 +2461,21 @@ class _MainScreenState extends ConsumerState<MainScreen>
           final loadedVoices = _speechService.parseSupportedVoices(
             await tts.getVoices,
           );
-          if (loadedVoices.isNotEmpty) {
-            if (mounted && identical(tts, flutterTts)) {
-              setState(() {
-                voices = loadedVoices;
-                _speechLanguageService.allVoices = loadedVoices;
-              });
-            }
-            break;
+          final mlStudio = _speechService.malayalamVoices();
+          final merged = [
+            ...mlStudio,
+            ...loadedVoices.where((v) {
+              final loc = (v['locale']?.toString() ?? '').toLowerCase();
+              return !loc.startsWith('ml');
+            }),
+          ];
+          if (mounted && identical(tts, flutterTts)) {
+            setState(() {
+              voices = merged;
+              _speechLanguageService.allVoices = merged;
+            });
           }
+          break;
         } catch (error) {
           debugPrint('TTS getVoices attempt $attempt failed: $error');
         }
