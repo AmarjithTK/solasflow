@@ -187,6 +187,8 @@ The normal **Timer finished** dialog fills the app window. Presets use uniform b
 - **Drive Mode** provides compact or fullscreen dark controls for clock, timer, and stopwatch, large pause/resume and speak-now buttons, audio toggle, and explicit 15/25/45-minute presets. Closing Drive Mode returns to the normal interface and exits fullscreen.
 - **Exit / Quit** stops audio and timers, releases native speech engines, flushes settings, and terminates the app. Background mode does not survive process termination or make timers run while the machine is suspended. Configure Drive Mode before driving; do not interact with the screen while driving.
 
+**Settings → Start with desktop** manages a per-user `systemd --user` unit that launches Solas Flow with your graphical desktop session. Enable, remove, and refresh its installed/enabled/running status in the app. It starts after you log in, not at the login screen; it writes only under `~/.config/systemd/user` and does not need Polkit or administrator access. Removing the unit disables future autostart but does not quit the currently open app.
+
 
 ### Arch Linux package
 ```bash

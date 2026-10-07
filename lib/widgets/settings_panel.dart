@@ -8,6 +8,8 @@ import '../models/sound_option.dart';
 import '../providers/app_state.dart';
 import '../models/speech_model_download_status.dart';
 
+import '../services/desktop_autostart_service.dart';
+
 class SettingsPanel extends ConsumerStatefulWidget {
   // ── Side-effect callbacks only (audio, TTS, foreground service) ──
   final List<SoundOption> soundList;
@@ -103,6 +105,120 @@ class SettingsPanel extends ConsumerStatefulWidget {
 }
 
 class _SettingsPanelState extends ConsumerState<SettingsPanel> {
+  final DesktopAutostartService _desktopAutostart =
+      DesktopAutostartService();
+  DesktopAutostartStatus? _desktopAutostartStatus;
+  String? _desktopAutostartError;
+  bool _desktopAutostartBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
+      _refreshDesktopAutostart();
+    }
+  }
+
+  Future<void> _refreshDesktopAutostart() async {
+    try {
+      final status = await _desktopAutostart.status();
+      if (!mounted) return;
+      setState(() {
+        _desktopAutostartStatus = status;
+        _desktopAutostartError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _desktopAutostartError = error.toString());
+    }
+  }
+
+  Future<void> _setDesktopAutostart(bool enabled) async {
+    if (_desktopAutostartBusy) return;
+    setState(() => _desktopAutostartBusy = true);
+    try {
+      if (enabled) {
+        await _desktopAutostart.enable();
+      } else {
+        await _desktopAutostart.disable();
+      }
+      await _refreshDesktopAutostart();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _desktopAutostartError = error.toString());
+    } finally {
+      if (mounted) setState(() => _desktopAutostartBusy = false);
+    }
+  }
+
+  Widget _desktopAutostartCard(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final status = _desktopAutostartStatus;
+    final error = _desktopAutostartError;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Start with desktop',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            error ??
+                status?.summary ??
+                'Checking systemd user service…',
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Starts Solas Flow when you log in to your desktop. This is a per-user service and does not need administrator authorization.',
+            style: TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _desktopAutostartBusy || status?.enabled == true
+                    ? null
+                    : () => _setDesktopAutostart(true),
+                icon: _desktopAutostartBusy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.power_settings_new),
+                label: const Text('Enable'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _desktopAutostartBusy || status?.installed != true
+                    ? null
+                    : () => _setDesktopAutostart(false),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remove'),
+              ),
+              IconButton(
+                tooltip: 'Refresh status',
+                onPressed: _desktopAutostartBusy
+                    ? null
+                    : _refreshDesktopAutostart,
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   String get _desktopModelLanguage =>
       ref.read(settingsProvider).voiceListMode == 'malayalam' ? 'ml' : 'en';
   bool _modelOperationBusy = false;
@@ -620,11 +736,16 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                     _speechModelDownloadCard(context, status),
               ),
             ),
-          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
               child: _desktopModelCard(context),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+              child: _desktopAutostartCard(context),
+            ),
+          ],
           _settingsOption(
             context,
             icon: Icons.play_circle_outline_rounded,
