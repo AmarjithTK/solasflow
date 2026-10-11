@@ -25,19 +25,85 @@
 //
 // Benefits:
 // - User perceives variety without random repetition
-// - Quote order is retained only for this service instance; indices reset when the app/service restarts.
-// - Stateful cycling ensures variety within a running session.
+// - Quote order is retained per category across app launches.
+// - Stateful cycling ensures fairness over time.
 //
 // Stateless Alternative:
 // If quotes should be random instead, use Random().nextInt() instead of
 // indexing. Current design favors cycling to ensure all quotes get equal
 // airtime.
 
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../core/pref_keys.dart';
+
 class QuoteRotationService {
-  /// Track rotation index for each unique category/list
-  /// Key: category name or list identifier
-  /// Value: current index in that list (auto-increments)
+  static const _preferenceKey = PrefKeys.quoteRotationIndices;
+
+  /// Track rotation index for each unique category/list.
+  /// Key: category name or list identifier.
+  /// Value: next index to select.
   final Map<String, int> _quoteIndexByCategory = {};
+  SharedPreferences? _preferences;
+  Future<void> _writeTail = Future<void>.value();
+  bool _loaded = false;
+  bool _persistenceReady = false;
+
+  Future<void> load() async {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      _preferences = preferences;
+      _persistenceReady = true;
+      final encoded = preferences.getString(_preferenceKey);
+      if (encoded == null) return;
+      final decoded = jsonDecode(encoded);
+      if (decoded is! Map<String, dynamic>) {
+        debugPrint('[DB] Ignoring invalid quote rotation preferences');
+        return;
+      }
+      for (final entry in decoded.entries) {
+        final index = entry.value;
+        if (index is int && index >= 0) {
+          _quoteIndexByCategory[entry.key] = index;
+        }
+      }
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[ERROR] Could not load quote rotation preferences: $error\n$stackTrace',
+      );
+    }
+  }
+
+  Future<void> flush() => _writeTail;
+
+  void _persistIndices() {
+    if (!_persistenceReady) return;
+    final encoded = jsonEncode(_quoteIndexByCategory);
+    _writeTail = _writeTail
+        .catchError((Object error, StackTrace stackTrace) {
+          debugPrint(
+            '[ERROR] Previous quote rotation write failed: $error\n$stackTrace',
+          );
+        })
+        .then((_) async {
+          final preferences = _preferences ??=
+              await SharedPreferences.getInstance();
+          if (!await preferences.setString(_preferenceKey, encoded)) {
+            throw StateError('SharedPreferences rejected quote rotation write');
+          }
+        })
+        .catchError((Object error, StackTrace stackTrace) {
+          debugPrint(
+            '[ERROR] Could not persist quote rotation preferences: '
+            '$error\n$stackTrace',
+          );
+        });
+  }
 
   /// Get next quote from a list with manual cycling
   ///
@@ -59,6 +125,7 @@ class QuoteRotationService {
     final currentIndex = _quoteIndexByCategory[key] ?? 0;
     final selected = quotes[currentIndex % quotes.length];
     _quoteIndexByCategory[key] = currentIndex + 1;
+    _persistIndices();
     return selected;
   }
 

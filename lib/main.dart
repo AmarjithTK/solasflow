@@ -1920,6 +1920,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       await _audioService.stopBackground();
       await _audioService.stopNotification();
       await _stopForegroundService();
+      await _quoteRotationService.flush();
       if (Platform.isLinux) {
         await _speechService.disposeDesktopSpeech();
         await _settingsService.flush();
@@ -2179,6 +2180,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   Future<void> _bootstrapImpl() async {
+    await _quoteRotationService.load();
     final settings = _settings;
     _speechLanguageService.setLanguage(settings.voiceListMode);
     timerDisplayValue = _formatTimerDisplayValue(seconds);

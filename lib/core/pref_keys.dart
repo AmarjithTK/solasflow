@@ -47,4 +47,5 @@ class PrefKeys {
   static const sessionTag = 'SessionTag';
   static const linuxKokoroConsentPromptSeen = 'LinuxKokoroConsentPromptSeen';
   static const linuxKokoroConsentAccepted = 'LinuxKokoroConsentAccepted';
+  static const quoteRotationIndices = 'QuoteRotationIndices';
 }
