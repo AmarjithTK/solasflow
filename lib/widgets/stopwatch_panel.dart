@@ -71,21 +71,23 @@ class StopwatchPanel extends StatelessWidget {
     final current = _parseSeconds(lapTimes[index]);
     final previous = _parseSeconds(lapTimes[index - 1]);
     if (current == null || previous == null) return '';
-    final diff = current - previous;
+    final diff = previous - current;
     if (diff >= 0) return '+${_formatDelta(diff)}';
     return '-${_formatDelta(diff.abs())}';
   }
 
   int? _parseSeconds(String time) {
     try {
-      final parts = time.split(':');
+      final value = time.trim().split(RegExp(r'\s+')).last;
+      final parts = value.split(':');
+      final seconds = int.parse(parts.last.split('.').first);
       if (parts.length == 2) {
-        return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+        return int.parse(parts[0]) * 60 + seconds;
       }
       if (parts.length == 3) {
         return int.parse(parts[0]) * 3600 +
             int.parse(parts[1]) * 60 +
-            int.parse(parts[2]);
+            seconds;
       }
       return null;
     } catch (_) {
