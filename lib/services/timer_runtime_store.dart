@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/persistence_error_reporter.dart';
 import '../core/safe_preference_reads.dart';
 
 import '../models/app_settings.dart';
@@ -37,18 +38,17 @@ class TimerRuntimeStore {
 
   Future<void> save(TimerRuntime runtime) {
     final encoded = jsonEncode(runtime.toJson());
-    _writeTail = _writeTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Previous timer runtime write failed: $error');
-        })
-        .then((_) async {
-          final prefs = await SharedPreferences.getInstance();
-          final written = await prefs.setString(runtimeKey, encoded);
-          if (!written) {
-            throw StateError('SharedPreferences rejected timer runtime write');
-          }
-        });
-    return _writeTail;
+    final operation = _writeTail.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final written = await prefs.setString(runtimeKey, encoded);
+      if (!written) {
+        throw StateError('SharedPreferences rejected timer runtime write');
+      }
+    });
+    _writeTail = operation.catchError((Object error, StackTrace stackTrace) {
+      PersistenceErrorReporter.report('Timer runtime', error, stackTrace);
+    });
+    return operation;
   }
 
   Future<StopwatchRuntime> loadStopwatch() async {
@@ -72,20 +72,17 @@ class TimerRuntimeStore {
 
   Future<void> saveStopwatch(StopwatchRuntime runtime) {
     final encoded = jsonEncode(runtime.toJson());
-    _writeTail = _writeTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Previous runtime write failed: $error');
-        })
-        .then((_) async {
-          final prefs = await SharedPreferences.getInstance();
-          final written = await prefs.setString(stopwatchKey, encoded);
-          if (!written) {
-            throw StateError(
-              'SharedPreferences rejected stopwatch runtime write',
-            );
-          }
-        });
-    return _writeTail;
+    final operation = _writeTail.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final written = await prefs.setString(stopwatchKey, encoded);
+      if (!written) {
+        throw StateError('SharedPreferences rejected stopwatch runtime write');
+      }
+    });
+    _writeTail = operation.catchError((Object error, StackTrace stackTrace) {
+      PersistenceErrorReporter.report('Stopwatch runtime', error, stackTrace);
+    });
+    return operation;
   }
 
   Future<DateTime?> loadClockNextAt() async {
@@ -102,20 +99,19 @@ class TimerRuntimeStore {
 
   Future<void> saveClockNextAt(DateTime? dueAt) {
     final epochMs = dueAt?.millisecondsSinceEpoch;
-    _writeTail = _writeTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Previous runtime write failed: $error');
-        })
-        .then((_) async {
-          final prefs = await SharedPreferences.getInstance();
-          final written = epochMs == null
-              ? await prefs.remove(clockNextAtKey)
-              : await prefs.setInt(clockNextAtKey, epochMs);
-          if (!written) {
-            throw StateError('SharedPreferences rejected clock deadline write');
-          }
-        });
-    return _writeTail;
+    final operation = _writeTail.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final written = epochMs == null
+          ? await prefs.remove(clockNextAtKey)
+          : await prefs.setInt(clockNextAtKey, epochMs);
+      if (!written) {
+        throw StateError('SharedPreferences rejected clock deadline write');
+      }
+    });
+    _writeTail = operation.catchError((Object error, StackTrace stackTrace) {
+      PersistenceErrorReporter.report('Clock deadline', error, stackTrace);
+    });
+    return operation;
   }
 
   Future<AppSettings> loadTaskSettings() async {

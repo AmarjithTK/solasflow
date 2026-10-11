@@ -74,6 +74,7 @@ import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/persistence_error_reporter.dart';
 import 'core/pref_keys.dart';
 import 'providers/app_state.dart';
 import 'theme/app_theme.dart';
@@ -480,6 +481,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   late MaterialLocalizations _materialLocalizations;
   late AppLocalizations _appLocalizations;
   bool _platformResourcesInitialized = false;
+  int _lastPersistenceFailureSequence = 0;
 
   /// Cycles through motivational quotes by category
   /// Encapsulates quote rotation state and list management
@@ -1934,6 +1936,22 @@ class _MainScreenState extends ConsumerState<MainScreen>
     exit(0);
   }
 
+  void _onPersistenceFailure() {
+    final failure = PersistenceErrorReporter.latest.value;
+    if (!mounted ||
+        failure == null ||
+        failure.sequence <= _lastPersistenceFailureSequence) {
+      return;
+    }
+    _lastPersistenceFailureSequence = failure.sequence;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_appLocalizations.mainPersistenceWriteFailed)),
+      );
+    });
+  }
+
   void _onReceiveTaskData(Object data) {
     _dispatchExternal(() => _handleTaskData(data));
   }
@@ -2051,6 +2069,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    PersistenceErrorReporter.latest.addListener(_onPersistenceFailure);
+    _onPersistenceFailure();
     unawaited(SystemChrome.setPreferredOrientations([]));
     _initWidgetChannel();
     FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
@@ -4841,6 +4861,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    PersistenceErrorReporter.latest.removeListener(_onPersistenceFailure);
     foregroundHealthTimer?.cancel();
     nightIdleTimer?.cancel();
     nightResumeSpeechTimer?.cancel();

@@ -2281,6 +2281,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{minutes} minute timer completed.'**
   String mainDesktopTimerFinishedBody(int minutes);
+
+  /// No description provided for @mainPersistenceWriteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save app data. Please try again.'**
+  String get mainPersistenceWriteFailed;
 }
 
 class _AppLocalizationsDelegate

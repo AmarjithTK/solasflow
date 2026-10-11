@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/persistence_error_reporter.dart';
 import '../core/safe_preference_reads.dart';
 import '../models/session_log.dart';
 
@@ -13,29 +14,28 @@ class SessionLogService {
   static final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
   Future<void> logSession(SessionLog session) {
-    _writeTail = _writeTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Previous session write failed: $error');
-        })
-        .then((_) async {
-          final prefs = await SharedPreferences.getInstance();
-          final stored = _decode(
-            SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
-          );
-          final sessions = stored.sessions;
-          if (session.sessionId.isNotEmpty &&
-              sessions.any((saved) => saved.sessionId == session.sessionId)) {
-            return;
-          }
-          sessions.add(session);
-          await _writeSessions(
-            prefs,
-            sessions,
-            preservedRecords: stored.unparsedRecords,
-          );
-          revision.value++;
-        });
-    return _writeTail;
+    final operation = _writeTail.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = _decode(
+        SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
+      );
+      final sessions = stored.sessions;
+      if (session.sessionId.isNotEmpty &&
+          sessions.any((saved) => saved.sessionId == session.sessionId)) {
+        return;
+      }
+      sessions.add(session);
+      await _writeSessions(
+        prefs,
+        sessions,
+        preservedRecords: stored.unparsedRecords,
+      );
+      revision.value++;
+    });
+    _writeTail = operation.catchError((Object error, StackTrace stackTrace) {
+      PersistenceErrorReporter.report('Session history', error, stackTrace);
+    });
+    return operation;
   }
 
   Future<List<SessionLog>> getSessionsForDate(DateTime date) async {
@@ -65,22 +65,25 @@ class SessionLogService {
   }
 
   Future<void> prune() {
-    _writeTail = _writeTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Previous session write failed: $error');
-        })
-        .then((_) async {
-          final prefs = await SharedPreferences.getInstance();
-          final stored = _decode(
-            SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
-          );
-          await _writeSessions(
-            prefs,
-            stored.sessions,
-            preservedRecords: stored.unparsedRecords,
-          );
-        });
-    return _writeTail;
+    final operation = _writeTail.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = _decode(
+        SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
+      );
+      await _writeSessions(
+        prefs,
+        stored.sessions,
+        preservedRecords: stored.unparsedRecords,
+      );
+    });
+    _writeTail = operation.catchError((Object error, StackTrace stackTrace) {
+      PersistenceErrorReporter.report(
+        'Session history prune',
+        error,
+        stackTrace,
+      );
+    });
+    return operation;
   }
 
   Future<List<SessionLog>> _loadAll() async {

@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/persistence_error_reporter.dart';
 import '../core/pref_keys.dart';
 import '../core/safe_preference_reads.dart';
 import '../models/app_settings.dart';
@@ -79,29 +80,24 @@ class SettingsService {
   Future<void> save(AppSettings settings) {
     final stable = AppSettings.fromJson(settings.normalized().toJson());
     final encoded = jsonEncode(stable.toJson());
-    _writeTail = _writeTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Previous settings write failed: $error');
-        })
-        .then((_) async {
-          final prefs = await SharedPreferences.getInstance();
-          final written = await prefs.setString(snapshotKey, encoded);
-          if (!written) {
-            throw StateError(
-              'SharedPreferences rejected settings snapshot write',
-            );
-          }
-          final versionWritten = await prefs.setInt(
-            PrefKeys.settingsSchemaVersion,
-            currentSchemaVersion,
-          );
-          if (!versionWritten) {
-            throw StateError(
-              'SharedPreferences rejected settings schema write',
-            );
-          }
-        });
-    return _writeTail;
+    final operation = _writeTail.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final written = await prefs.setString(snapshotKey, encoded);
+      if (!written) {
+        throw StateError('SharedPreferences rejected settings snapshot write');
+      }
+      final versionWritten = await prefs.setInt(
+        PrefKeys.settingsSchemaVersion,
+        currentSchemaVersion,
+      );
+      if (!versionWritten) {
+        throw StateError('SharedPreferences rejected settings schema write');
+      }
+    });
+    _writeTail = operation.catchError((Object error, StackTrace stackTrace) {
+      PersistenceErrorReporter.report('Settings', error, stackTrace);
+    });
+    return operation;
   }
 
   Future<void> acknowledgeSpeechMasterOverride(bool enabled) async {

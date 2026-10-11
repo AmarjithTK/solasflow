@@ -1216,4 +1216,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String mainDesktopTimerFinishedBody(int minutes) {
     return '$minutes minute timer completed.';
   }
+
+  @override
+  String get mainPersistenceWriteFailed =>
+      'Could not save app data. Please try again.';
 }

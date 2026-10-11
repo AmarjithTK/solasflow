@@ -1236,4 +1236,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String mainDesktopTimerFinishedBody(int minutes) {
     return '$minutes മിനിറ്റ് ടൈമർ പൂർത്തിയായി.';
   }
+
+  @override
+  String get mainPersistenceWriteFailed =>
+      'ആപ്പ് ഡാറ്റ സംരക്ഷിക്കാനായില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.';
 }
