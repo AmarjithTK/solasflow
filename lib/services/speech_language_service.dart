@@ -1,6 +1,5 @@
 import 'package:flutter_tts/flutter_tts.dart';
 
-import '../models/speech_item.dart';
 import 'malayalam_tts_service.dart';
 
 /// Centralized speech language manager.
@@ -99,83 +98,6 @@ class SpeechLanguageService {
     return null;
   }
 
-  /// Whether the active language is Malayalam.
-  bool get isMalayalam => _language == 'malayalam';
 
-  /// Generates speech text for the given [item] in the active language.
-  String localize(SpeechItem item) {
-    if (_language == 'malayalam') {
-      return _toMalayalam(item);
-    }
-    return item.text;
-  }
 
-  String _toMalayalam(SpeechItem item) {
-    final ml = MalayalamTtsService();
-    final text = item.text.toLowerCase();
-
-    if (item.isQuote) {
-      // For quotes, check if already in Malayalam
-      if (RegExp(r'[\u0D00-\u0D7F]').hasMatch(item.text)) return item.text;
-      return ml.defaultQuote();
-    }
-
-    // Clock announcement
-    if (text.contains('time') || text.contains('o\'clock')) {
-      return ml.clockAnnouncement(DateTime.now());
-    }
-
-    // Timer remaining
-    if (text.contains('remaining') || text.contains('minute') || text.contains('second')) {
-      final mins = _extractNumber(text);
-      return ml.timerRemaining(mins);
-    }
-
-    // Timer finished
-    if (text.contains('finished') || text.contains('done') || text.contains('complete')) {
-      return ml.timerFinished();
-    }
-
-    // Elapsed time
-    if (text.contains('elapsed')) {
-      return ml.timerRemaining(_extractNumber(text));
-    }
-
-    // Goal reminder
-    if (text.contains('goal')) {
-      final goal = item.text.replaceAll(RegExp(r'^Goal reminder:\s*', caseSensitive: false), '');
-      if (RegExp(r'[\u0D00-\u0D7F]').hasMatch(goal)) return goal;
-      return '$goal എന്ന ലക്ഷ്യത്തെ കുറിച്ച് ഓർമ്മിപ്പിക്കുന്നു.';
-    }
-
-    return ml.defaultQuote();
-  }
-
-  int _extractNumber(String text) {
-    final match = RegExp(r'(\d+)').firstMatch(text);
-    if (match != null) return int.tryParse(match.group(1)!) ?? 0;
-    return 0;
-  }
-
-  /// Malayalam clock announcement for the given time.
-  String malayalamClockAnnouncement(DateTime now) {
-    return MalayalamTtsService().clockAnnouncement(now);
-  }
-
-  /// Malayalam timer announcement for the given minutes remaining.
-  String malayalamTimerRemaining(int minutes) {
-    return MalayalamTtsService().timerRemaining(minutes);
-  }
-
-  /// Malayalam timer finished announcement.
-  String malayalamTimerFinished() {
-    return MalayalamTtsService().timerFinished();
-  }
-
-  /// Malayalam stopwatch elapsed announcement.
-  String malayalamStopwatchElapsed(int seconds) {
-    final mins = seconds ~/ 60;
-    if (mins <= 0) return 'കഴിഞ്ഞു $seconds സെക്കന്റ്.';
-    return 'കഴിഞ്ഞു $mins മിനിറ്റ്.';
-  }
 }

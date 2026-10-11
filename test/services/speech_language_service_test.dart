@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:solasflow/models/speech_item.dart';
 import 'package:solasflow/services/malayalam_tts_service.dart';
 import 'package:solasflow/services/speech_language_service.dart';
 
@@ -23,11 +22,9 @@ void main() {
       );
       expect(service.setLanguage('malayalam'), isTrue);
       expect(service.language, 'malayalam');
-      expect(service.isMalayalam, isTrue);
 
       expect(service.setLanguage('english'), isTrue);
       expect(service.language, 'english');
-      expect(service.isMalayalam, isFalse);
 
       expect(service.setLanguage('auto'), isTrue);
       expect(service.language, 'auto');
@@ -87,15 +84,6 @@ void main() {
       },
     );
 
-    test(
-      'localize translates timer and clock announcements to Malayalam when active',
-      () {
-        service.setLanguage('malayalam');
-        final timerItem = SpeechItem('3 minutes remaining');
-        final localized = service.localize(timerItem);
-        expect(localized, contains('മിനിറ്റ്'));
-      },
-    );
     test('Malayalam clock announcements omit the time prefix', () {
       final announcement = MalayalamTtsService().clockAnnouncement(
         DateTime(2026, 9, 7, 18, 22),
