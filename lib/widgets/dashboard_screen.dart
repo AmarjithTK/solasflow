@@ -76,7 +76,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
       ),
       body: _loadError != null
-          ? Center(child: Text(_loadError!))
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_loadError!, textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _loading = true;
+                        _loadError = null;
+                      });
+                      _load();
+                    },
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(
+                      AppLocalizations.of(context)!.settingsPanelRetry,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : _loading
           ? const Center(child: CircularProgressIndicator())
           : _summaries.isEmpty
