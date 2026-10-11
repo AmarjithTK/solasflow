@@ -67,9 +67,12 @@ class _TimerRingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawArc(rect, 0, math.pi * 2, false, trackPaint);
 
-    if (progress > 0) {
+    final safeProgress = progress.isFinite
+        ? progress.clamp(0.0, 1.0).toDouble()
+        : 0.0;
+    if (safeProgress > 0) {
       // Progress arc (solid accent color, no gradient)
-      final sweep = math.pi * 2 * progress;
+      final sweep = math.pi * 2 * safeProgress;
       final progressPaint = Paint()
         ..color = primary
         ..style = PaintingStyle.stroke
@@ -92,6 +95,7 @@ class _TimerRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _TimerRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.primary != primary;
+        oldDelegate.primary != primary ||
+        oldDelegate.trackColor != trackColor;
   }
 }

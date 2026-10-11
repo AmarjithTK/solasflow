@@ -1289,6 +1289,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     final cs = Theme.of(context).colorScheme;
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       backgroundColor: cs.surfaceContainerLow,
       builder: (ctx) => SafeArea(
@@ -1307,37 +1308,42 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                 ),
               ),
               const SizedBox(height: 8),
-              ...widget.volumeLists.map((volume) {
-                final selected = volume == currentValue;
-                return ListTile(
-                  selected: selected,
-                  selectedTileColor: cs.primaryContainer.withAlpha(80),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  leading: Icon(
-                    selected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: selected ? cs.primary : cs.onSurfaceVariant,
-                  ),
-                  title: Text(
-                    _getVolTitle(volume),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${(volume * 100).round()}%',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  onTap: () {
-                    onChanged(volume);
-                    Navigator.of(ctx).pop();
-                  },
-                );
-              }),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: widget.volumeLists.map((volume) {
+                    final selected = volume == currentValue;
+                    return ListTile(
+                      selected: selected,
+                      selectedTileColor: cs.primaryContainer.withAlpha(80),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      leading: Icon(
+                        selected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: selected ? cs.primary : cs.onSurfaceVariant,
+                      ),
+                      title: Text(
+                        _getVolTitle(volume),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${(volume * 100).round()}%',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onTap: () {
+                        onChanged(volume);
+                        Navigator.of(ctx).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),

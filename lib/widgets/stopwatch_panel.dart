@@ -292,6 +292,8 @@ class StopwatchPanel extends StatelessWidget {
     final c = context.appColors;
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
@@ -308,34 +310,39 @@ class StopwatchPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              ...stopwatchSpeakDelayOptions.map((value) {
-                final selected = value == stopwatchSpeakDelaySeconds;
-                return ListTile(
-                  selected: selected,
-                  selectedTileColor: c.accentLight,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: Icon(
-                    selected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: selected ? c.accent : c.textMuted,
-                  ),
-                  title: Text(
-                    _delayLabel(value),
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: c.textPrimary,
-                    ),
-                  ),
-                  onTap: () {
-                    onStopwatchSpeakDelayChanged(value);
-                    Navigator.of(context).pop();
-                  },
-                );
-              }),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: stopwatchSpeakDelayOptions.map((value) {
+                    final selected = value == stopwatchSpeakDelaySeconds;
+                    return ListTile(
+                      selected: selected,
+                      selectedTileColor: c.accentLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      leading: Icon(
+                        selected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: selected ? c.accent : c.textMuted,
+                      ),
+                      title: Text(
+                        _delayLabel(value),
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: c.textPrimary,
+                        ),
+                      ),
+                      onTap: () {
+                        onStopwatchSpeakDelayChanged(value);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),

@@ -15,6 +15,7 @@ import 'timer_ring.dart';
 class TimerPanel extends StatelessWidget {
   final String timerValue;
   final int sliderValue;
+  final int durationSeconds;
   final int remainingSeconds;
   final int voicesCount;
   final bool isRunning;
@@ -62,6 +63,7 @@ class TimerPanel extends StatelessWidget {
     super.key,
     required this.timerValue,
     required this.sliderValue,
+    required this.durationSeconds,
     required this.remainingSeconds,
     required this.voicesCount,
     required this.isRunning,
@@ -121,8 +123,8 @@ class TimerPanel extends StatelessWidget {
   }
 
   double get _progress {
-    if (sliderValue <= 0) return 0;
-    return remainingSeconds / sliderValue;
+    if (durationSeconds <= 0) return 0;
+    return (remainingSeconds / durationSeconds).clamp(0.0, 1.0).toDouble();
   }
 
   @override
@@ -171,6 +173,7 @@ class TimerPanel extends StatelessWidget {
                                 progress: _progress,
                                 primary: c.primaryAction,
                                 trackColor: c.surfaceBorder,
+                                size: 200,
                               ),
                             Column(
                               mainAxisSize: MainAxisSize.min,
@@ -484,6 +487,8 @@ class TimerPanel extends StatelessWidget {
     final c = context.appColors;
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
@@ -500,34 +505,39 @@ class TimerPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              ...timerAnnounceOptions.map((mins) {
-                final selected = mins == timerAnnounceEvery;
-                return ListTile(
-                  selected: selected,
-                  selectedTileColor: c.accentLight,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: Icon(
-                    selected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: selected ? c.accent : c.textMuted,
-                  ),
-                  title: Text(
-                    'Announce every $mins min',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: c.textPrimary,
-                    ),
-                  ),
-                  onTap: () {
-                    onTimerAnnounceEveryChanged(mins);
-                    Navigator.of(context).pop();
-                  },
-                );
-              }),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: timerAnnounceOptions.map((mins) {
+                    final selected = mins == timerAnnounceEvery;
+                    return ListTile(
+                      selected: selected,
+                      selectedTileColor: c.accentLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      leading: Icon(
+                        selected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: selected ? c.accent : c.textMuted,
+                      ),
+                      title: Text(
+                        'Announce every $mins min',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: c.textPrimary,
+                        ),
+                      ),
+                      onTap: () {
+                        onTimerAnnounceEveryChanged(mins);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),
@@ -539,6 +549,8 @@ class TimerPanel extends StatelessWidget {
     final c = context.appColors;
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
@@ -555,41 +567,46 @@ class TimerPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              ...chainPresets.entries.map((entry) {
-                final selected = entry.key == chainPresetKey;
-                return ListTile(
-                  selected: selected,
-                  selectedTileColor: c.accentLight,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: Icon(
-                    selected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: selected ? c.accent : c.textMuted,
-                  ),
-                  title: Text(
-                    entry.key,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: c.textPrimary,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${entry.value.join(' / ')} min',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: c.textSecondary,
-                    ),
-                  ),
-                  onTap: () {
-                    onChainPresetChanged(entry.key);
-                    Navigator.of(context).pop();
-                  },
-                );
-              }),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: chainPresets.entries.map((entry) {
+                    final selected = entry.key == chainPresetKey;
+                    return ListTile(
+                      selected: selected,
+                      selectedTileColor: c.accentLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      leading: Icon(
+                        selected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: selected ? c.accent : c.textMuted,
+                      ),
+                      title: Text(
+                        entry.key,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: c.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${entry.value.join(' / ')} min',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: c.textSecondary,
+                        ),
+                      ),
+                      onTap: () {
+                        onChainPresetChanged(entry.key);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),

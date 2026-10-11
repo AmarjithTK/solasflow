@@ -4439,6 +4439,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           timerValue: timerDisplayValue,
           sliderValue: sliderValue,
           remainingSeconds: seconds,
+          durationSeconds: _activeTimerDurationSeconds,
           voicesCount: voices.length,
           isRunning: timerInterval != null,
           presetValues: presetValues,
