@@ -12,6 +12,9 @@ class TimerRuntime {
   final int revision;
   final int segmentStartRemainingSeconds;
 
+  final Stopwatch? _monotonicClock;
+  final int _monotonicBaseMs;
+
   const TimerRuntime({
     required this.runId,
     required this.status,
@@ -23,7 +26,24 @@ class TimerRuntime {
     required this.chainIndex,
     required this.revision,
     this.segmentStartRemainingSeconds = 0,
-  });
+  }) : _monotonicClock = null,
+       _monotonicBaseMs = 0;
+
+  TimerRuntime._({
+    required this.runId,
+    required this.status,
+    required this.durationSeconds,
+    required this.remainingSeconds,
+    required this.endAtEpochMs,
+    required this.chainModeOn,
+    required this.chainPresetKey,
+    required this.chainIndex,
+    required this.revision,
+    this.segmentStartRemainingSeconds = 0,
+    Stopwatch? monotonicClock,
+    int monotonicBaseMs = 0,
+  }) : _monotonicClock = monotonicClock,
+       _monotonicBaseMs = monotonicBaseMs;
 
   factory TimerRuntime.idle() => const TimerRuntime(
     runId: '',
@@ -49,7 +69,8 @@ class TimerRuntime {
     int? segmentStartRemainingSeconds,
   }) {
     final safeRemaining = remainingSeconds.clamp(1, 720 * 60);
-    return TimerRuntime(
+    final monotonicClock = Stopwatch()..start();
+    return TimerRuntime._(
       runId: runId ?? '${now.microsecondsSinceEpoch}',
       status: TimerRuntimeStatus.running,
       durationSeconds: durationSeconds.clamp(1, 720 * 60),
@@ -63,16 +84,34 @@ class TimerRuntime {
       revision: revision,
       segmentStartRemainingSeconds:
           (segmentStartRemainingSeconds ?? safeRemaining).clamp(1, 720 * 60),
+      monotonicClock: monotonicClock,
+      monotonicBaseMs: safeRemaining * 1000,
+    );
+  }
+
+  int _remainingMsAt(DateTime now) {
+    if (status != TimerRuntimeStatus.running) {
+      return remainingSeconds.clamp(0, 720 * 60) * 1000;
+    }
+    final monotonicClock = _monotonicClock;
+    if (monotonicClock != null) {
+      return (_monotonicBaseMs - monotonicClock.elapsedMilliseconds).clamp(
+        0,
+        720 * 60 * 1000,
+      );
+    }
+    if (endAtEpochMs == null) {
+      return remainingSeconds.clamp(0, 720 * 60) * 1000;
+    }
+    return (endAtEpochMs! - now.millisecondsSinceEpoch).clamp(
+      0,
+      720 * 60 * 1000,
     );
   }
 
   int remainingAt(DateTime now) {
-    if (status != TimerRuntimeStatus.running || endAtEpochMs == null) {
-      return remainingSeconds.clamp(0, 720 * 60);
-    }
-    final deltaMs = endAtEpochMs! - now.millisecondsSinceEpoch;
-    if (deltaMs <= 0) return 0;
-    return ((deltaMs + 999) ~/ 1000).clamp(0, 720 * 60);
+    final remainingMs = _remainingMsAt(now);
+    return ((remainingMs + 999) ~/ 1000).clamp(0, 720 * 60);
   }
 
   TimerRuntime copyWith({
@@ -86,7 +125,7 @@ class TimerRuntime {
     int? chainIndex,
     int? revision,
     int? segmentStartRemainingSeconds,
-  }) => TimerRuntime(
+  }) => TimerRuntime._(
     runId: runId ?? this.runId,
     status: status ?? this.status,
     durationSeconds: durationSeconds ?? this.durationSeconds,
@@ -98,20 +137,34 @@ class TimerRuntime {
     revision: revision ?? this.revision,
     segmentStartRemainingSeconds:
         segmentStartRemainingSeconds ?? this.segmentStartRemainingSeconds,
+    monotonicClock: _monotonicClock,
+    monotonicBaseMs: _monotonicBaseMs,
   );
 
-  Map<String, dynamic> toJson() => {
-    'runId': runId,
-    'status': status.name,
-    'durationSeconds': durationSeconds,
-    'remainingSeconds': remainingSeconds,
-    'endAtEpochMs': endAtEpochMs,
-    'chainModeOn': chainModeOn,
-    'chainPresetKey': chainPresetKey,
-    'chainIndex': chainIndex,
-    'revision': revision,
-    'segmentStartRemainingSeconds': segmentStartRemainingSeconds,
-  };
+  Map<String, dynamic> toJson() {
+    final now = DateTime.now();
+    final remainingMs = status == TimerRuntimeStatus.running
+        ? _remainingMsAt(now)
+        : 0;
+    final remaining = status == TimerRuntimeStatus.running
+        ? (remainingMs + 999) ~/ 1000
+        : remainingSeconds;
+    final persistedEndAt = status == TimerRuntimeStatus.running
+        ? now.millisecondsSinceEpoch + remainingMs
+        : endAtEpochMs;
+    return {
+      'runId': runId,
+      'status': status.name,
+      'durationSeconds': durationSeconds,
+      'remainingSeconds': remaining,
+      'endAtEpochMs': persistedEndAt,
+      'chainModeOn': chainModeOn,
+      'chainPresetKey': chainPresetKey,
+      'chainIndex': chainIndex,
+      'revision': revision,
+      'segmentStartRemainingSeconds': segmentStartRemainingSeconds,
+    };
+  }
 
   factory TimerRuntime.fromJson(Map<String, dynamic> json) {
     final statusName = json['status']?.toString();
@@ -138,13 +191,25 @@ class TimerRuntime {
               ? TimerRuntimeStatus.finished
               : TimerRuntimeStatus.paused
         : status;
+    final nowEpochMs = DateTime.now().millisecondsSinceEpoch;
+    final restoredRemainingMs =
+        normalizedStatus == TimerRuntimeStatus.running && endAtEpochMs != null
+        ? (endAtEpochMs - nowEpochMs).clamp(0, 720 * 60 * 1000)
+        : remainingSeconds * 1000;
+    final restoredRemainingSeconds = (restoredRemainingMs + 999) ~/ 1000;
+    final monotonicClock = normalizedStatus == TimerRuntimeStatus.running
+        ? (Stopwatch()..start())
+        : null;
 
-    return TimerRuntime(
+
+    return TimerRuntime._(
       runId: json['runId']?.toString() ?? '',
       status: normalizedStatus,
       durationSeconds: durationSeconds,
-      remainingSeconds: remainingSeconds,
-      endAtEpochMs: endAtEpochMs,
+      remainingSeconds: restoredRemainingSeconds,
+      endAtEpochMs: normalizedStatus == TimerRuntimeStatus.running
+          ? nowEpochMs + restoredRemainingMs
+          : endAtEpochMs,
       chainModeOn: json['chainModeOn'] == true,
       chainPresetKey: json['chainPresetKey']?.toString() ?? 'Pomodoro 25-5x4',
       chainIndex: readInt('chainIndex').clamp(0, 1000),
@@ -153,6 +218,8 @@ class TimerRuntime {
         'segmentStartRemainingSeconds',
         remainingSeconds,
       ).clamp(0, 720 * 60),
+      monotonicClock: monotonicClock,
+      monotonicBaseMs: restoredRemainingMs,
     );
   }
 }
@@ -164,13 +231,24 @@ class StopwatchRuntime {
   final int revision;
   final List<int> lapTimesMs;
 
+  final Stopwatch? _monotonicClock;
+
   const StopwatchRuntime({
     required this.isRunning,
     required this.accumulatedMs,
     required this.startedAtEpochMs,
     required this.revision,
     this.lapTimesMs = const [],
-  });
+  }) : _monotonicClock = null;
+
+  StopwatchRuntime._({
+    required this.isRunning,
+    required this.accumulatedMs,
+    required this.startedAtEpochMs,
+    required this.revision,
+    this.lapTimesMs = const [],
+    Stopwatch? monotonicClock,
+  }) : _monotonicClock = monotonicClock;
 
   factory StopwatchRuntime.idle() => const StopwatchRuntime(
     isRunning: false,
@@ -180,9 +258,15 @@ class StopwatchRuntime {
   );
 
   int elapsedMsAt(DateTime now) {
-    if (!isRunning || startedAtEpochMs == null) return accumulatedMs;
+    if (!isRunning) return accumulatedMs;
+    final monotonicClock = _monotonicClock;
+    if (monotonicClock != null) {
+      return accumulatedMs + monotonicClock.elapsedMilliseconds;
+    }
+    final startedAt = startedAtEpochMs;
+    if (startedAt == null) return accumulatedMs;
     return accumulatedMs +
-        (now.millisecondsSinceEpoch - startedAtEpochMs!).clamp(0, 1 << 52);
+        (now.millisecondsSinceEpoch - startedAt).clamp(0, 1 << 52);
   }
 
   StopwatchRuntime copyWith({
@@ -191,23 +275,37 @@ class StopwatchRuntime {
     int? Function()? startedAtEpochMs,
     int? revision,
     List<int>? lapTimesMs,
-  }) => StopwatchRuntime(
-    isRunning: isRunning ?? this.isRunning,
-    accumulatedMs: accumulatedMs ?? this.accumulatedMs,
-    startedAtEpochMs: startedAtEpochMs == null
-        ? this.startedAtEpochMs
-        : startedAtEpochMs(),
-    revision: revision ?? this.revision,
-    lapTimesMs: List<int>.unmodifiable(lapTimesMs ?? this.lapTimesMs),
-  );
+  }) {
+    final nextIsRunning = isRunning ?? this.isRunning;
+    final monotonicClock = !nextIsRunning
+        ? null
+        : this.isRunning
+        ? _monotonicClock
+        : (Stopwatch()..start());
+    return StopwatchRuntime._(
+      isRunning: nextIsRunning,
+      accumulatedMs: accumulatedMs ?? this.accumulatedMs,
+      startedAtEpochMs: startedAtEpochMs == null
+          ? this.startedAtEpochMs
+          : startedAtEpochMs(),
+      revision: revision ?? this.revision,
+      lapTimesMs: List<int>.unmodifiable(lapTimesMs ?? this.lapTimesMs),
+      monotonicClock: monotonicClock,
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'isRunning': isRunning,
-    'accumulatedMs': accumulatedMs,
-    'startedAtEpochMs': startedAtEpochMs,
-    'revision': revision,
-    'lapTimesMs': lapTimesMs,
-  };
+  Map<String, dynamic> toJson() {
+    final now = DateTime.now();
+    return {
+      'isRunning': isRunning,
+      'accumulatedMs': isRunning ? elapsedMsAt(now) : accumulatedMs,
+      'startedAtEpochMs': isRunning
+          ? now.millisecondsSinceEpoch
+          : startedAtEpochMs,
+      'revision': revision,
+      'lapTimesMs': lapTimesMs,
+    };
+  }
 
   factory StopwatchRuntime.fromJson(Map<String, dynamic> json) {
     int readInt(String key, [int fallback = 0]) {
@@ -215,12 +313,28 @@ class StopwatchRuntime {
       return value is num ? value.toInt() : fallback;
     }
 
-    return StopwatchRuntime(
-      isRunning: json['isRunning'] == true,
-      accumulatedMs: readInt('accumulatedMs').clamp(0, 1 << 52),
-      startedAtEpochMs: json['startedAtEpochMs'] is num
-          ? readInt('startedAtEpochMs')
-          : null,
+    final isRunning = json['isRunning'] == true;
+    final storedAccumulatedMs = readInt('accumulatedMs').clamp(0, 1 << 52);
+    final storedStartedAtEpochMs = json['startedAtEpochMs'] is num
+        ? readInt('startedAtEpochMs')
+        : null;
+    final now = DateTime.now();
+    final nowEpochMs = now.millisecondsSinceEpoch;
+    final accumulatedMs = isRunning && storedStartedAtEpochMs != null
+        ? (storedAccumulatedMs +
+                  (nowEpochMs - storedStartedAtEpochMs).clamp(0, 1 << 52))
+              .clamp(0, 1 << 52)
+        : storedAccumulatedMs;
+    final monotonicClock = isRunning && storedStartedAtEpochMs != null
+        ? (Stopwatch()..start())
+        : null;
+
+    return StopwatchRuntime._(
+      isRunning: isRunning,
+      accumulatedMs: accumulatedMs,
+      startedAtEpochMs: isRunning && storedStartedAtEpochMs != null
+          ? nowEpochMs
+          : storedStartedAtEpochMs,
       revision: readInt('revision').clamp(0, 1 << 30),
       lapTimesMs: json['lapTimesMs'] is List
           ? List<int>.unmodifiable(
@@ -229,6 +343,7 @@ class StopwatchRuntime {
                   .map((value) => value.toInt().clamp(0, 1 << 52)),
             )
           : const [],
+      monotonicClock: monotonicClock,
     );
   }
 }
