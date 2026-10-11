@@ -518,6 +518,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   DateTime _nextTtsInitAllowedAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   final Queue<SpeechItem> speechQueue = Queue<SpeechItem>();
+  SpeechItem? _activeSpeechItem;
   int _speechGeneration = 0;
   int _clockScheduleGeneration = 0;
   Future<void> _announcementTail = Future<void>.value();
@@ -1977,6 +1978,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Future<void> _dismissFinishedTimer() async {
     if (!mounted) return;
     _stopMobileRingtone();
+    _cancelTimerCompletionSpeech();
     await _audioService.stopNotification();
     _timerRuntime = TimerRuntime.idle().copyWith(
       revision: _timerRuntime.revision + 1,
@@ -2759,6 +2761,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
       return false;
     }
     if (item.isTimerAnnouncement && !timerSpeakOn) return false;
+    if (item.isTimerCompletion &&
+        (_timerRuntime.status != TimerRuntimeStatus.finished ||
+            _timerRuntime.runId != item.timerRunId ||
+            _timerRuntime.revision != item.timerRevision)) {
+      return false;
+    }
     if (item.isStopwatchAnnouncement && !stopwatchSpeakOn) return false;
     return true;
   }
@@ -2825,6 +2833,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           unawaited(_desktopService.notify('Solas Flow', item.text));
         }
       }
+      _activeSpeechItem = item;
       await _speechService.speakItem(
         flutterTts: flutterTts,
         item: item,
@@ -2861,6 +2870,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           (speechQueue.isEmpty || speechQueue.first.delayMs > 0)) {
         await _audioService.setSpeechDucking(false);
       }
+      if (identical(_activeSpeechItem, item)) _activeSpeechItem = null;
     }
     if (!mounted) return;
     setState(() => isSpeechActive = false);
@@ -2875,12 +2885,21 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     unawaited(_stopTts());
   }
+  void _cancelTimerCompletionSpeech() {
+    speechQueue.removeWhere((item) => item.isTimerCompletion);
+    if (_activeSpeechItem?.isTimerCompletion == true) {
+      unawaited(_stopTts());
+    }
+  }
 
   void speak(
     String text, {
     Map<dynamic, dynamic>? voice,
     bool isTimerAnnouncement = false,
     bool isStopwatchAnnouncement = false,
+    bool isTimerCompletion = false,
+    String? timerRunId,
+    int? timerRevision,
   }) {
     if (_isAudioMuted()) {
       speechQueue.clear();
@@ -2889,7 +2908,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final pv = getPreferredVoice();
     final useMalayalam = _isMalayalamActive(pv);
     final language = useMalayalam ? 'ml' : 'en';
-    final activeVoice = voice ?? _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
+    final activeVoice =
+        voice ?? _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
     speechQueue.add(
       SpeechItem(
         text,
@@ -2897,6 +2917,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
         voice: activeVoice,
         isTimerAnnouncement: isTimerAnnouncement,
         isStopwatchAnnouncement: isStopwatchAnnouncement,
+        isTimerCompletion: isTimerCompletion,
+        timerRunId: timerRunId,
+        timerRevision: timerRevision,
       ),
     );
     drainQueue();
@@ -3291,6 +3314,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
         text,
         voice: timerVoice,
         isTimerAnnouncement: true,
+        isTimerCompletion: finishedRunId != null,
+        timerRunId: finishedRunId,
+        timerRevision: finishedRevision,
       ),
     );
   }
@@ -4138,6 +4164,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void startTimer() {
     if (timerInterval != null) return;
+    if (_timerRuntime.status == TimerRuntimeStatus.finished) {
+      _cancelTimerCompletionSpeech();
+    }
     unawaited(_audioService.stopNotification());
     _invalidateTimerWork();
     _armedPresetTimer?.cancel();

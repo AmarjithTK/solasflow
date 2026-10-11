@@ -32,11 +32,11 @@ Implementation status is source-reviewed, not device/UI reproduced. Findings not
 | U37 | Scope clarified in Settings UI and restore confirmation: JSON backups cover app preferences, not local desktop offline-model selections; restore leaves those local selections unchanged. |
 | U18–U19, U38–U41, U49–U52 | Fixed in code: explicit stopwatch speech no longer depends on periodic speech/running state; reset/pause/schedule changes invalidate old stopwatch messages; fullscreen focus requests update the open route and timer dismissal preserves unrelated focus; Start 25m uses timer replacement; stale native confirmations expire from tap time; landscape retains tabs; Help copy and Custom input validation match reachable behavior. |
 | U02, U05, U10, U12, U14, U26–U27 | Fixed in code: paused chain edits update persisted runtime configuration; selecting the current chain preset is a no-op; Repeat Same Timer preserves exact seconds; clock quotes run without time speech and delayed time announcements use the current time; English Rotate is retained and voice/language changes cancel stale speech callbacks. |
-| U11 | Partial: delayed completion speech checks the finished run/revision before firing. An already-speaking completion message is not selectively interrupted on dismissal/restart; finding remains open. |
+| U11 | Fixed in code: completion speech items carry finished-run identity; dismissal/replacement removes only owned queued items and stops the active completion item without flushing unrelated clock speech. |
 | U29, U30, U46–U47 | Fixed in code: strict System/Sherpa modes skip Malayalam asset bypass; Linux eSpeak/Speech Dispatcher fallbacks receive configured volume; external Linux speech processes are tracked for cancellation; Kokoro cancellation is checked after download/extraction and immediately before replacing the installed model. |
 | U48 | Fixed in code: Settings listens to live voice and engine-status notifiers, so voices and the reported runtime refresh while the Settings route remains open. |
 
-Verification after the live Settings update: `dart analyze lib/main.dart lib/services/speech_service.dart lib/widgets/settings_panel.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform/model-download behavior remains unverified.
+Verification after the completion-speech ownership edit: `dart analyze lib/main.dart lib/models/speech_item.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; active audio interruption remains unverified on target platforms.
 
 ## Most urgent journeys at the audit baseline
 
