@@ -1,0 +1,1094 @@
+{
+  "default": {
+    "id": "default",
+    "text": "നമുക്ക് മുന്നോട്ട് പോകാം, സമയം നന്നായി ഉപയോഗിക്കുക.",
+    "voice_asset": "default"
+  },
+  "categories": [
+    {
+      "name": "Focus",
+      "quotes": [
+        {
+          "id": "focus_01",
+          "text": "നിങ്ങളുടെ ശ്രദ്ധയാണ് ഏറ്റവും വലിയ ശക്തി.",
+          "voice_asset": "focus_1",
+          "shared_asset": null
+        },
+        {
+          "id": "focus_02",
+          "text": "ഒരു മണിക്കൂർ നല്ല ശ്രദ്ധയോടെ ചെയ്താൽ വലിയ മാറ്റമുണ്ടാകും.",
+          "voice_asset": "focus_2",
+          "shared_asset": null
+        },
+        {
+          "id": "focus_03",
+          "text": "നന്നായി ശ്രദ്ധിക്കുക, ഫലം തനിയെ വരും.",
+          "voice_asset": "focus_3",
+          "shared_asset": null
+        },
+        {
+          "id": "focus_04",
+          "text": "മറ്റു കാര്യങ്ങൾ മാറ്റി വെച്ച് ഇപ്പോൾ ചെയ്യുന്നതിൽ മാത്രം ശ്രദ്ധിക്കുക.",
+          "voice_asset": "focus_4",
+          "shared_asset": null
+        },
+        {
+          "id": "focus_05",
+          "text": "ഇപ്പോഴത്തെ കുറച്ചു ബുദ്ധിമുട്ട് പിന്നീട് സന്തോഷം നൽകും.",
+          "voice_asset": "focus_5",
+          "shared_asset": null
+        },
+        {
+          "id": "focus_06",
+          "text": "ഒരു ജോലി പൂർത്തിയാക്കുന്നതുവരെ അതിൽ ശ്രദ്ധ തുടരൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_06"
+        },
+        {
+          "id": "focus_07",
+          "text": "ശ്രദ്ധ ചിതറുമ്പോൾ കുറ്റപ്പെടുത്താതെ ജോലിയിലേക്ക് മടങ്ങിവരൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_07"
+        },
+        {
+          "id": "focus_08",
+          "text": "ഇന്നത്തെ പ്രധാന കാര്യത്തിന് നിങ്ങളുടെ മികച്ച സമയം നൽകൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_08"
+        },
+        {
+          "id": "focus_09",
+          "text": "ഒരു വ്യക്തമായ ലക്ഷ്യം ഈ മണിക്കൂറിന് ദിശ നൽകും.",
+          "voice_asset": null,
+          "shared_asset": "focus_09"
+        },
+        {
+          "id": "focus_10",
+          "text": "പൂർത്തിയാക്കേണ്ട കാര്യത്തിൽ മാത്രം ഇപ്പോൾ ശ്രദ്ധ കേന്ദ്രീകരിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_10"
+        },
+        {
+          "id": "focus_11",
+          "text": "ചെറിയ ഇടവേളയ്ക്ക് ശേഷം ശ്രദ്ധ വീണ്ടും പുതുക്കാം.",
+          "voice_asset": null,
+          "shared_asset": "focus_11"
+        },
+        {
+          "id": "focus_12",
+          "text": "ചിന്തകൾ പലതായാലും ചെയ്യേണ്ടത് ഒന്ന് മാത്രം തിരഞ്ഞെടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_12"
+        },
+        {
+          "id": "focus_13",
+          "text": "ശ്രദ്ധയോടെ ചെയ്ത ചെറിയ ജോലി തിരക്കുള്ള ദിവസത്തെക്കാൾ വിലപ്പെട്ടതാണ്.",
+          "voice_asset": null,
+          "shared_asset": "focus_13"
+        },
+        {
+          "id": "focus_14",
+          "text": "പ്രധാനപ്പെട്ട ജോലിക്ക് ഇടം നൽകാൻ ഒരു വ്യതിയാനം മാറ്റിവെക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_14"
+        },
+        {
+          "id": "focus_15",
+          "text": "ഇപ്പോൾ ചെയ്യുന്ന ഘട്ടം നന്നായി പൂർത്തിയാക്കുന്നതിൽ ശ്രദ്ധിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_15"
+        },
+        {
+          "id": "focus_16",
+          "text": "ശാന്തമായി ശ്രദ്ധിച്ചാൽ സങ്കീർണ്ണമായ ജോലിയും വ്യക്തമാകും.",
+          "voice_asset": null,
+          "shared_asset": "focus_16"
+        },
+        {
+          "id": "focus_17",
+          "text": "മനസ്സ് വഴുതിയാൽ മൃദുവായി ഇപ്പോഴത്തെ ജോലിയിലേക്ക് തിരികെ വരൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_17"
+        },
+        {
+          "id": "focus_18",
+          "text": "മറ്റെല്ലാം കാത്തിരിക്കട്ടെ; ഈ ചെറിയ ഘട്ടം പൂർത്തിയാക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_18"
+        },
+        {
+          "id": "focus_19",
+          "text": "ശ്രദ്ധയ്ക്കായി ശാന്തമായ ഇടവും വ്യക്തമായ ഉദ്ദേശവും ഒരുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_19"
+        },
+        {
+          "id": "focus_20",
+          "text": "ഒരു ലക്ഷ്യത്തിൽ കുറച്ചുനേരം മുഴുകുന്നത് വലിയ മുന്നേറ്റമാകാം.",
+          "voice_asset": null,
+          "shared_asset": "focus_20"
+        },
+        {
+          "id": "focus_21",
+          "text": "ചിന്തിച്ചു നിൽക്കാതെ അടുത്ത വ്യക്തമായ നടപടി തുടങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_21"
+        },
+        {
+          "id": "focus_22",
+          "text": "ശ്രദ്ധയെ സംരക്ഷിക്കാൻ അനാവശ്യ അറിയിപ്പുകൾ മാറ്റിവെക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "focus_22"
+        },
+        {
+          "id": "focus_23",
+          "text": "ഇന്നത്തെ ശ്രദ്ധ നാളത്തെ സ്വാതന്ത്ര്യം സൃഷ്ടിക്കുന്നു.",
+          "voice_asset": null,
+          "shared_asset": "focus_23"
+        },
+        {
+          "id": "focus_24",
+          "text": "പ്രധാനപ്പെട്ട കാര്യത്തിൽ തുടർച്ചയായി മടങ്ങിവരുന്നതാണ് പരിശീലനം.",
+          "voice_asset": null,
+          "shared_asset": "focus_24"
+        },
+        {
+          "id": "focus_25",
+          "text": "ഈ സമയം ഒരു ജോലിക്ക് നൽകൂ; ഫലം പിന്നീട് കാണാം.",
+          "voice_asset": null,
+          "shared_asset": "focus_25"
+        }
+      ]
+    },
+    {
+      "name": "Discipline",
+      "quotes": [
+        {
+          "id": "discipline_01",
+          "text": "ചെറിയ കാര്യങ്ങൾ കൃത്യമായി ചെയ്യുന്നതാണ് യഥാർത്ഥ അച്ചടക്കം.",
+          "voice_asset": "discipline_1",
+          "shared_asset": null
+        },
+        {
+          "id": "discipline_02",
+          "text": "വിജയം എന്നത് എന്നും ചെയ്യുന്ന ചെറിയ ശീലങ്ങളാണ്.",
+          "voice_asset": "discipline_2",
+          "shared_asset": null
+        },
+        {
+          "id": "discipline_03",
+          "text": "ഇപ്പോഴത്തെ പരിശ്രമം നാളത്തെ ദിവസങ്ങൾ എളുപ്പമാക്കും.",
+          "voice_asset": "discipline_3",
+          "shared_asset": null
+        },
+        {
+          "id": "discipline_04",
+          "text": "മടി കാണിക്കരുത്, വേണ്ടത് എന്താണോ അത് ചെയ്യുക.",
+          "voice_asset": "discipline_4",
+          "shared_asset": null
+        },
+        {
+          "id": "discipline_05",
+          "text": "പ്രചോദനം കുറയുമ്പോഴും ശീലം നിങ്ങളെ മുന്നോട്ട് നയിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "discipline_05"
+        },
+        {
+          "id": "discipline_06",
+          "text": "ചെറിയ വാഗ്ദാനങ്ങൾ സ്വയം പാലിക്കുന്നത് ആത്മവിശ്വാസം വളർത്തും.",
+          "voice_asset": null,
+          "shared_asset": "discipline_06"
+        },
+        {
+          "id": "discipline_07",
+          "text": "ഓരോ ദിവസവും ചെയ്യുന്ന ചെറിയ ശ്രമം വലിയ മാറ്റം സൃഷ്ടിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "discipline_07"
+        },
+        {
+          "id": "discipline_08",
+          "text": "പൂർത്തിയാക്കാൻ കഴിയുന്ന ചെറിയ ലക്ഷ്യം വെച്ച് തുടങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_08"
+        },
+        {
+          "id": "discipline_09",
+          "text": "ഒരു ദിവസം വിട്ടുപോയാലും അടുത്ത ദിവസം വീണ്ടും തുടക്കം കുറിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_09"
+        },
+        {
+          "id": "discipline_10",
+          "text": "സ്ഥിരമായ പരിശ്രമമാണ് കഴിവിനെ വിശ്വസനീയമാക്കുന്നത്.",
+          "voice_asset": null,
+          "shared_asset": "discipline_10"
+        },
+        {
+          "id": "discipline_11",
+          "text": "നാളെ എളുപ്പമാകാൻ ഇന്ന് ഒരു ചെറിയ ക്രമം ഒരുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_11"
+        },
+        {
+          "id": "discipline_12",
+          "text": "ശീലമാകാൻ സമയം വേണം; ക്ഷമയോടെ ആവർത്തിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_12"
+        },
+        {
+          "id": "discipline_13",
+          "text": "ആഗ്രഹിക്കുന്ന ഫലത്തിന് അനുയോജ്യമായ പ്രവൃത്തി ഇന്ന് ചെയ്യൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_13"
+        },
+        {
+          "id": "discipline_14",
+          "text": "ഉത്സാഹം വരുന്നത് കാത്തിരിക്കാതെ നിശ്ചയിച്ച ജോലി തുടങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_14"
+        },
+        {
+          "id": "discipline_15",
+          "text": "ഒരു നല്ല ശീലം സംരക്ഷിക്കാൻ അനാവശ്യ തടസ്സം കുറയ്ക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_15"
+        },
+        {
+          "id": "discipline_16",
+          "text": "തുടരാൻ പറ്റുന്ന വേഗം തിരഞ്ഞെടുക്കൂ; അതാണ് നിലനിൽക്കുക.",
+          "voice_asset": null,
+          "shared_asset": "discipline_16"
+        },
+        {
+          "id": "discipline_17",
+          "text": "സ്വയം നൽകിയ വാക്ക് ചെറിയ പ്രവൃത്തിയിലൂടെ പാലിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_17"
+        },
+        {
+          "id": "discipline_18",
+          "text": "വഴി തെറ്റിയാൽ നിർത്താതെ അടുത്ത ശരിയായ പടി എടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_18"
+        },
+        {
+          "id": "discipline_19",
+          "text": "ദിവസേനയുള്ള ശ്രമം നിശ്ശബ്ദമായി ഫലം കൂട്ടിച്ചേർക്കും.",
+          "voice_asset": null,
+          "shared_asset": "discipline_19"
+        },
+        {
+          "id": "discipline_20",
+          "text": "ഇന്നത്തെ ആവർത്തനം നാളത്തെ സ്വാഭാവിക ശീലമാകും.",
+          "voice_asset": null,
+          "shared_asset": "discipline_20"
+        },
+        {
+          "id": "discipline_21",
+          "text": "നല്ല ശീലത്തിന് വ്യക്തമായ സമയവും ലളിതമായ തുടക്കവും നൽകൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_21"
+        },
+        {
+          "id": "discipline_22",
+          "text": "മികവ് ഒരു ദിവസം കൊണ്ടല്ല, പതിവായ ശ്രമത്തിലൂടെയാണ് വരുന്നത്.",
+          "voice_asset": null,
+          "shared_asset": "discipline_22"
+        },
+        {
+          "id": "discipline_23",
+          "text": "പ്രവൃത്തി ചെറുതായാലും അത് പൂർത്തിയാക്കാനുള്ള ശീലം വളർത്തൂ.",
+          "voice_asset": null,
+          "shared_asset": "discipline_23"
+        },
+        {
+          "id": "discipline_24",
+          "text": "ആരംഭിച്ച കാര്യം തീർക്കുന്നത് അടുത്ത തുടക്കത്തെ എളുപ്പമാക്കും.",
+          "voice_asset": null,
+          "shared_asset": "discipline_24"
+        },
+        {
+          "id": "discipline_25",
+          "text": "ശരിയായ ശീലങ്ങൾ നമ്മെ ലക്ഷ്യത്തിൽ എത്തിക്കും.",
+          "voice_asset": "discipline_5",
+          "shared_asset": null
+        }
+      ]
+    },
+    {
+      "name": "Calm",
+      "quotes": [
+        {
+          "id": "calm_01",
+          "text": "ദീർഘമായി ശ്വാസമെടുക്കൂ, ഈ ഒരു കാര്യത്തിൽ മാത്രം മനസ്സുറപ്പിക്കൂ.",
+          "voice_asset": "calm_1",
+          "shared_asset": null
+        },
+        {
+          "id": "calm_02",
+          "text": "തിരക്ക് പിടിക്കേണ്ട, ശാന്തമായി കാര്യങ്ങൾ ചെയ്യുക.",
+          "voice_asset": "calm_2",
+          "shared_asset": null
+        },
+        {
+          "id": "calm_03",
+          "text": "നമുക്ക് ഇനിയും സമയമുണ്ട്, സമാധാനത്തോടെ ചെയ്യാം.",
+          "voice_asset": "calm_3",
+          "shared_asset": null
+        },
+        {
+          "id": "calm_04",
+          "text": "ഓരോ നിമിഷവും പുതിയൊരു തുടക്കത്തിന് പറ്റിയതാണ്.",
+          "voice_asset": "calm_4",
+          "shared_asset": null
+        },
+        {
+          "id": "calm_05",
+          "text": "ശ്വാസം ശാന്തമാക്കൂ; അടുത്ത തീരുമാനം വ്യക്തമായി വരും.",
+          "voice_asset": null,
+          "shared_asset": "calm_05"
+        },
+        {
+          "id": "calm_06",
+          "text": "എല്ലാം ഒരേസമയം പരിഹരിക്കേണ്ടതില്ല; ഇപ്പോഴത്തെ കാര്യം നോക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_06"
+        },
+        {
+          "id": "calm_07",
+          "text": "വേഗം കുറച്ചാലും മുന്നേറ്റം തുടരാം.",
+          "voice_asset": null,
+          "shared_asset": "calm_07"
+        },
+        {
+          "id": "calm_08",
+          "text": "ആവശ്യത്തിന് വിശ്രമിക്കുന്നത് പരിശ്രമത്തെ ദീർഘകാലം നിലനിർത്തും.",
+          "voice_asset": null,
+          "shared_asset": "calm_08"
+        },
+        {
+          "id": "calm_09",
+          "text": "മൃദുവായ തുടക്കവും നല്ലൊരു തുടക്കമാണ്.",
+          "voice_asset": null,
+          "shared_asset": "calm_09"
+        },
+        {
+          "id": "calm_10",
+          "text": "ഇന്നത്തെ ഒരു മണിക്കൂർ മാത്രം ശ്രദ്ധിച്ചാൽ മതി.",
+          "voice_asset": null,
+          "shared_asset": "calm_10"
+        },
+        {
+          "id": "calm_11",
+          "text": "അവസരപ്പെടാതെ അടുത്ത പടി തിരഞ്ഞെടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_11"
+        },
+        {
+          "id": "calm_12",
+          "text": "ശാന്തമായ മനസ്സിന് ലളിതമായ പരിഹാരങ്ങൾ കാണാൻ കഴിയും.",
+          "voice_asset": null,
+          "shared_asset": "calm_12"
+        },
+        {
+          "id": "calm_13",
+          "text": "ഭാരം തോന്നുമ്പോൾ ജോലി ചെറിയ ഭാഗങ്ങളാക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_13"
+        },
+        {
+          "id": "calm_14",
+          "text": "ഒരു ആഴത്തിലുള്ള ശ്വാസം എടുത്ത് വീണ്ടും തുടങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_14"
+        },
+        {
+          "id": "calm_15",
+          "text": "നിനക്ക് നിയന്ത്രിക്കാനാകുന്നതിൽ ശ്രദ്ധ ചെലുത്തൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_15"
+        },
+        {
+          "id": "calm_16",
+          "text": "മനസ്സിന് ഇടം നൽകാൻ ഒരു നിമിഷം നിശ്ശബ്ദമായി ഇരിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_16"
+        },
+        {
+          "id": "calm_17",
+          "text": "ജോലി ചെയ്യുമ്പോഴും ശരീരത്തിന്റെ ആവശ്യങ്ങൾ ശ്രദ്ധിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_17"
+        },
+        {
+          "id": "calm_18",
+          "text": "സമാധാനത്തോടെ ചെയ്ത ജോലി വേഗത്തിൽ ചെയ്തതിനെക്കാൾ ഉറപ്പുള്ളതാകും.",
+          "voice_asset": null,
+          "shared_asset": "calm_18"
+        },
+        {
+          "id": "calm_19",
+          "text": "വലിയ ചിന്തകളെ മാറ്റിവെച്ച് അടുത്ത ചെറിയ പ്രവൃത്തി ചെയ്യൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_19"
+        },
+        {
+          "id": "calm_20",
+          "text": "ഇപ്പോഴത്തെ നിമിഷം കൈകാര്യം ചെയ്യാൻ കഴിയുന്നത്ര മാത്രം ചെയ്യൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_20"
+        },
+        {
+          "id": "calm_21",
+          "text": "മനസ്സിലെ തിരക്ക് കുറച്ച് കാര്യത്തെ വ്യക്തമായി കാണൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_21"
+        },
+        {
+          "id": "calm_22",
+          "text": "വിശ്രമത്തിന് ശേഷം വീണ്ടും ശ്രദ്ധയോടെ മുന്നോട്ട് പോകാം.",
+          "voice_asset": null,
+          "shared_asset": "calm_22"
+        },
+        {
+          "id": "calm_23",
+          "text": "സ്വയം സമ്മർദ്ദം കൂട്ടാതെ ജോലിക്ക് വേണ്ട സമയം നൽകൂ.",
+          "voice_asset": null,
+          "shared_asset": "calm_23"
+        },
+        {
+          "id": "calm_24",
+          "text": "ശാന്തതയും സ്ഥിരതയും ഒരുമിച്ച് മുന്നോട്ട് കൊണ്ടുപോകും.",
+          "voice_asset": null,
+          "shared_asset": "calm_24"
+        },
+        {
+          "id": "calm_25",
+          "text": "ശാന്തമായ മനസ്സോടെ ചെയ്യുന്ന കാര്യങ്ങളെല്ലാം മികച്ചതായിരിക്കും.",
+          "voice_asset": "calm_5",
+          "shared_asset": null
+        }
+      ]
+    },
+    {
+      "name": "Positivity",
+      "quotes": [
+        {
+          "id": "positivity_01",
+          "text": "നല്ലത് ചിന്തിക്കുക, നല്ലത് മാത്രം സംഭവിക്കും.",
+          "voice_asset": "positivity_1",
+          "shared_asset": null
+        },
+        {
+          "id": "positivity_02",
+          "text": "ഇന്നത്തെ പരിശ്രമം നാളത്തെ വലിയ വിജയമായി മാറും.",
+          "voice_asset": "positivity_2",
+          "shared_asset": null
+        },
+        {
+          "id": "positivity_03",
+          "text": "ചെറിയ കാൽവെപ്പുകളും നമ്മെ മുന്നോട്ട് നയിക്കുന്നു.",
+          "voice_asset": "positivity_3",
+          "shared_asset": null
+        },
+        {
+          "id": "positivity_04",
+          "text": "നമ്മൾ തുടങ്ങുന്ന സമയമാണ് ഏറ്റവും നല്ല സമയം.",
+          "voice_asset": "positivity_4",
+          "shared_asset": null
+        },
+        {
+          "id": "positivity_05",
+          "text": "നല്ലൊരു മനസ്സുണ്ടെങ്കിൽ ഏതു വലിയ കാര്യവും എളുപ്പത്തിൽ തീർക്കാം.",
+          "voice_asset": "positivity_5",
+          "shared_asset": null
+        },
+        {
+          "id": "positivity_06",
+          "text": "ഇന്നത്തെ ചെറിയ ശ്രമം നാളത്തെ വലിയ വിജയത്തിന് തുടക്കമാകും.",
+          "voice_asset": null,
+          "shared_asset": "positivity_06"
+        },
+        {
+          "id": "positivity_07",
+          "text": "നിന്റെ കഴിവുകൾ പരിശീലനത്തോടെ കൂടുതൽ വളരും.",
+          "voice_asset": null,
+          "shared_asset": "positivity_07"
+        },
+        {
+          "id": "positivity_08",
+          "text": "തുടങ്ങിയത് തന്നെ മുന്നേറ്റത്തിന്റെ തെളിവാണ്.",
+          "voice_asset": null,
+          "shared_asset": "positivity_08"
+        },
+        {
+          "id": "positivity_09",
+          "text": "പ്രതിസന്ധി വന്നാലും നീ പഠിച്ചുകൊണ്ട് മുന്നോട്ട് പോകുന്നു.",
+          "voice_asset": null,
+          "shared_asset": "positivity_09"
+        },
+        {
+          "id": "positivity_10",
+          "text": "നിന്റെ പുരോഗതി ചെറുതായാലും അത് യഥാർത്ഥമാണ്.",
+          "voice_asset": null,
+          "shared_asset": "positivity_10"
+        },
+        {
+          "id": "positivity_11",
+          "text": "നല്ല മാറ്റം ഒരു നല്ല തിരഞ്ഞെടുപ്പിൽ നിന്നാണ് തുടങ്ങുന്നത്.",
+          "voice_asset": null,
+          "shared_asset": "positivity_11"
+        },
+        {
+          "id": "positivity_12",
+          "text": "നിനക്കായി നീ ചെലവഴിക്കുന്ന ശ്രദ്ധ വിലപ്പെട്ടതാണ്.",
+          "voice_asset": null,
+          "shared_asset": "positivity_12"
+        },
+        {
+          "id": "positivity_13",
+          "text": "കഴിഞ്ഞതിൽ നിന്ന് പഠിച്ച് അടുത്ത പടി പ്രതീക്ഷയോടെ എടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "positivity_13"
+        },
+        {
+          "id": "positivity_14",
+          "text": "ആദ്യ ശ്രമം പൂർണ്ണമാകേണ്ടതില്ല; അത് ആരംഭിച്ചാൽ മതി.",
+          "voice_asset": null,
+          "shared_asset": "positivity_14"
+        },
+        {
+          "id": "positivity_15",
+          "text": "നിന്നെ സഹായിക്കുന്ന ചെറിയ വിജയങ്ങൾ ശ്രദ്ധിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "positivity_15"
+        },
+        {
+          "id": "positivity_16",
+          "text": "കഠിനമായ ദിവസത്തിലും ഒരു നല്ല പ്രവൃത്തി സാധ്യമാണ്.",
+          "voice_asset": null,
+          "shared_asset": "positivity_16"
+        },
+        {
+          "id": "positivity_17",
+          "text": "ശ്രമം തുടരുമ്പോൾ പുതിയ വഴികൾ തുറന്നുവരും.",
+          "voice_asset": null,
+          "shared_asset": "positivity_17"
+        },
+        {
+          "id": "positivity_18",
+          "text": "നീ ഇതിനകം നേടിയ പുരോഗതിയെ ഓർത്ത് ആത്മവിശ്വാസം നേടൂ.",
+          "voice_asset": null,
+          "shared_asset": "positivity_18"
+        },
+        {
+          "id": "positivity_19",
+          "text": "നല്ല ഫലം വരാൻ സമയം എടുക്കും; നിന്റെ ശ്രമം തുടരൂ.",
+          "voice_asset": null,
+          "shared_asset": "positivity_19"
+        },
+        {
+          "id": "positivity_20",
+          "text": "ഇന്ന് ചെയ്ത നല്ല കാര്യം നാളത്തെ പ്രതീക്ഷയാകട്ടെ.",
+          "voice_asset": null,
+          "shared_asset": "positivity_20"
+        },
+        {
+          "id": "positivity_21",
+          "text": "നിനക്ക് പഠിക്കാനും മാറാനും വീണ്ടും തുടങ്ങാനും കഴിയും.",
+          "voice_asset": null,
+          "shared_asset": "positivity_21"
+        },
+        {
+          "id": "positivity_22",
+          "text": "ചെറിയ മുന്നേറ്റങ്ങളെ ആഘോഷിക്കുന്നത് യാത്രയെ ശക്തമാക്കും.",
+          "voice_asset": null,
+          "shared_asset": "positivity_22"
+        },
+        {
+          "id": "positivity_23",
+          "text": "നിന്റെ ഭാവിക്കായി ഇന്ന് ഒരു നല്ല തീരുമാനം എടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "positivity_23"
+        },
+        {
+          "id": "positivity_24",
+          "text": "ശ്രമം കാണാത്തപ്പോഴും വളർച്ച നടക്കുന്നു.",
+          "voice_asset": null,
+          "shared_asset": "positivity_24"
+        },
+        {
+          "id": "positivity_25",
+          "text": "പ്രതീക്ഷയെ പ്രവർത്തിയാക്കാൻ അടുത്ത പടി തുടങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "positivity_25"
+        }
+      ]
+    },
+    {
+      "name": "Historic Figures",
+      "quotes": [
+        {
+          "id": "historic_figures_01",
+          "text": "നഷ്ടപ്പെട്ട സമയം ഒരിക്കലും തിരികെ കിട്ടില്ല.",
+          "voice_asset": "historic_1",
+          "shared_asset": null
+        },
+        {
+          "id": "historic_figures_02",
+          "text": "നമ്മൾ സ്ഥിരമായി ചെയ്യുന്ന കാര്യങ്ങളാണ് നമ്മുടെ സ്വഭാവം.",
+          "voice_asset": "historic_2",
+          "shared_asset": null
+        },
+        {
+          "id": "historic_figures_03",
+          "text": "സമയം ശരിയായി വിനിയോഗിക്കുന്നവർക്ക് അത് എപ്പോഴും ധാരാളമായിരിക്കും.",
+          "voice_asset": "historic_3",
+          "shared_asset": null
+        },
+        {
+          "id": "historic_figures_04",
+          "text": "ഒന്നും ചെയ്യാതെ ഇരുന്നാൽ ഒന്നും നടക്കില്ല.",
+          "voice_asset": "historic_4",
+          "shared_asset": null
+        },
+        {
+          "id": "historic_figures_05",
+          "text": "സൂര്യപ്രകാശം പോലെ ഒരിടത്ത് മാത്രം ശ്രദ്ധ കേന്ദ്രീകരിച്ചാൽ ഏതു കാര്യവും നടക്കും.",
+          "voice_asset": "historic_5",
+          "shared_asset": null
+        },
+        {
+          "id": "historic_figures_06",
+          "text": "കാലത്തെ ബഹുമാനിക്കുന്നത് ജീവിതത്തെ ബഹുമാനിക്കുന്നതുപോലെയാണ്.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_06"
+        },
+        {
+          "id": "historic_figures_07",
+          "text": "പതിവായി ചെയ്യുന്ന ചെറിയ പ്രവൃത്തികളാണ് സ്വഭാവം രൂപപ്പെടുത്തുന്നത്.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_07"
+        },
+        {
+          "id": "historic_figures_08",
+          "text": "ഒരു തുടക്കം ചെറുതായാലും യാത്രയെ മാറ്റാൻ കഴിയും.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_08"
+        },
+        {
+          "id": "historic_figures_09",
+          "text": "നഷ്ടപ്പെട്ട നിമിഷം തിരികെ വരില്ല; ലഭിച്ച നിമിഷം നന്നായി ഉപയോഗിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_09"
+        },
+        {
+          "id": "historic_figures_10",
+          "text": "അറിവിന് വില ലഭിക്കുന്നത് അത് നല്ല പ്രവൃത്തിയാകുമ്പോഴാണ്.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_10"
+        },
+        {
+          "id": "historic_figures_11",
+          "text": "ദൂരെയുള്ള ലക്ഷ്യത്തിലേക്ക് ദിവസേന ഒരു പടി നീങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_11"
+        },
+        {
+          "id": "historic_figures_12",
+          "text": "ഉപകാരമുള്ള പ്രവൃത്തിക്ക് സമയം കണ്ടെത്തുന്നതാണ് വിവേകം.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_12"
+        },
+        {
+          "id": "historic_figures_13",
+          "text": "നല്ല ചിന്തയെ നല്ല പ്രവൃത്തിയാക്കി മാറ്റൂ.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_13"
+        },
+        {
+          "id": "historic_figures_14",
+          "text": "മനസ്സിനെ നിയന്ത്രിക്കുന്നത് സാഹചര്യങ്ങളെക്കാൾ വലിയ ശക്തിയാണ്.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_14"
+        },
+        {
+          "id": "historic_figures_15",
+          "text": "ക്ഷമയോടെ ചെയ്ത പരിശ്രമം ഫലത്തിന് അടിത്തറയാകും.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_15"
+        },
+        {
+          "id": "historic_figures_16",
+          "text": "മറ്റുള്ളവരെക്കാൾ ഇന്നലെ ഉണ്ടായിരുന്ന നിന്നെ മറികടക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_16"
+        },
+        {
+          "id": "historic_figures_17",
+          "text": "ചെറിയ കാര്യങ്ങളിൽ ശ്രദ്ധിക്കുന്നവൻ വലിയ ജോലിയും നന്നായി ചെയ്യും.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_17"
+        },
+        {
+          "id": "historic_figures_18",
+          "text": "തുടർച്ചയായ പഠനം മനസ്സിനെ പുതുമയോടെ നിലനിർത്തും.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_18"
+        },
+        {
+          "id": "historic_figures_19",
+          "text": "ഒരു നല്ല ശീലം ജീവിതത്തിന്റെ ദിശ തന്നെ മാറ്റാം.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_19"
+        },
+        {
+          "id": "historic_figures_20",
+          "text": "പ്രയാസം വന്നാൽ ലക്ഷ്യം ഓർത്ത് അടുത്ത പടി തിരഞ്ഞെടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_20"
+        },
+        {
+          "id": "historic_figures_21",
+          "text": "നിന്റെ സമയം എവിടെ ചെലവഴിക്കുന്നു എന്ന് നിന്റെ മുൻഗണനകൾ കാണിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_21"
+        },
+        {
+          "id": "historic_figures_22",
+          "text": "പ്രവൃത്തിയില്ലാത്ത ഉദ്ദേശം ഫലമാകില്ല.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_22"
+        },
+        {
+          "id": "historic_figures_23",
+          "text": "മികച്ച ഫലങ്ങൾ ക്ഷമയും പരിശ്രമവും ചേർന്നാണ് ഉണ്ടാകുന്നത്.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_23"
+        },
+        {
+          "id": "historic_figures_24",
+          "text": "ഒരു നിമിഷം ശ്രദ്ധയോടെ ഉപയോഗിച്ചാൽ അതിന് അർത്ഥം ലഭിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_24"
+        },
+        {
+          "id": "historic_figures_25",
+          "text": "പഠിച്ച കാര്യം ജീവിതത്തിൽ ഉപയോഗിക്കുമ്പോഴാണ് അറിവ് വളരുന്നത്.",
+          "voice_asset": null,
+          "shared_asset": "historic_figures_25"
+        }
+      ]
+    },
+    {
+      "name": "General Malayalam",
+      "quotes": [
+        {
+          "id": "general_malayalam_01",
+          "text": "നല്ല ശീലങ്ങൾ ചെറിയ തീരുമാനങ്ങളിൽ നിന്നാണ് വളരുന്നത്.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_01"
+        },
+        {
+          "id": "general_malayalam_02",
+          "text": "ശരീരത്തിനും മനസ്സിനും വേണ്ട പരിചരണം ദിവസേന നൽകൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_02"
+        },
+        {
+          "id": "general_malayalam_03",
+          "text": "ഒരു സമയം ഒരു കാര്യം ചെയ്യുന്നത് മനസ്സിന് ആശ്വാസം നൽകും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_03"
+        },
+        {
+          "id": "general_malayalam_04",
+          "text": "കുറച്ച് വെള്ളം കുടിച്ച് വീണ്ടും ശ്രദ്ധയോടെ തുടങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_04"
+        },
+        {
+          "id": "general_malayalam_05",
+          "text": "നല്ല വിശ്രമം നാളത്തെ ഊർജത്തിന് സഹായിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_05"
+        },
+        {
+          "id": "general_malayalam_06",
+          "text": "ചെറിയൊരു നടപ്പ് ചിന്തകൾക്ക് പുതുമ നൽകും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_06"
+        },
+        {
+          "id": "general_malayalam_07",
+          "text": "നിന്റെ ആരോഗ്യം നിന്റെ ഏറ്റവും പ്രധാനപ്പെട്ട സമ്പത്താണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_07"
+        },
+        {
+          "id": "general_malayalam_08",
+          "text": "വലിയ ജോലി ചെറിയ ഭാഗങ്ങളാക്കുമ്പോൾ തുടങ്ങാൻ എളുപ്പമാകും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_08"
+        },
+        {
+          "id": "general_malayalam_09",
+          "text": "ഭക്ഷണത്തിനും ഉറക്കത്തിനും സ്ഥിരമായ സമയം നൽകൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_09"
+        },
+        {
+          "id": "general_malayalam_10",
+          "text": "ദിവസേനയുള്ള ചെറിയ മാറ്റം ദീർഘകാലത്ത് വലിയ ഫലമാകും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_10"
+        },
+        {
+          "id": "general_malayalam_11",
+          "text": "വിശ്രമത്തിന് ഇടം നൽകുന്നത് നല്ല ജോലി തുടരാൻ സഹായിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_11"
+        },
+        {
+          "id": "general_malayalam_12",
+          "text": "ശരീരം പറയുന്ന ക്ഷീണം ശ്രദ്ധിച്ച് ആവശ്യമായ ഇടവേള എടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_12"
+        },
+        {
+          "id": "general_malayalam_13",
+          "text": "ആരോഗ്യകരമായ ഭക്ഷണവും വെള്ളവും ശ്രദ്ധ നിലനിർത്താൻ സഹായിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_13"
+        },
+        {
+          "id": "general_malayalam_14",
+          "text": "ഇടയ്ക്കിടെ എഴുന്നേറ്റ് നീങ്ങുന്നത് ശരീരത്തിന് ഗുണം ചെയ്യും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_14"
+        },
+        {
+          "id": "general_malayalam_15",
+          "text": "ഇന്നത്തെ ഒരു നല്ല ശീലം നാളത്തെ ജീവിതം എളുപ്പമാക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_15"
+        },
+        {
+          "id": "general_malayalam_16",
+          "text": "നിന്റെ വേഗം നിനക്കായി തിരഞ്ഞെടുക്കൂ; മറ്റുള്ളവരുമായി താരതമ്യം വേണ്ട.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_16"
+        },
+        {
+          "id": "general_malayalam_17",
+          "text": "ചെറിയ ഇടവേളയ്ക്ക് ശേഷം ജോലിയിലേക്ക് പുതുമയോടെ മടങ്ങാം.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_17"
+        },
+        {
+          "id": "general_malayalam_18",
+          "text": "ജോലിയും വിശ്രമവും തമ്മിലുള്ള തുലനം ദീർഘകാല വിജയത്തിന് സഹായിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_18"
+        },
+        {
+          "id": "general_malayalam_19",
+          "text": "കുറച്ച് നേരം പുറത്തേക്ക് നോക്കുന്നത് കണ്ണുകൾക്ക് വിശ്രമം നൽകും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_19"
+        },
+        {
+          "id": "general_malayalam_20",
+          "text": "ചിന്തകൾ കൂടുതലായാൽ എഴുതിവെച്ച് ഒന്നൊന്നായി പരിഹരിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_20"
+        },
+        {
+          "id": "general_malayalam_21",
+          "text": "സ്വയം കരുതുന്നത് ലക്ഷ്യങ്ങളിലേക്കുള്ള യാത്രയുടെ ഭാഗമാണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_21"
+        },
+        {
+          "id": "general_malayalam_22",
+          "text": "ആവശ്യമായപ്പോൾ സഹായം ചോദിക്കുന്നത് ധൈര്യത്തിന്റെ അടയാളമാണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_22"
+        },
+        {
+          "id": "general_malayalam_23",
+          "text": "ദിവസം തുടങ്ങുമ്പോൾ ഏറ്റവും പ്രധാനപ്പെട്ട കാര്യം ആദ്യം തിരഞ്ഞെടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_23"
+        },
+        {
+          "id": "general_malayalam_24",
+          "text": "ഒരു നല്ല തിരഞ്ഞെടുപ്പ് ആവർത്തിക്കുമ്പോൾ അത് ശീലമാകും.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_24"
+        },
+        {
+          "id": "general_malayalam_25",
+          "text": "ഇന്നത്തെ സമയത്തിൽ നിനക്ക് മാറ്റാനാകുന്നതിൽ ശ്രദ്ധിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_malayalam_25"
+        }
+      ]
+    },
+    {
+      "name": "General",
+      "quotes": [
+        {
+          "id": "general_01",
+          "text": "ഈ സമയം ബുദ്ധിപൂർവ്വം ഉപയോഗിക്കുക.",
+          "voice_asset": "general_1",
+          "shared_asset": null
+        },
+        {
+          "id": "general_02",
+          "text": "സ്ഥിരമായുള്ള ചെറിയ മാറ്റങ്ങൾ വലിയ ലക്ഷ്യങ്ങളിൽ എത്തിക്കും.",
+          "voice_asset": "general_2",
+          "shared_asset": null
+        },
+        {
+          "id": "general_03",
+          "text": "തിരിച്ചുകിട്ടാത്ത വലിയൊരു സമ്പത്താണ് സമയം.",
+          "voice_asset": "general_3",
+          "shared_asset": null
+        },
+        {
+          "id": "general_04",
+          "text": "നമുക്ക് ചെയ്യാൻ പറ്റുന്നത് ഇപ്പോൾ തന്നെ ചെയ്യുക.",
+          "voice_asset": "general_4",
+          "shared_asset": null
+        },
+        {
+          "id": "general_05",
+          "text": "ഇന്നത്തെ നമ്മുടെ പ്രവർത്തിയാണ് നമ്മുടെ ഭാവിയെ തീരുമാനിക്കുന്നത്.",
+          "voice_asset": "general_5",
+          "shared_asset": null
+        },
+        {
+          "id": "general_06",
+          "text": "സമയം തിരികെ കിട്ടില്ല; അതിനാൽ ഈ നിമിഷത്തെ കരുതലോടെ ഉപയോഗിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_06"
+        },
+        {
+          "id": "general_07",
+          "text": "ചെറിയ പുരോഗതി ദിവസേന കൂട്ടിച്ചേർന്നാൽ വലിയ മാറ്റമാകും.",
+          "voice_asset": null,
+          "shared_asset": "general_07"
+        },
+        {
+          "id": "general_08",
+          "text": "ഒരു മണിക്കൂർ ശ്രദ്ധയോടെ ചെലവഴിക്കുന്നത് പല തിരക്കുകളേക്കാൾ വിലപ്പെട്ടതാണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_08"
+        },
+        {
+          "id": "general_09",
+          "text": "ഇപ്പോൾ തുടങ്ങുന്ന നല്ല ശീലം ഭാവിയെ എളുപ്പമാക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_09"
+        },
+        {
+          "id": "general_10",
+          "text": "നിന്റെ സമയം നിന്റെ ഏറ്റവും വിലപ്പെട്ട സമ്പത്താണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_10"
+        },
+        {
+          "id": "general_11",
+          "text": "ഓരോ ദിവസവും ഒരു ചെറിയ കാര്യത്തിൽ മെച്ചപ്പെടാൻ ശ്രമിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_11"
+        },
+        {
+          "id": "general_12",
+          "text": "ആരംഭിക്കാൻ ഏറ്റവും നല്ല നിമിഷം ഇപ്പോഴാണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_12"
+        },
+        {
+          "id": "general_13",
+          "text": "ചിന്തിച്ചു മാത്രം നിൽക്കാതെ ചെയ്യാൻ കഴിയുന്ന കാര്യം തുടങ്ങൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_13"
+        },
+        {
+          "id": "general_14",
+          "text": "നല്ല പ്രവൃത്തികൾ ആവർത്തിക്കുമ്പോൾ നല്ല ശീലമാകും.",
+          "voice_asset": null,
+          "shared_asset": "general_14"
+        },
+        {
+          "id": "general_15",
+          "text": "ആദ്യം വേണ്ട കാര്യം ചെയ്യൂ; പിന്നെ മറ്റുള്ളവയ്ക്ക് സമയം കണ്ടെത്തൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_15"
+        },
+        {
+          "id": "general_16",
+          "text": "സ്ഥിരതയുള്ള ശ്രമം വലിയ ലക്ഷ്യങ്ങളെ അടുത്തെത്തിക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_16"
+        },
+        {
+          "id": "general_17",
+          "text": "പ്രയാസമുള്ള ജോലി ഭാഗങ്ങളാക്കുമ്പോൾ എളുപ്പമാകും.",
+          "voice_asset": null,
+          "shared_asset": "general_17"
+        },
+        {
+          "id": "general_18",
+          "text": "നല്ല സമയം കണ്ടെത്തുന്നതല്ല; അതിനെ നല്ല കാര്യത്തിന് ഉപയോഗിക്കുന്നതാണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_18"
+        },
+        {
+          "id": "general_19",
+          "text": "ഇന്നത്തെ ശ്രദ്ധയും പരിശ്രമവും നാളത്തെ ഫലത്തിന് വഴിയൊരുക്കും.",
+          "voice_asset": null,
+          "shared_asset": "general_19"
+        },
+        {
+          "id": "general_20",
+          "text": "ചെറിയൊരു തുടക്കം പോലും നിൽക്കുന്നതിനെക്കാൾ മുന്നിലാണ്.",
+          "voice_asset": null,
+          "shared_asset": "general_20"
+        },
+        {
+          "id": "general_21",
+          "text": "നല്ല തീരുമാനങ്ങൾ ആവർത്തിച്ച് ജീവിതത്തിന് ദിശ നൽകൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_21"
+        },
+        {
+          "id": "general_22",
+          "text": "ഇപ്പോൾ ചെയ്യാവുന്ന ഒരു നല്ല കാര്യം തിരഞ്ഞെടുക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_22"
+        },
+        {
+          "id": "general_23",
+          "text": "നിന്റെ ഊർജം പ്രധാനപ്പെട്ട കാര്യങ്ങളിൽ വിനിയോഗിക്കൂ.",
+          "voice_asset": null,
+          "shared_asset": "general_23"
+        },
+        {
+          "id": "general_24",
+          "text": "വിലപ്പെട്ട കാര്യങ്ങൾക്ക് സമയം മാറ്റിവെക്കൂ; ശേഷിക്കുന്നത് കാത്തിരിക്കാം.",
+          "voice_asset": null,
+          "shared_asset": "general_24"
+        },
+        {
+          "id": "general_25",
+          "text": "ഈ നിമിഷം നന്നായി ഉപയോഗിച്ചാൽ ദിവസം അർത്ഥവത്താകും.",
+          "voice_asset": null,
+          "shared_asset": "general_25"
+        }
+      ]
+    }
+  ]
+}

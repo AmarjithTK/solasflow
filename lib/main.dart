@@ -2181,6 +2181,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Future<void> _bootstrapImpl() async {
     await _quoteRotationService.load();
+    await _malayalamTtsService.loadQuoteCatalog();
     final settings = _settings;
     _speechLanguageService.setLanguage(settings.voiceListMode);
     timerDisplayValue = _formatTimerDisplayValue(seconds);

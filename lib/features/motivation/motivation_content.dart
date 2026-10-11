@@ -11,7 +11,7 @@
 //
 // Content Organization:
 // 1. General - Universal productivity tips for all languages/cultures
-// 2. General Malayalam - category metadata; quote text is owned by MalayalamTtsService
+// 2. General Malayalam - category metadata; Malayalam quote text is loaded from JSON
 // 3. Focus - Maintaining concentration during work sessions
 // 4. Discipline - Building habits and consistency
 // 5. Calm - Mindfulness and stress reduction
@@ -23,16 +23,13 @@
 // - Default category is 'General' (always available)
 // - Falls back to 'General' if user-selected category not found
 //
-// Future Enhancement:
-// - [ ] Externalize quotes to asset files (JSON)
-// - [ ] Load from database for easy updates without app rebuild
-// - [ ] User-submitted quotes feature
-// - [ ] Spaced repetition: prefer less-recently-used quotes
+// Language data:
+// - Malayalam quotes and stable audio IDs share one JSON catalog.
+// - Audio clips are generated from that catalog by the quote generator script.
 //
 // Localization Strategy:
-// - English quotes in 'General' category
-// - Malayalam content in dedicated 'General Malayalam' category
-// - Quotes remain const (compile-time safe, no runtime overhead)
+// - English quotes remain const in 'General'.
+// - Malayalam content uses the dedicated catalog categories.
 
 const List<String> motivationCategories = [
   'General',

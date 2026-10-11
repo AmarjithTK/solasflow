@@ -3,15 +3,15 @@
 
 import argparse
 import importlib.util
+import json
 from pathlib import Path
-import re
 import sys
 import time
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-SERVICE_PATH = ROOT / "lib/services/malayalam_tts_service.dart"
 OUTPUT_DIR = ROOT / "assets/audio/malayalam/shared_quotes"
+QUOTE_CATALOG_PATH = OUTPUT_DIR / "quote_catalog.json"
 VOICE = "Aoede"
 
 
@@ -26,41 +26,49 @@ def load_existing_generator() -> Any:
 
 
 def read_remaining_quotes() -> list[dict[str, str]]:
-    source = SERVICE_PATH.read_text(encoding="utf-8")
-    catalog_start = source.index("List<String> quotesForCategory(String category)")
-    catalog_end = source.index("static const Map<String, String> _quoteFileMap", catalog_start)
-    catalog = source[catalog_start:catalog_end]
-    recorded_section_start = catalog_end
-    recorded_section_end = source.index("  };", recorded_section_start)
-    recorded_section = source[recorded_section_start:recorded_section_end]
-    recorded = {
-        match.group(1)
-        for match in re.finditer(r"^\s*'([^']+)':\s*'[^']+',\s*$", recorded_section, re.MULTILINE)
-    }
-
-    categories: list[tuple[str, str]] = []
-    for match in re.finditer(r"case '([^']+)':\s*return const \[(.*?)\];", catalog, re.DOTALL):
-        categories.append((match.group(1), match.group(2)))
-    default_match = re.search(r"default:\s*return const \[(.*?)\];", catalog, re.DOTALL)
-    if default_match is None:
-        raise RuntimeError("Could not find the default Malayalam quote list")
-    categories.append(("General", default_match.group(1)))
+    catalog = json.loads(QUOTE_CATALOG_PATH.read_text(encoding="utf-8"))
+    if not isinstance(catalog, dict) or not isinstance(catalog.get("categories"), list):
+        raise RuntimeError("Quote catalog has no categories")
+    categories = catalog["categories"]
 
     remaining: list[dict[str, str]] = []
-    seen: set[str] = set()
-    for category, body in categories:
-        slug = category.lower().replace(" ", "_")
-        quotes = re.findall(r"^\s*'([^']*)',\s*$", body, re.MULTILINE)
-        if not quotes:
-            raise RuntimeError(f"No quote strings parsed from category {category!r}")
-        for index, text in enumerate(quotes, start=1):
-            if text in recorded or text in seen:
+    seen_files: dict[str, str] = {}
+    seen_ids: set[str] = set()
+    for category in categories:
+        if not isinstance(category, dict):
+            raise RuntimeError("Invalid quote category in catalog")
+        name = category.get("name")
+        quotes = category.get("quotes")
+        if not isinstance(name, str) or not isinstance(quotes, list):
+            raise RuntimeError("Invalid quote category in catalog")
+        for quote in quotes:
+            if not isinstance(quote, dict):
+                raise RuntimeError(f"Invalid quote in category {name!r}")
+            quote_id = quote.get("id")
+            text = quote.get("text")
+            shared_asset = quote.get("shared_asset")
+            if not isinstance(quote_id, str) or not isinstance(text, str):
+                raise RuntimeError(f"Quote has no stable id or text in {name!r}")
+            if quote_id in seen_ids:
+                raise RuntimeError(f"Duplicate stable quote id: {quote_id}")
+            seen_ids.add(quote_id)
+            if shared_asset is None:
                 continue
-            seen.add(text)
+            if not isinstance(shared_asset, str) or not shared_asset:
+                raise RuntimeError(f"Invalid shared audio id for quote {quote_id!r}")
+            previous_text = seen_files.get(shared_asset)
+            if previous_text is not None:
+                if previous_text != text:
+                    raise RuntimeError(
+                        f"Shared audio id {shared_asset!r} is assigned to multiple quotes"
+                    )
+                continue
+            seen_files[shared_asset] = text
             remaining.append({
-                "category": category,
+                "id": quote_id,
+                "category": name,
                 "text": text,
-                "filename": f"{slug}_{index:02d}.mp3",
+                "filename": f"{shared_asset}.mp3",
             })
     return remaining
 
