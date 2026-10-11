@@ -219,29 +219,6 @@ class AppTheme {
           color: c.textMuted,
         ),
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        height: 64,
-        elevation: 0,
-        backgroundColor: c.navBackground,
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        indicatorColor: Colors.transparent,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? c.navActive : c.navInactive,
-          );
-        }),
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            color: selected ? c.navActive : c.navInactive,
-            size: 22,
-          );
-        }),
-      ),
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         shape: const RoundedRectangleBorder(),

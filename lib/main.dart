@@ -4980,17 +4980,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
             destinations: const [
               NavDestination(
                 icon: Icons.watch_later_outlined,
-                activeIcon: Icons.watch_later_outlined,
                 label: 'Clock',
               ),
               NavDestination(
                 icon: Icons.hourglass_empty_rounded,
-                activeIcon: Icons.hourglass_empty_rounded,
                 label: 'Timer',
               ),
               NavDestination(
                 icon: Icons.timer_outlined,
-                activeIcon: Icons.timer_outlined,
                 label: 'Stopwatch',
               ),
             ],

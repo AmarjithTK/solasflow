@@ -3,24 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_colors.dart';
 
-/// Custom bottom navigation bar for SolasFlow.
-///
-/// Supports two indicator styles:
-/// - [IndicatorStyle.accentLine]: minimal accent line below active icon
-/// - [IndicatorStyle.pill]: subtle rounded pill behind active icon
-///
-/// Both are visually balanced — prototype and choose based on overall feel.
-enum IndicatorStyle { accentLine, pill }
 
 /// Navigation destination data.
 class NavDestination {
   final IconData icon;
-  final IconData activeIcon;
   final String label;
 
   const NavDestination({
     required this.icon,
-    required this.activeIcon,
     required this.label,
   });
 }
@@ -30,14 +20,12 @@ class BottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<NavDestination> destinations;
-  final IndicatorStyle indicatorStyle;
 
   const BottomNavBar({
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.destinations,
-    this.indicatorStyle = IndicatorStyle.accentLine,
   });
 
   @override
@@ -65,7 +53,6 @@ class BottomNavBar extends StatelessWidget {
                     destination: dest,
                     selected: selected,
                     colors: colors,
-                    indicatorStyle: indicatorStyle,
                   ),
                 ),
               );
@@ -81,13 +68,11 @@ class _NavTab extends StatelessWidget {
   final NavDestination destination;
   final bool selected;
   final ColorTokens colors;
-  final IndicatorStyle indicatorStyle;
 
   const _NavTab({
     required this.destination,
     required this.selected,
     required this.colors,
-    required this.indicatorStyle,
   });
 
   @override
@@ -102,14 +87,10 @@ class _NavTab extends StatelessWidget {
           scale: selected ? 1.0 : 0.85,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Icon(
-              selected ? destination.activeIcon : destination.icon,
-              key: ValueKey<bool>(selected),
-              size: 22,
-              color: selected ? activeColor : inactiveColor,
-            ),
+          child: Icon(
+            destination.icon,
+            size: 22,
+            color: selected ? activeColor : inactiveColor,
           ),
         ),
         const SizedBox(height: 4),
