@@ -305,7 +305,9 @@ class _DriveModeViewState extends State<DriveModeView> {
         children: [
           Expanded(
             child: Semantics(
+              button: true,
               toggled: _audioEnabled,
+              label: _audioEnabled ? 'Audio on' : 'Audio off',
               child: _button(
                 label: _audioEnabled ? 'Audio on' : 'Audio off',
                 icon: _audioEnabled

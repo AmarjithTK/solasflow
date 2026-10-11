@@ -134,7 +134,9 @@ class TimerPanel extends StatelessWidget {
     final minutes = timerParts.$1;
     final seconds = timerParts.$2;
     final millis = timerParts.$3;
-    final displayTime = millis != null ? '$minutes:$seconds.$millis' : '$minutes:$seconds';
+    final displayTime = millis != null
+        ? '$minutes:$seconds.$millis'
+        : '$minutes:$seconds';
 
     return SafeArea(
       child: ColoredBox(
@@ -145,167 +147,212 @@ class TimerPanel extends StatelessWidget {
             const SizedBox(height: 8),
 
             // ── Timer display area (subtle surface, not heavy card) ──
-            GestureDetector(
-              onTap: onFullscreenPressed,
-              onDoubleTap: onFullscreenImmersivePressed,
-              child: Center(
-                child: Container(
-                  width: double.infinity,
-                  constraints: const BoxConstraints(minHeight: 240),
-                  padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: c.surfaceBorder),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Timer ring — always rendered (stable layout, no resize)
-                      SizedBox(
-                        width: 280,
-                        height: 200,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            if (_progress > 0)
-                              TimerRing(
-                                progress: _progress,
-                                primary: c.primaryAction,
-                                trackColor: c.surfaceBorder,
-                                size: 200,
+            Semantics(
+              button: true,
+              label: 'Timer display',
+              hint:
+                  'Tap to open fullscreen. Double-tap for immersive fullscreen.',
+              child: GestureDetector(
+                onTap: onFullscreenPressed,
+                onDoubleTap: onFullscreenImmersivePressed,
+                child: Center(
+                  child: Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(minHeight: 240),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 36,
+                      horizontal: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: c.surfaceBorder),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Timer ring — always rendered (stable layout, no resize)
+                        SizedBox(
+                          width: 280,
+                          height: 200,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (_progress > 0)
+                                TimerRing(
+                                  progress: _progress,
+                                  primary: c.primaryAction,
+                                  trackColor: c.surfaceBorder,
+                                  size: 200,
+                                ),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Remaining',
+                                    style: GoogleFonts.inter(
+                                      color: c.textMuted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      displayTime,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        color: c.textPrimary,
+                                        fontSize: 56,
+                                        height: 0.9,
+                                        fontWeight: FontWeight.w800,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Remaining',
-                                  style: GoogleFonts.inter(
-                                    color: c.textMuted,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1.5,
+                              // −1 button (left, vertically centered)
+                              if (isRunning)
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: IconButton(
+                                    tooltip: 'Remove one minute',
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 48,
+                                      height: 48,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () => addTimeToRunningTimer(-60),
+                                    icon: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: c.surfaceSubtle,
+                                        borderRadius: BorderRadius.circular(18),
+                                        border: Border.all(
+                                          color: c.surfaceBorder,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.remove_rounded,
+                                        size: 18,
+                                        color: c.textSecondary,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    displayTime,
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.inter(
-                                      color: c.textPrimary,
-                                      fontSize: 56,
-                                      height: 0.9,
-                                      fontWeight: FontWeight.w800,
-                                      fontFeatures: const [FontFeature.tabularFigures()],
+                              // +5 button (right, vertically centered)
+                              if (isRunning)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: IconButton(
+                                    tooltip: 'Add five minutes',
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 48,
+                                      height: 48,
                                     ),
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () => addTimeToRunningTimer(300),
+                                    icon: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: c.surfaceSubtle,
+                                        borderRadius: BorderRadius.circular(18),
+                                        border: Border.all(
+                                          color: c.surfaceBorder,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.add_rounded,
+                                        size: 18,
+                                        color: c.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        // End time badge (when running)
+                        if (isRunning && _endLabel().isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: c.accentLight,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.schedule_rounded,
+                                  size: 14,
+                                  color: c.accent,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _endLabel(),
+                                  style: GoogleFonts.inter(
+                                    color: c.accent,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
-                            // −1 button (left, vertically centered)
-                            if (isRunning)
-                              Positioned(
-                                left: 0,
-                                top: 0,
-                                bottom: 0,
-                                child: GestureDetector(
-                                  onTap: () => addTimeToRunningTimer(-60),
-                                  child: Center(
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: c.surfaceSubtle,
-                                        borderRadius: BorderRadius.circular(18),
-                                        border: Border.all(color: c.surfaceBorder),
-                                      ),
-                                      child: Icon(Icons.remove_rounded, size: 18, color: c.textSecondary),
-                                    ),
+                          ),
+                        ],
+
+                        // Chain progress
+                        if (isRunning && chainModeOn) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: c.accentLight,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.link_rounded,
+                                  size: 14,
+                                  color: c.accent,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Step ${chainIndex + 1}',
+                                  style: GoogleFonts.inter(
+                                    color: c.accent,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ),
-                            // +5 button (right, vertically centered)
-                            if (isRunning)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                bottom: 0,
-                                child: GestureDetector(
-                                  onTap: () => addTimeToRunningTimer(300),
-                                  child: Center(
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: c.surfaceSubtle,
-                                        borderRadius: BorderRadius.circular(18),
-                                        border: Border.all(color: c.surfaceBorder),
-                                      ),
-                                      child: Icon(Icons.add_rounded, size: 18, color: c.textSecondary),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      // End time badge (when running)
-                      if (isRunning && _endLabel().isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: c.accentLight,
-                            borderRadius: BorderRadius.circular(8),
+                              ],
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.schedule_rounded, size: 14, color: c.accent),
-                              const SizedBox(width: 4),
-                              Text(
-                                _endLabel(),
-                                style: GoogleFonts.inter(
-                                  color: c.accent,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ],
-
-                      // Chain progress
-                      if (isRunning && chainModeOn) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: c.accentLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.link_rounded, size: 14, color: c.accent),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Step ${chainIndex + 1}',
-                                style: GoogleFonts.inter(
-                                  color: c.accent,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -318,7 +365,9 @@ class TimerPanel extends StatelessWidget {
                 Expanded(
                   child: PrimaryButton(
                     label: isRunning ? 'Pause' : 'Start',
-                    icon: isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    icon: isRunning
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
                     onPressed: isRunning ? stopTimer : startTimer,
                   ),
                 ),
@@ -337,7 +386,22 @@ class TimerPanel extends StatelessWidget {
 
             // ── Quick presets ──────────────────────────────────
             PresetGrid(
-              presets: const [1, 2, 3, 5, 7, 10, 12, 15, 20, 25, 30, 35, 45, 60],
+              presets: const [
+                1,
+                2,
+                3,
+                5,
+                7,
+                10,
+                12,
+                15,
+                20,
+                25,
+                30,
+                35,
+                45,
+                60,
+              ],
               selectedValue: sliderValue,
               armedValue: armedPresetValue,
               onTap: onPresetTap,
@@ -374,7 +438,8 @@ class TimerPanel extends StatelessWidget {
                   icon: Icons.access_time_rounded,
                   label: 'Clock',
                   active: fullscreenShowClock,
-                  onTap: () => onFullscreenShowClockChanged(!fullscreenShowClock),
+                  onTap: () =>
+                      onFullscreenShowClockChanged(!fullscreenShowClock),
                 ),
               ],
             ),
@@ -415,7 +480,10 @@ class TimerPanel extends StatelessWidget {
               GestureDetector(
                 onTap: onDashboardPressed,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: c.surface,
                     borderRadius: BorderRadius.circular(12),
@@ -448,7 +516,11 @@ class TimerPanel extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded, color: c.textMuted, size: 20),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: c.textMuted,
+                        size: 20,
+                      ),
                     ],
                   ),
                 ),
@@ -694,45 +766,50 @@ class _FeatureToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: active ? c.accentLight : c.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: active ? c.accentBorder : c.surfaceBorder,
-              width: 1,
+      child: Semantics(
+        button: true,
+        toggled: active,
+        label: label,
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: active ? c.accentLight : c.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: active ? c.accentBorder : c.surfaceBorder,
+                width: 1,
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: active ? c.accent : c.textSecondary,
-                size: 22,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: active ? c.textPrimary : c.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+            child: Column(
+              children: [
+                Icon(
+                  icon,
+                  color: active ? c.accent : c.textSecondary,
+                  size: 22,
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                active ? 'On' : 'Off',
-                style: GoogleFonts.inter(
-                  color: active ? c.accent : c.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: active ? c.textPrimary : c.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  active ? 'On' : 'Off',
+                  style: GoogleFonts.inter(
+                    color: active ? c.accent : c.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

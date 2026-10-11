@@ -100,7 +100,10 @@ class ClockPanel extends StatelessWidget {
               child: Center(
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 36,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
                     color: c.surface,
                     borderRadius: BorderRadius.circular(16),
@@ -133,7 +136,9 @@ class ClockPanel extends StatelessWidget {
                                 fontSize: 64,
                                 height: 0.85,
                                 fontWeight: FontWeight.w800,
-                                fontFeatures: const [FontFeature.tabularFigures()],
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
                               ),
                             ),
                             if (display.suffix != null) ...[
@@ -193,7 +198,8 @@ class ClockPanel extends StatelessWidget {
                   icon: Icons.phonelink_lock_rounded,
                   label: 'Background',
                   active: backgroundPersistenceOn,
-                  onTap: () => onBackgroundPersistenceChanged(!backgroundPersistenceOn),
+                  onTap: () =>
+                      onBackgroundPersistenceChanged(!backgroundPersistenceOn),
                 ),
               ],
             ),
@@ -216,7 +222,8 @@ class ClockPanel extends StatelessWidget {
             SettingsRow(
               icon: Icons.repeat_rounded,
               label: 'Repeat count',
-              value: '$clockSpeakRepeatCount time${clockSpeakRepeatCount > 1 ? 's' : ''}',
+              value:
+                  '$clockSpeakRepeatCount time${clockSpeakRepeatCount > 1 ? 's' : ''}',
               onTap: () => _showIntSheet(
                 context: context,
                 title: 'Repeat count',
@@ -416,45 +423,50 @@ class _FeatureToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: active ? c.accentLight : c.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: active ? c.accentBorder : c.surfaceBorder,
-              width: 1,
+      child: Semantics(
+        button: true,
+        toggled: active,
+        label: label,
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: active ? c.accentLight : c.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: active ? c.accentBorder : c.surfaceBorder,
+                width: 1,
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: active ? c.accent : c.textSecondary,
-                size: 22,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: active ? c.textPrimary : c.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+            child: Column(
+              children: [
+                Icon(
+                  icon,
+                  color: active ? c.accent : c.textSecondary,
+                  size: 22,
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                active ? 'On' : 'Off',
-                style: GoogleFonts.inter(
-                  color: active ? c.accent : c.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: active ? c.textPrimary : c.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  active ? 'On' : 'Off',
+                  style: GoogleFonts.inter(
+                    color: active ? c.accent : c.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

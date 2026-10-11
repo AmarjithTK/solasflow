@@ -149,6 +149,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
       });
     }
   }
+
   void _handleModeUpdate() {
     final nextMode = widget.modeUpdates.value;
     if (!mounted || nextMode == _mode) return;
@@ -164,7 +165,6 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
       _handleModeUpdate();
     }
   }
-
 
   void _restartControlsHideTimer() {
     _controlsHideTimer?.cancel();
@@ -413,28 +413,33 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
     required bool selected,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: selected ? selectedBg : Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Material(
+        color: selected ? selectedBg : Colors.transparent,
         borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: selected ? fg : variant, size: 17),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected ? fg : variant,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: selected ? fg : variant, size: 17),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? fg : variant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -622,6 +627,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                         child: Row(
                           children: [
                             IconButton.filledTonal(
+                              tooltip: 'Close focus mode',
                               onPressed: () {
                                 _onControlInteraction();
                                 Navigator.of(context).pop();
