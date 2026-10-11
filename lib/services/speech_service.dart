@@ -498,6 +498,12 @@ class SpeechService {
     await active;
   }
 
+  void _ensureKokoroDownloadActive() {
+    if (_kokoroCancelRequested) {
+      throw StateError('Kokoro download cancelled');
+    }
+  }
+
   Future<void> _installKokoroVoice() async {
     final kokoroDir = _kokoroModelDirectory();
     const installedFiles = [
@@ -539,6 +545,7 @@ class SpeechService {
           onProgress: _reportKokoroProgress,
         );
       }
+      _ensureKokoroDownloadActive();
 
       kokoroDownloadStatus.value = const SpeechModelDownloadStatus(
         phase: SpeechModelDownloadPhase.verifying,
@@ -552,6 +559,7 @@ class SpeechService {
       }
       await extractPath.create(recursive: true);
       await _extractTarBz2(archivePath, extractDir);
+      _ensureKokoroDownloadActive();
 
       var sourceDir = _joinPath(extractDir, 'kokoro-int8-en-v0_19');
       if (!_dirExists(sourceDir)) {
@@ -570,6 +578,7 @@ class SpeechService {
         throw Exception('Kokoro archive is missing matching language data');
       }
 
+      _ensureKokoroDownloadActive();
       kokoroDownloadStatus.value = const SpeechModelDownloadStatus(
         phase: SpeechModelDownloadPhase.installing,
         receivedBytes: _kokoroArchiveSize,
@@ -601,6 +610,7 @@ class SpeechService {
         }
       }
 
+      _ensureKokoroDownloadActive();
       final installedDir = Directory(kokoroDir);
       if (installedDir.existsSync()) {
         await installedDir.delete(recursive: true);
@@ -703,6 +713,7 @@ class SpeechService {
     try {
       final child = await Process.start(executable, args);
       process = child;
+      _externalSpeechProcess = child;
       if (generation != _desktopSpeechGeneration) child.kill();
       final stdoutDone = child.stdout.drain<void>();
       final stderrDone = utf8.decoder.bind(child.stderr).join();
@@ -830,15 +841,28 @@ class SpeechService {
   Future<bool> _speakOnLinuxFallback({
     required String text,
     required bool useMalayalamNuance,
+    required double volume,
   }) async {
     final voice = _linuxEspeakVoice(useMalayalamNuance: useMalayalamNuance);
     final generation = _desktopSpeechGeneration;
+    final normalizedVolume = volume.clamp(0.0, 1.0).toDouble();
+    final espeakAmplitude = (normalizedVolume * 200).round();
+    final dispatcherVolume = ((normalizedVolume * 200) - 100).round();
 
     // Ordered fallback chain for Linux desktop distributions.
     final commands = <({String exe, List<String> args})>[
-      (exe: 'espeak-ng', args: ['-v', voice, text]),
-      (exe: 'spd-say', args: ['-w', '-l', voice, text]),
-      (exe: 'spd-say', args: ['-w', text]),
+      (
+        exe: 'espeak-ng',
+        args: ['-v', voice, '-a', '$espeakAmplitude', text],
+      ),
+      (
+        exe: 'spd-say',
+        args: ['-w', '-l', voice, '-i', '$dispatcherVolume', text],
+      ),
+      (
+        exe: 'spd-say',
+        args: ['-w', '-i', '$dispatcherVolume', text],
+      ),
     ];
 
     for (final command in commands) {
@@ -1257,7 +1281,9 @@ class SpeechService {
     final ttsVolume = maximumSpeechVolume
         ? 1.0
         : speakVolume.clamp(0.0, 1.0).toDouble();
-    if (useMalayalamNuance) {
+    if (useMalayalamNuance &&
+        mode != 'system_only' &&
+        mode != 'sherpa_only') {
       final voiceId = MalayalamTtsService.resolveVoiceId(preferredVoice);
       final clips = _malayalamTts.resolveAudioClips(item.text, voiceId: voiceId);
       if (clips != null && clips.isNotEmpty) {
@@ -1299,6 +1325,7 @@ class SpeechService {
       final fallbackOk = await _speakOnLinuxFallback(
         text: item.text,
         useMalayalamNuance: useMalayalamNuance,
+        volume: ttsVolume,
       );
       if (fallbackOk) return;
     }
