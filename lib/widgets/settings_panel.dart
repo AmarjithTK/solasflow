@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/app_settings.dart';
 import '../models/sound_option.dart';
 import '../providers/app_state.dart';
 import '../models/speech_model_download_status.dart';
@@ -1126,10 +1127,15 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               ),
             ),
             Slider(
-              value: s.fullscreenClockScale.clamp(0.8, 2.0),
-              min: 0.8,
-              max: 2.0,
-              divisions: 6,
+              value: s.fullscreenClockScale
+                  .clamp(
+                    AppSettings.fullscreenClockScaleOptions.first,
+                    AppSettings.fullscreenClockScaleOptions.last,
+                  )
+                  .toDouble(),
+              min: AppSettings.fullscreenClockScaleOptions.first,
+              max: AppSettings.fullscreenClockScaleOptions.last,
+              divisions: AppSettings.fullscreenClockScaleOptions.length - 1,
               label: '${s.fullscreenClockScale.toStringAsFixed(1)}x',
               onChanged: (val) {
                 widget.onFullscreenClockScaleChanged?.call(val);

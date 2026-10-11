@@ -16,6 +16,15 @@ class AppSettings {
   ];
   static const motivationDelayOptions = [5, 10, 20, 30, 40, 60];
   static const goalReminderIntervalOptions = [30, 60, 120, 180, 240];
+  static const fullscreenClockScaleOptions = [
+    0.8,
+    1.0,
+    1.2,
+    1.4,
+    1.6,
+    1.8,
+    2.0,
+  ];
 
   static const rainSound = 'audio/rain.mp3';
   static const waterfallSound = 'audio/waterfall.mp3';

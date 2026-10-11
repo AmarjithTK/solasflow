@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../models/app_settings.dart';
 import '../theme/app_colors.dart';
 
 enum FullscreenFocusMode { clock, timer, moduleC }
@@ -244,15 +245,17 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
 
   void _cycleClockScale() {
     _onControlInteraction();
-    final scales = [0.8, 1.0, 1.25, 1.5, 2.0];
-    int nextIdx = 1;
-    for (int i = 0; i < scales.length; i++) {
-      if ((scales[i] - _clockScale).abs() < 0.05) {
-        nextIdx = (i + 1) % scales.length;
-        break;
+    final scales = AppSettings.fullscreenClockScaleOptions;
+    var closestIndex = 0;
+    var closestDistance = (scales.first - _clockScale).abs();
+    for (var i = 1; i < scales.length; i++) {
+      final distance = (scales[i] - _clockScale).abs();
+      if (distance < closestDistance) {
+        closestIndex = i;
+        closestDistance = distance;
       }
     }
-    final newScale = scales[nextIdx];
+    final newScale = scales[(closestIndex + 1) % scales.length];
     setState(() => _clockScale = newScale);
     widget.onClockScaleChanged?.call(newScale);
   }
