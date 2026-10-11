@@ -395,7 +395,7 @@ class SolasFlowApp extends ConsumerWidget {
         builder: (context) {
           return MaterialApp(
             onGenerateTitle: (context) =>
-                AppLocalizations.of(context)?.appTitle ?? 'SolasFlow',
+                AppLocalizations.of(context)!.appTitle,
             debugShowCheckedModeBanner: false,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -765,11 +765,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
       );
       unawaited(_timerRuntimeStore.save(_timerRuntime));
     } else if (!value) {
-      if (taggingOn &&
-          timerInterval != null &&
-          _sessionStartTime != null) {
+      if (taggingOn && timerInterval != null && _sessionStartTime != null) {
         final remaining = _timerRuntime.remainingAt(DateTime.now());
-        final elapsed = (_sessionStartRemainingSeconds ?? remaining) - remaining;
+        final elapsed =
+            (_sessionStartRemainingSeconds ?? remaining) - remaining;
         if (elapsed > 0) {
           _logCurrentSession(
             elapsed,
@@ -782,6 +781,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     _updateSettings((settings) => settings.copyWith(taggingOn: value));
   }
+
   String get sessionTag => _settings.sessionTag;
   set sessionTag(String value) =>
       _updateSettings((settings) => settings.copyWith(sessionTag: value));
@@ -848,8 +848,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   /// True while the focus fullscreen route is on top.
   bool _fullscreenFocusOpen = false;
-  final ValueNotifier<FullscreenFocusMode> _fullscreenFocusMode =
-      ValueNotifier(FullscreenFocusMode.clock);
+  final ValueNotifier<FullscreenFocusMode> _fullscreenFocusMode = ValueNotifier(
+    FullscreenFocusMode.clock,
+  );
 
   /// True when the timer has finished but the dialog hasn't been
   /// dismissed yet.  Used by the foreground notification to show
@@ -1091,10 +1092,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   String _formatMinutesAsTime(BuildContext context, int totalMinutes) {
     final normalized = totalMinutes % (24 * 60);
-    final time = TimeOfDay(
-      hour: normalized ~/ 60,
-      minute: normalized % 60,
-    );
+    final time = TimeOfDay(hour: normalized ~/ 60, minute: normalized % 60);
     return MaterialLocalizations.of(context).formatTimeOfDay(time);
   }
 
@@ -1229,7 +1227,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
       debugPrint('[ERROR] Speech engine change failed: $error\n$stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to change speech engine: $error')),
+          SnackBar(
+            content: Text(
+              _appLocalizations.mainSpeechEngineChangeFailed(error.toString()),
+            ),
+          ),
         );
       }
     }
@@ -1245,10 +1247,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
         );
       }
     } catch (error, stackTrace) {
-      debugPrint('[ERROR] Unable to load Settings voice engines: $error\n$stackTrace');
+      debugPrint(
+        '[ERROR] Unable to load Settings voice engines: $error\n$stackTrace',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to open Settings: $error')),
+          SnackBar(
+            content: Text(
+              _appLocalizations.mainSettingsOpenFailed(error.toString()),
+            ),
+          ),
         );
       }
       return;
@@ -1519,6 +1527,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       backupJson = jsonStr;
       final filePath = await _settingsService.exportToUserFolder(
         contents: jsonStr,
+        dialogTitle: _appLocalizations.settingsPanelChooseBackupFolder,
       );
       if (!mounted) return;
       if (filePath == null) return; // User cancelled directory picker
@@ -1526,12 +1535,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Backup Saved'),
+          title: Text(_appLocalizations.mainBackupSavedTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Settings exported successfully.'),
+              Text(_appLocalizations.mainSettingsExported),
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -1557,15 +1566,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 Navigator.of(ctx).pop();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('JSON copied to clipboard')),
+                    SnackBar(content: Text(_appLocalizations.mainJsonCopied)),
                   );
                 }
               },
-              child: const Text('Copy JSON'),
+              child: Text(_appLocalizations.mainCopyJson),
             ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Done'),
+              child: Text(_appLocalizations.mainDone),
             ),
           ],
         ),
@@ -1577,18 +1586,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
         final copyJson = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Backup failed'),
-            content: Text(
-              'The file could not be saved: $e. Copy the settings JSON instead?',
-            ),
+            title: Text(_appLocalizations.mainBackupFailedTitle),
+            content: Text(_appLocalizations.mainBackupFileFailed(e.toString())),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel'),
+                child: Text(_appLocalizations.mainCancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Copy JSON'),
+                child: Text(_appLocalizations.mainCopyJson),
               ),
             ],
           ),
@@ -1597,15 +1604,17 @@ class _MainScreenState extends ConsumerState<MainScreen>
           await Clipboard.setData(ClipboardData(text: failedBackupJson));
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('JSON copied to clipboard')),
+            SnackBar(content: Text(_appLocalizations.mainJsonCopied)),
           );
           return;
         }
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Backup failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_appLocalizations.mainBackupFailed(e.toString())),
+        ),
+      );
     }
   }
 
@@ -1620,20 +1629,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Restore Settings'),
-          content: const Text(
-            'This will replace the app preferences in this backup. '
-            'Local desktop offline-model selections are not included and will stay unchanged. '
-            'The restored preferences will take effect immediately. Continue?',
-          ),
+          title: Text(_appLocalizations.mainRestoreSettingsTitle),
+          content: Text(_appLocalizations.mainRestoreSettingsWarning),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
+              child: Text(_appLocalizations.mainCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Restore'),
+              child: Text(_appLocalizations.mainRestoreButton),
             ),
           ],
         ),
@@ -1643,13 +1648,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
       await _applyRestoredSettings(imported);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings restored successfully!')),
+        SnackBar(content: Text(_appLocalizations.mainSettingsRestored)),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_appLocalizations.mainRestoreFailed(e.toString())),
+        ),
+      );
     }
   }
 
@@ -1787,7 +1794,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
           );
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(DesktopService.alwaysOnTopNote)),
+              SnackBar(
+                content: Text(_appLocalizations.mainDesktopAlwaysOnTopNote),
+              ),
             );
           }
         case 'hide':
@@ -1799,7 +1808,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
       debugPrint('[ERROR] Desktop action $action failed: $error\n$stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Desktop action failed: $error')),
+          SnackBar(
+            content: Text(
+              _appLocalizations.mainDesktopActionFailed(error.toString()),
+            ),
+          ),
         );
       }
     }
@@ -2155,7 +2168,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Startup is incomplete: $error')),
+          SnackBar(
+            content: Text(
+              _appLocalizations.mainStartupIncomplete(error.toString()),
+            ),
+          ),
         );
       }
     }
@@ -2281,10 +2298,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           .clamp(0, 720 * 60);
 
   /// Log one uninterrupted, tagged timer run segment.
-  void _logCurrentSession(
-    int elapsedSeconds, {
-    required String sessionId,
-  }) {
+  void _logCurrentSession(int elapsedSeconds, {required String sessionId}) {
     final startedAt = _sessionStartTime;
     _sessionStartTime = null;
     _sessionStartRemainingSeconds = null;
@@ -2440,10 +2454,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
               DateTime.now().millisecondsSinceEpoch - receivedAtEpochMs;
           if (ageMs < 0 ||
               ageMs >= _widgetActionConfirmationWindow.inMilliseconds) {
-            await _widgetChannel.invokeMethod<bool>(
-              'ackWidgetAction',
-              {'id': id},
-            );
+            await _widgetChannel.invokeMethod<bool>('ackWidgetAction', {
+              'id': id,
+            });
             continue;
           }
         }
@@ -2692,12 +2705,17 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final isMl = _isMalayalamActive(preferredVoice);
     final testVoice = _resolveVoiceForNewAnnouncement(useMalayalam: isMl);
     if (isMl) {
-      speak('ഇത് ശബ്ദ പരിശോധനയാണ്. നിങ്ങളുടെ ടൈമർ ആരംഭിക്കാൻ തയ്യാറാണ്.', voice: testVoice);
+      speak(
+        'ഇത് ശബ്ദ പരിശോധനയാണ്. നിങ്ങളുടെ ടൈമർ ആരംഭിക്കാൻ തയ്യാറാണ്.',
+        voice: testVoice,
+      );
     } else {
-      speak('This is a voice test. Your focus timer is ready.', voice: testVoice);
+      speak(
+        'This is a voice test. Your focus timer is ready.',
+        voice: testVoice,
+      );
     }
   }
-
 
   Future<void> _stopTts() async {
     try {
@@ -2727,7 +2745,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
     if (forceRebind) {
       final previous = flutterTts;
-      await previous.stop().timeout(const Duration(seconds: 5), onTimeout: () {});
+      await previous.stop().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {},
+      );
       flutterTts = FlutterTts();
       _voiceSessionManager.resetSession();
       _ttsReady = false;
@@ -3000,6 +3021,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     unawaited(_stopTts());
   }
+
   void _cancelTimerCompletionSpeech() {
     speechQueue.removeWhere((item) => item.isTimerCompletion);
     if (_activeSpeechItem?.isTimerCompletion == true) {
@@ -3088,7 +3110,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
         nextStart = nextStart.add(const Duration(days: 1));
       }
       nightWindowTimer = Timer(nextStart.difference(now), () {
-        if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        if (WidgetsBinding.instance.lifecycleState !=
+            AppLifecycleState.resumed) {
           _startNightIdleTimerIfNeeded();
         }
       });
@@ -3139,6 +3162,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     unawaited(_audioService.stopNotification());
     _stopMobileRingtone();
   }
+
   void _refreshNightMuteSchedule() {
     _cancelNightIdleTimer();
     if (muteSpeechAfterMidnight && nightMuteMode == 'automatic') {
@@ -3150,7 +3174,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _applyAudioSettings();
     }
   }
-
 
   void _scheduleNightResumeAnnouncement() {
     nightResumeSpeechTimer?.cancel();
@@ -3266,11 +3289,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void _persistClockDeadline(DateTime? dueAt) {
     unawaited(
-      _timerRuntimeStore
-          .saveClockNextAt(dueAt)
-          .catchError((Object error, StackTrace stackTrace) {
-            debugPrint('[STATE] Failed to persist clock deadline: $error');
-          }),
+      _timerRuntimeStore.saveClockNextAt(dueAt).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        debugPrint('[STATE] Failed to persist clock deadline: $error');
+      }),
     );
   }
 
@@ -3415,7 +3439,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     final pv = getPreferredVoice();
     final useMalayalam = _isMalayalamActive(pv);
-    final timerVoice = _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
+    final timerVoice = _resolveVoiceForNewAnnouncement(
+      useMalayalam: useMalayalam,
+    );
     _speakAfterGap(
       text: text,
       isStillValid: () =>
@@ -3677,7 +3703,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
         final segmentStartSeconds = next.segmentStartRemainingSeconds > 0
             ? next.segmentStartRemainingSeconds
             : remaining;
-        final endAt = next.endAtEpochMs ?? DateTime.now().millisecondsSinceEpoch;
+        final endAt =
+            next.endAtEpochMs ?? DateTime.now().millisecondsSinceEpoch;
         _sessionStartTime = DateTime.fromMillisecondsSinceEpoch(
           endAt - segmentStartSeconds * 1000,
         );
@@ -3692,9 +3719,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       seconds = remaining;
       _activeTimerDurationSeconds = next.durationSeconds;
       if (next.durationSeconds > 0) {
-        sliderValue = ((next.durationSeconds + 59) ~/ 60)
-            .clamp(1, 720)
-            .toInt();
+        sliderValue = ((next.durationSeconds + 59) ~/ 60).clamp(1, 720).toInt();
       }
       if (next.status == TimerRuntimeStatus.finished) {
         _lastFinishedTimerDurationSeconds = next.durationSeconds;
@@ -3710,9 +3735,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       }
     });
     if (replacesCurrentRun && _timerFinishedDialogOpen) {
-      unawaited(
-        Navigator.of(context, rootNavigator: true).maybePop(),
-      );
+      unawaited(Navigator.of(context, rootNavigator: true).maybePop());
     }
     _applyAudioSettings();
     await _reconcileForeground(force: true);
@@ -3791,10 +3814,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           await _timerRuntimeStore.save(_timerRuntime);
           if (!mounted || workGeneration != _timerWorkGeneration) return;
           if (taggingOn && _sessionStartTime != null) {
-            _logCurrentSession(
-              _taggedElapsedSeconds(0),
-              sessionId: sessionId,
-            );
+            _logCurrentSession(_taggedElapsedSeconds(0), sessionId: sessionId);
             _sessionStartTime = DateTime.now();
             _sessionStartRemainingSeconds = nextSeconds;
           }
@@ -3844,17 +3864,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
       if (Platform.isLinux) {
         unawaited(
           _desktopService.notify(
-            'Timer finished',
-            '${(_lastFinishedTimerDurationSeconds / 60).ceil()} minute timer completed.',
+            _appLocalizations.mainTimerFinishedTitle,
+            _appLocalizations.mainDesktopTimerFinishedBody(
+              (_lastFinishedTimerDurationSeconds / 60).ceil(),
+            ),
           ),
         );
       }
 
       if (taggingOn && _sessionStartTime != null) {
-        _logCurrentSession(
-          _taggedElapsedSeconds(0),
-          sessionId: sessionId,
-        );
+        _logCurrentSession(_taggedElapsedSeconds(0), sessionId: sessionId);
       }
       if (timerSpeakOn) {
         final preferredVoice = getPreferredVoice();
@@ -3983,7 +4002,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             final minutes = int.tryParse(customController.text.trim());
             if (minutes == null || minutes < 1 || minutes > 720) {
               setDialogState(() {
-                inputError = 'Enter a value between 1 and 720';
+                inputError = _appLocalizations.mainTimerDurationRangeError;
               });
               return;
             }
@@ -4001,7 +4020,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Timer finished',
+                          _appLocalizations.mainTimerFinishedTitle,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 16),
@@ -4017,11 +4036,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
                                     ).pop(_lastFinishedTimerDurationSeconds);
                                   },
                                   icon: const Icon(Icons.replay_rounded),
-                                  label: const Text('Repeat Same Timer'),
+                                  label: Text(
+                                    _appLocalizations.mainRepeatSameTimer,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
-                                const Text(
-                                  'Start New Preset Timer',
+                                Text(
+                                  _appLocalizations.mainStartPresetTimer,
                                   style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
                                 const SizedBox(height: 10),
@@ -4044,7 +4065,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
                                       onPressed: () => Navigator.of(
                                         dialogContext,
                                       ).pop(minutes * 60),
-                                      child: Text('$minutes min'),
+                                      child: Text(
+                                        _appLocalizations.mainMinuteShort(
+                                          minutes,
+                                        ),
+                                      ),
                                     );
                                   },
                                 ),
@@ -4053,7 +4078,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
                                   controller: customController,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
-                                    labelText: 'Custom duration (minutes)',
+                                    labelText: _appLocalizations
+                                        .mainCustomDurationMinutes,
                                     errorText: inputError,
                                   ),
                                   onSubmitted: (_) => startCustomTimer(),
@@ -4073,8 +4099,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
                                   style: actionStyle,
                                   onPressed: () =>
                                       Navigator.of(dialogContext).pop(),
-                                  child: const Text(
-                                    'Close timer',
+                                  child: Text(
+                                    _appLocalizations.mainCloseTimer,
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
@@ -4084,8 +4110,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
                                 child: FilledButton(
                                   style: actionStyle,
                                   onPressed: startCustomTimer,
-                                  child: const Text(
-                                    'Start custom',
+                                  child: Text(
+                                    _appLocalizations.mainStartCustomTimer,
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
@@ -4130,8 +4156,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             borderRadius: BorderRadius.circular(16),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () =>
-                  Navigator.of(dialogContext).pop(mins * 60),
+              onTap: () => Navigator.of(dialogContext).pop(mins * 60),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -4139,7 +4164,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 ),
                 child: Center(
                   child: Text(
-                    '$mins min',
+                    _appLocalizations.mainMinuteShort(mins),
                     style: TextStyle(
                       color: fg,
                       fontSize: 18,
@@ -4172,7 +4197,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                       ),
                       const Spacer(),
                       Text(
-                        'Timer finished',
+                        _appLocalizations.mainTimerFinishedTitle,
                         style: TextStyle(
                           color: fg,
                           fontSize: 18,
@@ -4194,7 +4219,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                         ).pop(_lastFinishedTimerDurationSeconds);
                       },
                       icon: const Icon(Icons.replay_rounded),
-                      label: const Text('Repeat Same Timer'),
+                      label: Text(_appLocalizations.mainRepeatSameTimer),
                       style: FilledButton.styleFrom(
                         backgroundColor: primary,
                         foregroundColor: cs.onPrimary,
@@ -4212,7 +4237,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Start New Preset Timer',
+                      _appLocalizations.mainStartPresetTimer,
                       style: TextStyle(
                         color: variant,
                         fontSize: 13,
@@ -4243,7 +4268,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       icon: const Icon(Icons.close_rounded),
-                      label: const Text('Close timer'),
+                      label: Text(_appLocalizations.mainCloseTimer),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: fg,
                         side: BorderSide(color: outline),
@@ -4847,10 +4872,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Widget build(BuildContext context) {
     ref.watch(settingsProvider);
     final appTitle = currentTabIndex == 0
-        ? 'Clock'
+        ? _appLocalizations.clockTab
         : currentTabIndex == 1
-        ? 'Timer'
-        : 'Stopwatch';
+        ? _appLocalizations.timerTab
+        : _appLocalizations.stopwatchTab;
 
     return OrientationBuilder(
       builder: (context, orientation) {
@@ -4860,13 +4885,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
             title: Text(appTitle),
             leading: IconButton(
               icon: const Icon(Icons.menu_rounded),
-              tooltip: 'Settings',
+              tooltip: _appLocalizations.settingsTab,
               onPressed: _openSettings,
             ),
             actions: [
               IconButton(
                 onPressed: () => unawaited(_setSpeechMaster(!speechMasterOn)),
-                tooltip: speechMasterOn ? 'Turn audio off' : 'Turn audio on',
+                tooltip: speechMasterOn
+                    ? _appLocalizations.mainTurnAudioOff
+                    : _appLocalizations.mainTurnAudioOn,
                 icon: Icon(
                   speechMasterOn
                       ? Icons.volume_up_rounded
@@ -4875,43 +4902,43 @@ class _MainScreenState extends ConsumerState<MainScreen>
               ),
               IconButton(
                 onPressed: _openFullscreenFocus,
-                tooltip: 'Focus mode',
+                tooltip: _appLocalizations.focusMode,
                 icon: const Icon(Icons.fullscreen_rounded),
               ),
               if (Platform.isLinux)
                 PopupMenuButton<String>(
-                  tooltip: 'Desktop controls',
+                  tooltip: _appLocalizations.mainDesktopControls,
                   onSelected: (action) =>
                       unawaited(_handleDesktopAction(action)),
                   itemBuilder: (_) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'drive',
-                      child: Text('Drive Mode — compact'),
+                      child: Text(_appLocalizations.mainDriveModeCompact),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'drive_fullscreen',
-                      child: Text('Drive Mode — fullscreen'),
+                      child: Text(_appLocalizations.mainDriveModeFullscreen),
                     ),
                     const PopupMenuDivider(),
                     CheckedPopupMenuItem(
                       value: 'background',
                       checked: _desktopService.backgroundEnabled.value,
-                      child: const Text('Keep running when closed'),
+                      child: Text(_appLocalizations.mainKeepRunningWhenClosed),
                     ),
                     CheckedPopupMenuItem(
                       value: 'top',
                       checked: _desktopService.alwaysOnTop.value,
-                      child: const Text('Always on top (desktop hint)'),
+                      child: Text(_appLocalizations.mainAlwaysOnTopDesktopHint),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'hide',
-                      child: Text('Hide to background'),
+                      child: Text(_appLocalizations.mainHideToBackground),
                     ),
                   ],
                 ),
               IconButton(
                 onPressed: () => unawaited(_exitAppFully()),
-                tooltip: 'Exit',
+                tooltip: _appLocalizations.exitButton,
                 icon: const Icon(Icons.power_settings_new_rounded),
               ),
               const SizedBox(width: 4),
@@ -4950,18 +4977,18 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 _armedPresetValue = null;
               }
             },
-            destinations: const [
+            destinations: [
               NavDestination(
                 icon: Icons.watch_later_outlined,
-                label: 'Clock',
+                label: _appLocalizations.clockTab,
               ),
               NavDestination(
                 icon: Icons.hourglass_empty_rounded,
-                label: 'Timer',
+                label: _appLocalizations.timerTab,
               ),
               NavDestination(
                 icon: Icons.timer_outlined,
-                label: 'Stopwatch',
+                label: _appLocalizations.stopwatchTab,
               ),
             ],
           ),

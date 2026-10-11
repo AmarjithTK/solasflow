@@ -10,6 +10,8 @@ import '../models/speech_model_download_status.dart';
 
 import '../services/desktop_autostart_service.dart';
 
+import '../l10n/app_localizations.dart';
+
 class SettingsPanel extends ConsumerStatefulWidget {
   // ── Side-effect callbacks only (audio, TTS, foreground service) ──
   final List<SoundOption> soundList;
@@ -109,8 +111,7 @@ class SettingsPanel extends ConsumerStatefulWidget {
 }
 
 class _SettingsPanelState extends ConsumerState<SettingsPanel> {
-  final DesktopAutostartService _desktopAutostart =
-      DesktopAutostartService();
+  final DesktopAutostartService _desktopAutostart = DesktopAutostartService();
   DesktopAutostartStatus? _desktopAutostartStatus;
   String? _desktopAutostartError;
   bool _desktopAutostartBusy = false;
@@ -153,7 +154,6 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     super.dispose();
   }
 
-
   Future<void> _refreshDesktopAutostart() async {
     try {
       final status = await _desktopAutostart.status();
@@ -187,9 +187,21 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
   }
 
   Widget _desktopAutostartCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final status = _desktopAutostartStatus;
     final error = _desktopAutostartError;
+    final statusSummary = status == null
+        ? l10n.settingsPanelDesktopAutostartChecking
+        : !status.installed
+        ? l10n.settingsPanelAutostartNotConfigured
+        : !status.enabled
+        ? l10n.settingsPanelAutostartInstalledDisabled
+        : status.serviceState == 'failed'
+        ? l10n.settingsPanelAutostartFailed
+        : status.active
+        ? l10n.settingsPanelAutostartRunning
+        : l10n.settingsPanelAutostartNextLogin;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -199,21 +211,19 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Start with desktop',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          Text(
+            l10n.settingsPanelDesktopAutostartTitle,
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            error ??
-                status?.summary ??
-                'Checking systemd user service…',
+            error ?? statusSummary,
             style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Starts Solas Flow when you log in to your desktop. This is a per-user service and does not need administrator authorization.',
-            style: TextStyle(fontSize: 12),
+          Text(
+            l10n.settingsPanelDesktopAutostartDescription,
+            style: const TextStyle(fontSize: 12),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -231,17 +241,17 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.power_settings_new),
-                label: const Text('Enable'),
+                label: Text(l10n.settingsPanelEnable),
               ),
               OutlinedButton.icon(
                 onPressed: _desktopAutostartBusy || status?.installed != true
                     ? null
                     : () => _setDesktopAutostart(false),
                 icon: const Icon(Icons.delete_outline),
-                label: const Text('Remove'),
+                label: Text(l10n.settingsPanelRemove),
               ),
               IconButton(
-                tooltip: 'Refresh status',
+                tooltip: l10n.settingsPanelRefreshStatus,
                 onPressed: _desktopAutostartBusy
                     ? null
                     : _refreshDesktopAutostart,
@@ -261,13 +271,14 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
   Future<void> _changeDesktopModel({required bool clear}) async {
     if (_modelOperationBusy) return;
     final language = _desktopModelLanguage;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _modelOperationBusy = true);
     try {
       if (clear) {
         await widget.onClearDesktopModel(language);
       } else {
         final directory = await FilePicker.platform.getDirectoryPath(
-          dialogTitle: 'Choose a Sherpa-converted model folder',
+          dialogTitle: l10n.settingsPanelChooseModelFolder,
         );
         if (directory == null || !mounted) return;
         await widget.onImportDesktopModel(directory, language);
@@ -277,7 +288,10 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Offline model ${clear ? 'clear' : 'import'} failed: $error',
+              l10n.settingsPanelOfflineModelFailed(
+                clear ? l10n.settingsPanelClear : l10n.settingsPanelImport,
+                error.toString(),
+              ),
             ),
           ),
         );
@@ -287,8 +301,8 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     }
   }
 
-
   Widget _desktopModelCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -298,28 +312,33 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Local offline model',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          Text(
+            l10n.settingsPanelLocalOfflineModel,
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Import a trusted Sherpa-converted Piper/VITS folder or English Kokoro folder. '
-            'One self-contained ONNX file and tokens.txt are required; Kokoro also needs '
-            'voices.bin and an English lexicon. HF source weights and arbitrary ONNX models '
-            'are not supported. Only model data is copied; no imported code is executed.',
-            style: TextStyle(fontSize: 12),
+          Text(
+            l10n.settingsPanelOfflineModelDescription,
+            style: const TextStyle(fontSize: 12),
           ),
           const SizedBox(height: 8),
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'Model language'),
+            decoration: InputDecoration(
+              labelText: l10n.settingsPanelModelLanguage,
+            ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _desktopModelLanguage,
                 isExpanded: true,
-                items: const [
-                  DropdownMenuItem(value: 'en', child: Text('English')),
-                  DropdownMenuItem(value: 'ml', child: Text('Malayalam')),
+                items: [
+                  DropdownMenuItem(
+                    value: 'en',
+                    child: Text(l10n.settingsPanelEnglish),
+                  ),
+                  DropdownMenuItem(
+                    value: 'ml',
+                    child: Text(l10n.settingsPanelMalayalam),
+                  ),
                 ],
                 onChanged: _modelOperationBusy
                     ? null
@@ -352,13 +371,13 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                     ? null
                     : () => _changeDesktopModel(clear: false),
                 icon: const Icon(Icons.folder_open),
-                label: const Text('Import folder'),
+                label: Text(l10n.settingsPanelImportFolder),
               ),
               OutlinedButton(
                 onPressed: _modelOperationBusy
                     ? null
                     : () => _changeDesktopModel(clear: true),
-                child: const Text('Use built-in voice'),
+                child: Text(l10n.settingsPanelUseBuiltinVoice),
               ),
               OutlinedButton.icon(
                 onPressed: _modelOperationBusy
@@ -373,33 +392,74 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                       },
                 icon: const Icon(Icons.volume_up_outlined),
                 label: Text(
-                  'Test ${_desktopModelLanguage == 'ml' ? 'Malayalam' : 'English'}',
+                  l10n.settingsPanelTestLanguage(
+                    _desktopModelLanguage == 'ml'
+                        ? l10n.settingsPanelMalayalam
+                        : l10n.settingsPanelEnglish,
+                  ),
                 ),
               ),
             ],
           ),
-          const Text(
-            'Model language also sets and saves your speech language. '
-            'System-only mode bypasses offline models.',
-            style: TextStyle(fontSize: 11),
+          Text(
+            l10n.settingsPanelModelLanguageDescription,
+            style: const TextStyle(fontSize: 11),
           ),
         ],
       ),
     );
   }
 
-  String _getVolTitle(double v) {
-    if (v == 0.1) return 'Very Low';
-    if (v == 0.2) return 'Low';
-    if (v == 0.6) return 'Medium';
-    if (v == 0.8) return 'High';
-    return 'Very High';
+  String _getVolTitle(BuildContext context, double v) {
+    final l10n = AppLocalizations.of(context)!;
+    if (v == 0.1) return l10n.settingsPanelVeryLow;
+    if (v == 0.2) return l10n.settingsPanelLow;
+    if (v == 0.6) return l10n.settingsPanelMedium;
+    if (v == 0.8) return l10n.settingsPanelHigh;
+    return l10n.settingsPanelVeryHigh;
+  }
+
+  String _speechModelDownloadMessage(
+    SpeechModelDownloadStatus status,
+    AppLocalizations l10n,
+  ) {
+    String mebibytes(int bytes) =>
+        '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MiB';
+
+    switch (status.phase) {
+      case SpeechModelDownloadPhase.notDownloaded:
+        return l10n.settingsPanelDownloadNotDownloaded;
+      case SpeechModelDownloadPhase.downloading:
+        final amount = status.totalBytes > 0
+            ? '${mebibytes(status.receivedBytes)} / ${mebibytes(status.totalBytes)}'
+            : '${mebibytes(status.receivedBytes)} downloaded';
+        final percent = status.progress;
+        return percent == null
+            ? l10n.settingsPanelDownloadingKokoro(amount)
+            : l10n.settingsPanelDownloadingKokoroPercent(
+                (percent * 100).round(),
+                amount,
+              );
+      case SpeechModelDownloadPhase.verifying:
+        return l10n.settingsPanelDownloadVerifying;
+      case SpeechModelDownloadPhase.installing:
+        return l10n.settingsPanelDownloadInstalling;
+      case SpeechModelDownloadPhase.ready:
+        return l10n.settingsPanelDownloadReady;
+      case SpeechModelDownloadPhase.failed:
+        return l10n.settingsPanelDownloadFailed(
+          status.error ?? l10n.settingsPanelDownloadFailedFallback,
+        );
+      case SpeechModelDownloadPhase.cancelled:
+        return l10n.settingsPanelDownloadCancelled;
+    }
   }
 
   Widget _speechModelDownloadCard(
     BuildContext context,
     SpeechModelDownloadStatus status,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final canStart =
         status.phase == SpeechModelDownloadPhase.notDownloaded ||
@@ -422,7 +482,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Kokoro English voice',
+                  l10n.settingsPanelKokoroEnglishVoice,
                   style: TextStyle(
                     color: cs.onSurface,
                     fontWeight: FontWeight.w700,
@@ -433,7 +493,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           ),
           const SizedBox(height: 6),
           Text(
-            status.message,
+            _speechModelDownloadMessage(status, l10n),
             style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
@@ -457,12 +517,16 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                             ? Icons.refresh_rounded
                             : Icons.download_rounded,
                       ),
-                      label: Text(status.canRetry ? 'Retry' : 'Download'),
+                      label: Text(
+                        status.canRetry
+                            ? l10n.settingsPanelRetry
+                            : l10n.settingsPanelDownload,
+                      ),
                     )
                   : TextButton.icon(
                       onPressed: widget.onCancelEnglishVoiceDownload,
                       icon: const Icon(Icons.close_rounded),
-                      label: const Text('Cancel'),
+                      label: Text(l10n.settingsPanelCancel),
                     ),
             ),
         ],
@@ -470,88 +534,106 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     );
   }
 
-  String _soundTitle(String link) {
+  String _soundTitle(BuildContext context, String link) {
+    final l10n = AppLocalizations.of(context)!;
     for (final sound in widget.soundList) {
-      if (sound.link == link) return sound.title;
+      if (sound.link != link) continue;
+      return switch (link) {
+        'audio/rain.mp3' => l10n.settingsPanelSoundRain,
+        'audio/waterfall.mp3' => l10n.settingsPanelSoundWaterfall,
+        'audio/fire.mp3' => l10n.settingsPanelSoundFire,
+        'audio/stream.mp3' => l10n.settingsPanelSoundStream,
+        _ => sound.title,
+      };
     }
-    return widget.soundList.isEmpty ? 'None' : widget.soundList.first.title;
+    return widget.soundList.isEmpty
+        ? l10n.settingsPanelNone
+        : widget.soundList.first.title;
   }
 
-  String _voiceCharacterName(String name, String locale) {
+  String _voiceCharacterName(BuildContext context, String name, String locale) {
+    final l10n = AppLocalizations.of(context)!;
     final lower = name.toLowerCase();
     final isMl = locale.toLowerCase().startsWith('ml');
-    if (lower.contains('aoede')) return 'Aoede (Female 1 · Natural)';
-    if (lower.contains('kore')) return 'Kore (Female 2 · Clear)';
-    if (lower.contains('puck')) return 'Puck (Male 1 · Upbeat)';
-    if (lower.contains('charon')) return 'Charon (Male 2 · Deep)';
+    if (lower.contains('aoede')) return l10n.settingsPanelAoedeVoice;
+    if (lower.contains('kore')) return l10n.settingsPanelKoreVoice;
+    if (lower.contains('puck')) return l10n.settingsPanelPuckVoice;
+    if (lower.contains('charon')) return l10n.settingsPanelCharonVoice;
     if (lower.contains('veena')) return 'Veena';
     if (lower.contains('rishi')) return 'Rishi';
-    if (lower.contains('meera')) return 'Piper Meera (Female)';
-    if (lower.contains('arjun')) return 'Piper Arjun (Male)';
-    if (lower.contains('lessac')) return 'Piper Lessac (Female)';
-    if (lower.contains('ryan')) return 'Piper Ryan (Male)';
-    if (lower.contains('bella')) return 'Kokoro Bella (US Female)';
-    if (lower.contains('adam')) return 'Kokoro Adam (US Male)';
-    if (lower.contains('emma')) return 'Kokoro Emma (UK Female)';
-    if (lower.contains('george')) return 'Kokoro George (UK Male)';
-    if (lower.contains('maple')) return 'Kokoro Maple (US Female)';
-    if (lower.contains('sol')) return 'Kokoro Sol (US Female)';
-    if (lower.contains('vale')) return 'Kokoro Vale (UK Female)';
+    if (lower.contains('meera')) return l10n.settingsPanelPiperMeeraVoice;
+    if (lower.contains('arjun')) return l10n.settingsPanelPiperArjunVoice;
+    if (lower.contains('lessac')) return l10n.settingsPanelPiperLessacVoice;
+    if (lower.contains('ryan')) return l10n.settingsPanelPiperRyanVoice;
+    if (lower.contains('bella')) return l10n.settingsPanelKokoroBellaVoice;
+    if (lower.contains('adam')) return l10n.settingsPanelKokoroAdamVoice;
+    if (lower.contains('emma')) return l10n.settingsPanelKokoroEmmaVoice;
+    if (lower.contains('george')) return l10n.settingsPanelKokoroGeorgeVoice;
+    if (lower.contains('maple')) return l10n.settingsPanelKokoroMapleVoice;
+    if (lower.contains('sol')) return l10n.settingsPanelKokoroSolVoice;
+    if (lower.contains('vale')) return l10n.settingsPanelKokoroValeVoice;
     if (isMl) {
-      if (lower.contains('female')) return 'Malayalam Female';
-      if (lower.contains('male')) return 'Malayalam Male';
-      return 'Malayalam Native';
+      if (lower.contains('female')) return l10n.settingsPanelMalayalamFemale;
+      if (lower.contains('male')) return l10n.settingsPanelMalayalamMale;
+      return l10n.settingsPanelMalayalamNative;
     }
-    if (lower.contains('female')) return 'Female';
-    if (lower.contains('male')) return 'Male';
-    if (locale.toLowerCase().startsWith('en-in')) return 'Indian English';
-    if (locale.toLowerCase().startsWith('en-us')) return 'US English';
-    if (locale.toLowerCase().startsWith('en-gb')) return 'UK English';
+    if (lower.contains('female')) return l10n.settingsPanelFemale;
+    if (lower.contains('male')) return l10n.settingsPanelMale;
+    if (locale.toLowerCase().startsWith('en-in'))
+      return l10n.settingsPanelIndianEnglish;
+    if (locale.toLowerCase().startsWith('en-us'))
+      return l10n.settingsPanelUsEnglish;
+    if (locale.toLowerCase().startsWith('en-gb'))
+      return l10n.settingsPanelUkEnglish;
     return name;
   }
 
-  String _speechEngineLabel(String value) {
+  String _speechEngineLabel(BuildContext context, String value) {
+    final l10n = AppLocalizations.of(context)!;
     switch (value) {
       case 'system_only':
-        return 'System TTS only';
+        return l10n.settingsPanelSystemTtsOnly;
       case 'sherpa_only':
-        return 'Sherpa-ONNX only';
+        return l10n.settingsPanelSherpaOnly;
       case 'auto':
-        return 'Auto (best available)';
+        return l10n.settingsPanelAutoBestAvailable;
       case 'com.google.android.tts':
-        return 'Google Speech Services';
+        return l10n.settingsPanelGoogleSpeechServices;
       case 'com.samsung.SMT':
-        return 'Samsung Text-to-Speech';
+        return l10n.settingsPanelSamsungTextToSpeech;
       default:
         if (value.startsWith('com.')) {
           final parts = value.split('.');
           return parts.length > 1 ? parts.sublist(1).join(' ') : value;
         }
-        return value.isNotEmpty ? value : 'Auto';
+        return value.isNotEmpty ? value : l10n.settingsPanelAuto;
     }
   }
 
-  String _voiceListLabel(String value) {
+  String _voiceListLabel(BuildContext context, String value) {
+    final l10n = AppLocalizations.of(context)!;
     switch (value) {
       case 'english':
-        return 'English';
+        return l10n.settingsPanelEnglish;
       case 'malayalam':
-        return 'Malayalam';
+        return l10n.settingsPanelMalayalam;
       default:
-        return 'Auto';
+        return l10n.settingsPanelAuto;
     }
   }
 
-  String _favoriteVoiceLabel() {
+  String _favoriteVoiceLabel(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final s = ref.read(settingsProvider);
     final fav = s.favoriteVoiceName;
     if (fav == null || fav == '__auto__' || fav == '__rotate__') {
       final lang = s.voiceListMode.toLowerCase();
-      if (lang == 'malayalam') return 'Rotate all Malayalam voices (Default)';
-      if (lang == 'english') return 'Rotate voices (Default)';
-      return 'Rotate voices (Default)';
+      if (lang == 'malayalam')
+        return l10n.settingsPanelRotateAllMalayalamVoices;
+      if (lang == 'english') return l10n.settingsPanelRotateVoicesDefault;
+      return l10n.settingsPanelRotateVoicesDefault;
     }
-    return '${_voiceCharacterName(s.favoriteVoiceName!, s.favoriteVoiceLocale ?? '')} - ${s.favoriteVoiceLocale ?? ''}';
+    return '${_voiceCharacterName(context, s.favoriteVoiceName!, s.favoriteVoiceLocale ?? '')} - ${s.favoriteVoiceLocale ?? ''}';
   }
 
   String _favoriteVoiceKey() {
@@ -567,27 +649,48 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final s = ref.watch(settingsProvider);
 
     final speechEngineOptions = <(String, String, String?)>[
-      ('auto', 'Auto (System default)', 'Use device default speech engine'),
-      ('system_only', 'System TTS only', 'Use the device speech engine'),
+      (
+        'auto',
+        l10n.settingsPanelAutoSystemDefault,
+        l10n.settingsPanelUseDeviceDefaultEngine,
+      ),
+      (
+        'system_only',
+        l10n.settingsPanelSystemTtsOnly,
+        l10n.settingsPanelUseDeviceSpeechEngine,
+      ),
       for (final engine in widget.availableEngines)
         if (engine != 'auto' &&
             engine != 'system_only' &&
             engine != 'sherpa_only')
-          (engine, _speechEngineLabel(engine), engine),
+          (engine, _speechEngineLabel(context, engine), engine),
       if (!kIsWeb)
-        ('sherpa_only', 'Sherpa-ONNX only', 'Linux/Windows fallback voice'),
+        (
+          'sherpa_only',
+          l10n.settingsPanelSherpaOnly,
+          l10n.settingsPanelFallbackVoicePlatforms,
+        ),
     ];
     final voiceModeOptions = <(String, String, String?)>[
-      ('auto', 'Auto', 'Automatically pick based on content'),
-      ('english', 'English', null),
-      ('malayalam', 'Malayalam', null),
+      ('auto', l10n.settingsPanelAuto, l10n.settingsPanelAutoVoiceDescription),
+      ('english', l10n.settingsPanelEnglish, null),
+      ('malayalam', l10n.settingsPanelMalayalam, null),
     ];
     final nightModeOptions = <(String, String, String?)>[
-      ('manual', 'Manual mode', 'Use the selected quiet hours'),
-      ('automatic', 'Automatic mode', 'Mute after idle time at night'),
+      (
+        'manual',
+        l10n.settingsPanelManualMode,
+        l10n.settingsPanelSelectedQuietHours,
+      ),
+      (
+        'automatic',
+        l10n.settingsPanelAutomaticMode,
+        l10n.settingsPanelMuteAfterNightIdle,
+      ),
     ];
 
     final currentLanguageMode = s.voiceListMode.toLowerCase();
@@ -604,7 +707,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
       languageVoices = ml.isNotEmpty
           ? ml
           : [
-              {'name': 'Standard Malayalam', 'locale': 'ml-IN'},
+              {'name': l10n.settingsPanelStandardMalayalam, 'locale': 'ml-IN'},
             ];
     } else if (currentLanguageMode == 'english') {
       languageVoices = availableVoices.where((v) {
@@ -633,7 +736,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         if (ml.isNotEmpty)
           ...ml
         else
-          {'name': 'Standard Malayalam', 'locale': 'ml-IN'},
+          {'name': l10n.settingsPanelStandardMalayalam, 'locale': 'ml-IN'},
         ...en,
       ];
     }
@@ -642,28 +745,29 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
       (
         '__rotate__',
         currentLanguageMode == 'malayalam'
-            ? 'Rotate all Malayalam voices (Default)'
-            : 'Rotate voices (Different each time)',
-        'Alternates different voices for each announcement',
+            ? l10n.settingsPanelRotateAllMalayalamVoices
+            : l10n.settingsPanelRotateVoicesDefault,
+        l10n.settingsPanelAlternatesVoices,
       ),
       ...languageVoices.map((voice) {
-        final name = voice['name']?.toString() ?? 'Unknown';
+        final name =
+            voice['name']?.toString() ?? l10n.settingsPanelUnknownVoice;
         final locale = voice['locale']?.toString() ?? 'en';
         final key = '$name|$locale';
-        return (key, _voiceCharacterName(name, locale), name);
+        return (key, _voiceCharacterName(context, name, locale), name);
       }),
     ];
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.settingsTab), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           _settingsSwitch(
             context,
             icon: Icons.dark_mode_rounded,
-            title: 'Dark theme',
-            subtitle: 'Use dark colors throughout the app',
+            title: l10n.darkThemeLabel,
+            subtitle: l10n.settingsPanelDarkThemeDescription,
             value: s.appDarkTheme,
             onChanged: widget.onAppDarkThemeChanged,
           ),
@@ -673,8 +777,10 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             icon: s.speechMasterOn
                 ? Icons.volume_up_rounded
                 : Icons.volume_off_rounded,
-            title: 'Master Audio',
-            subtitle: s.speechMasterOn ? 'All audio on' : 'All audio off',
+            title: l10n.settingsPanelMasterAudio,
+            subtitle: s.speechMasterOn
+                ? l10n.settingsPanelAllAudioOn
+                : l10n.settingsPanelAllAudioOff,
             value: s.speechMasterOn,
             onChanged: (val) {
               widget.onSpeechMasterOnChanged(val);
@@ -684,10 +790,12 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsSwitch(
             context,
             icon: Icons.flag_rounded,
-            title: 'Goal reminders',
+            title: l10n.settingsPanelGoalReminders,
             subtitle: s.goalReminderItems.isEmpty
-                ? 'Add a goal below to enable reminders'
-                : 'Speak a saved goal every ${s.goalReminderIntervalMins} minutes',
+                ? l10n.settingsPanelAddGoalToEnableReminders
+                : l10n.settingsPanelSpeakSavedGoalEvery(
+                    s.goalReminderIntervalMins,
+                  ),
             value: s.goalReminderOn,
             onChanged: s.goalReminderItems.isEmpty
                 ? null
@@ -697,14 +805,20 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsOption(
             context,
             icon: Icons.schedule_rounded,
-            title: 'Goal reminder interval',
-            value: '${s.goalReminderIntervalMins} min',
+            title: l10n.settingsPanelGoalReminderInterval,
+            value: l10n.clockPanelMinutes(s.goalReminderIntervalMins),
             onTap: () => _showStringPicker(
               context,
-              title: 'Goal reminder interval',
+              title: l10n.settingsPanelGoalReminderInterval,
               currentValue: s.goalReminderIntervalMins.toString(),
               options: widget.goalReminderIntervalOptions
-                  .map((minutes) => (minutes.toString(), '$minutes minutes', null))
+                  .map(
+                    (minutes) => (
+                      minutes.toString(),
+                      l10n.clockPanelMinutes(minutes),
+                      null,
+                    ),
+                  )
                   .toList(),
               onChanged: (value) {
                 final minutes = int.tryParse(value ?? '');
@@ -718,16 +832,16 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsOption(
             context,
             icon: Icons.playlist_add_rounded,
-            title: 'Add a goal',
-            value: 'Add',
+            title: l10n.settingsPanelAddGoal,
+            value: l10n.settingsPanelAdd,
             onTap: () => _addGoalReminder(context, s.goalReminderItems),
           ),
           if (s.goalReminderItems.isEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(72, 0, 16, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(72, 0, 16, 12),
               child: Text(
-                'No goals saved yet.',
-                style: TextStyle(fontSize: 12),
+                l10n.settingsPanelNoGoalsSaved,
+                style: const TextStyle(fontSize: 12),
               ),
             ),
           for (final goal in s.goalReminderItems)
@@ -736,7 +850,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               contentPadding: const EdgeInsets.only(left: 72, right: 8),
               title: Text(goal),
               trailing: IconButton(
-                tooltip: 'Remove goal',
+                tooltip: l10n.settingsPanelRemoveGoal,
                 icon: const Icon(Icons.close_rounded),
                 onPressed: () => widget.onGoalReminderItemsChanged(
                   s.goalReminderItems.where((item) => item != goal).toList(),
@@ -747,74 +861,67 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsOption(
             context,
             icon: Icons.music_note_rounded,
-            title: 'Background sound',
-            value: _soundTitle(s.soundChosen),
+            title: l10n.soundLabel,
+            value: _soundTitle(context, s.soundChosen),
             onTap: () => _showStringPicker(
               context,
-              title: 'Background sound',
+              title: l10n.soundLabel,
               currentValue: s.soundChosen,
               options: widget.soundList
-                  .map((s) => (s.link, s.title, null))
+                  .map(
+                    (sound) =>
+                        (sound.link, _soundTitle(context, sound.link), null),
+                  )
                   .toList(),
-              onChanged: (val) {
-                widget.onSoundChanged(val);
-              },
+              onChanged: widget.onSoundChanged,
             ),
           ),
           _settingsDivider(context),
           _settingsOption(
             context,
             icon: Icons.volume_up_rounded,
-            title: 'Noise volume',
-            value: _getVolTitle(s.noiseVolume),
+            title: l10n.settingsPanelNoiseVolume,
+            value: _getVolTitle(context, s.noiseVolume),
             onTap: () => _showDoublePicker(
               context,
-              title: 'Noise volume',
+              title: l10n.settingsPanelNoiseVolume,
               currentValue: s.noiseVolume,
-              onChanged: (val) {
-                widget.onNoiseVolumeChanged(val);
-              },
+              onChanged: widget.onNoiseVolumeChanged,
             ),
           ),
           _settingsDivider(context),
           _settingsOption(
             context,
             icon: Icons.record_voice_over_rounded,
-            title: 'Speech volume',
-            value: _getVolTitle(s.speakVolume),
+            title: l10n.settingsPanelSpeechVolume,
+            value: _getVolTitle(context, s.speakVolume),
             onTap: () => _showDoublePicker(
               context,
-              title: 'Speech volume',
+              title: l10n.settingsPanelSpeechVolume,
               currentValue: s.speakVolume,
-              onChanged: (val) {
-                widget.onSpeakVolumeChanged(val);
-              },
+              onChanged: widget.onSpeakVolumeChanged,
             ),
           ),
           _settingsDivider(context),
           _settingsSwitch(
             context,
             icon: Icons.volume_up_rounded,
-            title: 'Boost TTS Volume',
-            subtitle: 'Maximum volume for speech announcements only',
+            title: l10n.settingsPanelBoostTtsVolume,
+            subtitle: l10n.settingsPanelMaximumSpeechVolumeDescription,
             value: s.maximumSpeechVolume,
-            onChanged: (val) {
-              widget.onMaximumSpeechVolumeChanged(val);
-            },
+            onChanged: widget.onMaximumSpeechVolumeChanged,
           ),
           _settingsOption(
             context,
             icon: Icons.spatial_audio_off_rounded,
-            title: 'Speech engine',
-            value: _speechEngineLabel(s.speechEngineMode),
+            title: l10n.settingsPanelSpeechEngine,
+            value: _speechEngineLabel(context, s.speechEngineMode),
             onTap: () => _showStringPicker(
               context,
-              title: 'Speech engine',
+              title: l10n.settingsPanelSpeechEngine,
               currentValue: s.speechEngineMode,
               options: speechEngineOptions,
-              onChanged: (val) {
-                widget.onSpeechEngineModeChanged(val);
-              },
+              onChanged: widget.onSpeechEngineModeChanged,
             ),
           ),
           if (widget.speechEngineRuntime.value.isNotEmpty)
@@ -848,40 +955,36 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsOption(
             context,
             icon: Icons.play_circle_outline_rounded,
-            title: 'Test voice',
-            value: 'Play sample',
+            title: l10n.settingsPanelTestVoice,
+            value: l10n.settingsPanelPlaySample,
             onTap: widget.onTestSpeech,
           ),
           _settingsDivider(context),
           _settingsOption(
             context,
             icon: Icons.language_rounded,
-            title: 'Language list',
-            value: _voiceListLabel(s.voiceListMode),
+            title: l10n.settingsPanelLanguageList,
+            value: _voiceListLabel(context, s.voiceListMode),
             onTap: () => _showStringPicker(
               context,
-              title: 'Language list',
+              title: l10n.settingsPanelLanguageList,
               currentValue: s.voiceListMode,
               options: voiceModeOptions,
-              onChanged: (val) {
-                widget.onVoiceListModeChanged(val);
-              },
+              onChanged: widget.onVoiceListModeChanged,
             ),
           ),
           _settingsDivider(context),
           _settingsOption(
             context,
             icon: Icons.person_search_rounded,
-            title: 'Preferred voice',
-            value: _favoriteVoiceLabel(),
+            title: l10n.settingsPanelPreferredVoice,
+            value: _favoriteVoiceLabel(context),
             onTap: () => _showStringPicker(
               context,
-              title: 'Voice',
+              title: l10n.settingsPanelVoice,
               currentValue: _favoriteVoiceKey(),
               options: voiceOptions,
-              onChanged: (val) {
-                widget.onFavoriteVoiceChanged(val);
-              },
+              onChanged: widget.onFavoriteVoiceChanged,
             ),
           ),
           Padding(
@@ -889,7 +992,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             child: Row(
               children: [
                 Text(
-                  'Font size',
+                  l10n.settingsPanelFontSize,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -922,7 +1025,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsSwitch(
             context,
             icon: Icons.dark_mode_rounded,
-            title: 'Dark fullscreen',
+            title: l10n.focusViewDarkTheme,
             value: s.fullscreenDarkTheme,
             onChanged: (val) {
               widget.onFullscreenDarkThemeChanged(val);
@@ -933,7 +1036,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             _settingsSwitch(
               context,
               icon: Icons.brightness_4_rounded,
-              title: 'Dim brightness',
+              title: l10n.focusViewDimBrightness,
               value: s.fullscreenDimBrightness,
               onChanged: (val) {
                 widget.onFullscreenDimBrightnessChanged(val);
@@ -980,7 +1083,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsSwitch(
             context,
             icon: Icons.screen_rotation_rounded,
-            title: 'Start landscape',
+            title: l10n.settingsPanelStartLandscape,
             value: s.fullscreenStartLandscape,
             onChanged: (val) {
               widget.onFullscreenStartLandscapeChanged(val);
@@ -990,8 +1093,8 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsSwitch(
             context,
             icon: Icons.access_time_rounded,
-            title: 'Show clock in fullscreen',
-            subtitle: 'Display current time overlay in fullscreen focus',
+            title: l10n.settingsPanelShowClockFullscreen,
+            subtitle: l10n.settingsPanelShowClockFullscreenDescription,
             value: s.fullscreenShowClock,
             onChanged: (val) {
               widget.onFullscreenShowClockChanged?.call(val);
@@ -1003,7 +1106,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               child: Row(
                 children: [
                   Text(
-                    'Fullscreen clock size',
+                    l10n.settingsPanelFullscreenClockSize,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -1037,8 +1140,8 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           _settingsSwitch(
             context,
             icon: Icons.nightlight_round,
-            title: 'Enable sleep mode',
-            subtitle: 'Quiet hours for speech',
+            title: l10n.settingsPanelEnableSleepMode,
+            subtitle: l10n.settingsPanelQuietHoursSpeech,
             value: s.muteSpeechAfterMidnight,
             onChanged: (val) {
               widget.onMuteSpeechAfterMidnightChanged(val);
@@ -1049,11 +1152,13 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             _settingsOption(
               context,
               icon: Icons.bedtime_rounded,
-              title: 'Mode',
-              value: s.nightMuteMode == 'automatic' ? 'Automatic' : 'Manual',
+              title: l10n.settingsPanelMode,
+              value: s.nightMuteMode == 'automatic'
+                  ? l10n.settingsPanelAutomaticMode
+                  : l10n.settingsPanelManualMode,
               onTap: () => _showStringPicker(
                 context,
-                title: 'Sleep mode',
+                title: l10n.settingsPanelSleepMode,
                 currentValue: s.nightMuteMode,
                 options: nightModeOptions,
                 onChanged: (val) {
@@ -1065,7 +1170,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             _settingsOption(
               context,
               icon: Icons.schedule_rounded,
-              title: 'Starts at',
+              title: l10n.sleepStartLabel,
               value: widget.sleepStartLabel,
               onTap: widget.onPickSleepStart,
             ),
@@ -1073,7 +1178,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             _settingsOption(
               context,
               icon: Icons.alarm_rounded,
-              title: 'Ends at',
+              title: l10n.sleepEndLabel,
               value: widget.sleepEndLabel,
               onTap: widget.onPickSleepEnd,
             ),
@@ -1081,7 +1186,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           ListTile(
             leading: Icon(Icons.backup_rounded, color: cs.primary, size: 22),
             title: Text(
-              'Backup app settings',
+              l10n.settingsPanelBackupAppSettings,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -1089,7 +1194,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               ),
             ),
             subtitle: Text(
-              'Export app preferences as JSON. Desktop offline-model selections are not included.',
+              l10n.settingsPanelBackupDescription,
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             trailing: Icon(
@@ -1103,7 +1208,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           ListTile(
             leading: Icon(Icons.restore_rounded, color: cs.primary, size: 22),
             title: Text(
-              'Restore app settings',
+              l10n.settingsPanelRestoreAppSettings,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -1111,7 +1216,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               ),
             ),
             subtitle: Text(
-              'Import preferences from a JSON backup; desktop offline-model selections stay unchanged.',
+              l10n.settingsPanelRestoreDescription,
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             trailing: Icon(
@@ -1129,7 +1234,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               size: 22,
             ),
             title: Text(
-              'Help / Working',
+              l10n.helpTitle,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -1185,25 +1290,26 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     List<String> currentItems,
   ) async {
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
     final goal = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Add a goal'),
+        title: Text(l10n.settingsPanelAddGoal),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(labelText: 'Goal'),
+          decoration: InputDecoration(labelText: l10n.settingsPanelGoalField),
           onSubmitted: (value) => Navigator.of(dialogContext).pop(value),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.settingsPanelCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('Add'),
+            child: Text(l10n.settingsPanelAdd),
           ),
         ],
       ),
@@ -1429,7 +1535,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                         color: selected ? cs.primary : cs.onSurfaceVariant,
                       ),
                       title: Text(
-                        _getVolTitle(volume),
+                        _getVolTitle(context, volume),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,

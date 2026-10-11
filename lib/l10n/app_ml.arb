@@ -23,7 +23,6 @@
   "volumeLabel": "ശബ്ദ തീവ്രത",
   "voiceLabel": "വോയിസ്",
   "darkThemeLabel": "ഡാർക്ക് തീം",
-  "motivationLabel": "പ്രചോദനം കാണിക്കുക",
   "motivationCategoryLabel": "പ്രചോദന വിഭാഗം",
   "motivationDelayLabel": "ഉദ്ധരണി ഇടവേള (സെക്കൻഡിൽ)",
   "clockIntervalLabel": "ക്ലോക്ക് ഇടവേള (മിനിറ്റിൽ)",
@@ -31,9 +30,6 @@
   "nightMuteMode": "രാത്രിയിലെ നിശ്ശബ്ദ മോഡ്",
   "sleepStartLabel": "ഉറങ്ങാൻ തുടങ്ങുന്ന സമയം",
   "sleepEndLabel": "ഉറക്കമുണരുന്ന സമയം",
-  "longPressToDone": "പൂർത്തിയായെന്ന് അടയാളപ്പെടുത്താൻ ടൈമറിൽ ദീർഘനേരം അമർത്തുക",
-  "sessionCompleted": "സെഷൻ പൂർത്തിയായി!",
-  "motivationQuote": "പ്രചോദനം",
   "today": "ഇന്ന്",
   "yesterday": "ഇന്നലെ",
   "quickActionStart25m": "25 മിനിറ്റ് ആരംഭിക്കുക",
@@ -65,5 +61,540 @@
   "repeatButton": "ആവർത്തിക്കുക",
   "dismissButton": "അടയ്ക്കുക",
   "openButton": "തുറക്കുക",
-  "exitButton": "പുറത്തുകടക്കുക"
+  "exitButton": "പുറത്തുകടക്കുക",
+  "stopwatchTab": "സ്റ്റോപ്പ്‌വാച്ച്",
+  "mainSpeechEngineChangeFailed": "സംസാര എഞ്ചിൻ മാറ്റാനായില്ല: {error}",
+  "@mainSpeechEngineChangeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainSettingsOpenFailed": "ക്രമീകരണങ്ങൾ തുറക്കാനായില്ല: {error}",
+  "@mainSettingsOpenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainBackupSavedTitle": "ബാക്കപ്പ് സംരക്ഷിച്ചു",
+  "mainSettingsExported": "ക്രമീകരണങ്ങൾ വിജയകരമായി എക്സ്പോർട്ട് ചെയ്തു.",
+  "mainJsonCopied": "JSON ക്ലിപ്പ്ബോർഡിലേക്ക് പകർത്തി",
+  "mainCopyJson": "JSON പകർത്തുക",
+  "mainDone": "പൂർത്തിയായി",
+  "mainBackupFailedTitle": "ബാക്കപ്പ് പരാജയപ്പെട്ടു",
+  "mainBackupFileFailed": "ഫയൽ സംരക്ഷിക്കാനായില്ല: {error}. പകരം ക്രമീകരണ JSON പകർത്തണോ?",
+  "@mainBackupFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainCancel": "റദ്ദാക്കുക",
+  "mainBackupFailed": "ബാക്കപ്പ് പരാജയപ്പെട്ടു: {error}",
+  "@mainBackupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainRestoreSettingsTitle": "ക്രമീകരണങ്ങൾ പുനഃസ്ഥാപിക്കുക",
+  "mainRestoreSettingsWarning": "ഈ ബാക്കപ്പിലുള്ള ആപ്പ് മുൻഗണനകൾ നിലവിലുള്ളവയ്ക്ക് പകരമാകും. ഡെസ്‌ക്‌ടോപ്പിലെ പ്രാദേശിക ഓഫ്‌ലൈൻ മോഡൽ തിരഞ്ഞെടുപ്പുകൾ ഉൾപ്പെടില്ല; അവ മാറ്റമില്ലാതെ തുടരും. പുനഃസ്ഥാപിച്ച മുൻഗണനകൾ ഉടൻ പ്രാബല്യത്തിൽ വരും. തുടരട്ടേ?",
+  "mainRestoreButton": "പുനഃസ്ഥാപിക്കുക",
+  "mainSettingsRestored": "ക്രമീകരണങ്ങൾ വിജയകരമായി പുനഃസ്ഥാപിച്ചു!",
+  "mainRestoreFailed": "പുനഃസ്ഥാപിക്കൽ പരാജയപ്പെട്ടു: {error}",
+  "@mainRestoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainDesktopAlwaysOnTopNote": "എല്ലായ്പ്പോഴും മുകളിൽ എന്നത് വിൻഡോ മാനേജറിനുള്ള ഒരു സൂചന മാത്രമാണ്. ചില Wayland ഡെസ്‌ക്‌ടോപ്പുകൾ ഇത് അവഗണിക്കും; ആവശ്യമെങ്കിൽ കമ്പോസിറ്ററിലെ വിൻഡോ നിയമങ്ങൾ ഉപയോഗിക്കുക.",
+  "mainDesktopActionFailed": "ഡെസ്‌ക്‌ടോപ്പ് പ്രവർത്തനം പരാജയപ്പെട്ടു: {error}",
+  "@mainDesktopActionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainStartupIncomplete": "ആരംഭിക്കൽ പൂർത്തിയായില്ല: {error}",
+  "@mainStartupIncomplete": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainTimerDurationRangeError": "1 മുതൽ 720 വരെയുള്ള മൂല്യം നൽകുക",
+  "mainTimerFinishedTitle": "ടൈമർ പൂർത്തിയായി",
+  "mainRepeatSameTimer": "അതേ ടൈമർ വീണ്ടും ആവർത്തിക്കുക",
+  "mainStartPresetTimer": "പുതിയ മുൻസജ്ജ ടൈമർ ആരംഭിക്കുക",
+  "mainMinuteShort": "{minutes} മിനിറ്റ്",
+  "@mainMinuteShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "mainCustomDurationMinutes": "ഇഷ്ടാനുസൃത ദൈർഘ്യം (മിനിറ്റുകൾ)",
+  "mainCloseTimer": "ടൈമർ അടയ്ക്കുക",
+  "mainStartCustomTimer": "ഇഷ്ടാനുസൃതമായി ആരംഭിക്കുക",
+  "mainTurnAudioOn": "ഓഡിയോ ഓൺ ചെയ്യുക",
+  "mainTurnAudioOff": "ഓഡിയോ ഓഫ് ചെയ്യുക",
+  "mainDesktopControls": "ഡെസ്‌ക്‌ടോപ്പ് നിയന്ത്രണങ്ങൾ",
+  "mainDriveModeCompact": "ഡ്രൈവ് മോഡ് — ഒതുക്കമുള്ളത്",
+  "mainDriveModeFullscreen": "ഡ്രൈവ് മോഡ് — പൂർണ്ണസ്‌ക്രീൻ",
+  "mainKeepRunningWhenClosed": "അടച്ചാലും പ്രവർത്തിപ്പിക്കുക",
+  "mainAlwaysOnTopDesktopHint": "എല്ലായ്പ്പോഴും മുകളിൽ (ഡെസ്‌ക്‌ടോപ്പ് സൂചന)",
+  "mainHideToBackground": "പശ്ചാത്തലത്തിലേക്ക് മറയ്ക്കുക",
+  "dashboardTimeUtilization": "സമയ വിനിയോഗം",
+  "dashboardLoadError": "സെഷൻ ചരിത്രം ലോഡ് ചെയ്യാനായില്ല.",
+  "dashboardNoSessions": "ഇതുവരെ സെഷനുകളൊന്നും രേഖപ്പെടുത്തിയിട്ടില്ല.\nഡാറ്റ കാണാൻ ടാഗിംഗ് പ്രവർത്തനക്ഷമമാക്കി ഒരു ടൈമർ പൂർത്തിയാക്കുക.",
+  "daySummaryStudy": "പഠനം",
+  "daySummaryNonStudy": "പഠനേതരം",
+  "presetGridQuickPresets": "വേഗത്തിലുള്ള മുൻസജ്ജീകരണങ്ങൾ",
+  "kokoroDownloadTitle": "Kokoro ഇംഗ്ലീഷ് ശബ്ദം ഡൗൺലോഡ് ചെയ്യണോ?",
+  "kokoroDownloadDescription": "കൂടുതൽ സ്വാഭാവികമായ ഇംഗ്ലീഷ് അറിയിപ്പുകൾക്കായി Solas Flow-ന് 140 MiB ഇംഗ്ലീഷ് സംഭാഷണ മോഡൽ ഡൗൺലോഡ് ചെയ്യാം. ഡൗൺലോഡ് പരിശോധിച്ച ശേഷം ഓഫ്‌ലൈനായി ലഭ്യമാകും. ഒഴിവാക്കിയാലും ഉൾപ്പെടുത്തിയിട്ടുള്ള ഇംഗ്ലീഷ്, മലയാളം ശബ്ദങ്ങൾ ലഭ്യമായിരിക്കും. പിന്നീട് ക്രമീകരണങ്ങളിൽ നിന്ന് ഡൗൺലോഡ് ചെയ്യാനോ റദ്ദാക്കാനോ വീണ്ടും ശ്രമിക്കാനോ കഴിയും.",
+  "kokoroKeepPiper": "Piper തന്നെ നിലനിർത്തുക",
+  "kokoroAcceptAndDownload": "അംഗീകരിച്ച് ഡൗൺലോഡ് ചെയ്യുക",
+  "clockPanelCurrentTime": "നിലവിലെ സമയം",
+  "clockPanelSound": "ശബ്ദം",
+  "clockPanelNoise": "ശബ്ദം",
+  "clockPanelQuotes": "ഉദ്ധരണികൾ",
+  "clockPanelBackground": "പശ്ചാത്തലം",
+  "clockPanelAnnounceInterval": "അറിയിപ്പ് ഇടവേള",
+  "clockPanelMinutes": "{count} മിനിറ്റ്",
+  "@clockPanelMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelEveryMinutes": "ഓരോ {count} മിനിറ്റിലും",
+  "@clockPanelEveryMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelRepeatCount": "ആവർത്തനങ്ങളുടെ എണ്ണം",
+  "clockPanelTimes": "{count} തവണ",
+  "@clockPanelTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelQuoteCategory": "ഉദ്ധരണി വിഭാഗം",
+  "clockPanelQuoteDelay": "ഉദ്ധരണി വൈകൽ",
+  "clockPanelSecondsDelay": "{seconds} സെക്കൻഡ് വൈകൽ",
+  "@clockPanelSecondsDelay": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelShowSeconds": "സെക്കൻഡുകൾ കാണിക്കുക",
+  "clockPanelShowMilliseconds": "മില്ലിസെക്കൻഡുകൾ കാണിക്കുക",
+  "clockPanelOn": "ഓൺ",
+  "clockPanelOff": "ഓഫ്",
+  "clockPanelCategoryGeneral": "പൊതുവായത്",
+  "clockPanelCategoryGeneralMalayalam": "പൊതുവായ മലയാളം",
+  "clockPanelCategoryFocus": "ശ്രദ്ധ",
+  "clockPanelCategoryDiscipline": "അച്ചടക്കം",
+  "clockPanelCategoryCalm": "ശാന്തത",
+  "clockPanelCategoryPositivity": "അനുകൂല ചിന്ത",
+  "clockPanelCategoryHistoricFigures": "ചരിത്രപ്രസിദ്ധർ",
+  "timerPanelEndsAt": "അവസാനിക്കുന്നത് {time} ന്",
+  "@timerPanelEndsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timerPanelDisplay": "ടൈമർ ഡിസ്പ്ലേ",
+  "timerPanelFullscreenHint": "പൂർണ്ണ സ്‌ക്രീൻ തുറക്കാൻ ടാപ്പ് ചെയ്യുക. ഇമേഴ്‌സീവ് പൂർണ്ണ സ്‌ക്രീനിനായി രണ്ടുതവണ ടാപ്പ് ചെയ്യുക.",
+  "timerPanelRemaining": "ശേഷിക്കുന്നത്",
+  "timerPanelRemoveMinute": "ഒരു മിനിറ്റ് കുറയ്ക്കുക",
+  "timerPanelAddFiveMinutes": "അഞ്ച് മിനിറ്റ് ചേർക്കുക",
+  "timerPanelStep": "ഘട്ടം {step}",
+  "@timerPanelStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "timerPanelPause": "താൽക്കാലികമായി നിർത്തുക",
+  "timerPanelStart": "ആരംഭിക്കുക",
+  "timerPanelReset": "പുനഃസജ്ജമാക്കുക",
+  "timerPanelSpeech": "സംസാരം",
+  "timerPanelNoise": "ശബ്ദം",
+  "timerPanelChain": "ശൃംഖല",
+  "timerPanelClock": "ഘടികാരം",
+  "timerPanelTagging": "ടാഗിംഗ്",
+  "timerPanelStudy": "പഠനം",
+  "timerPanelNonStudy": "പഠനേതരം",
+  "timerPanelTimeUtilization": "സമയ വിനിയോഗം",
+  "timerPanelShowMilliseconds": "മില്ലിസെക്കൻഡുകൾ കാണിക്കുക",
+  "timerPanelAnnounceEvery": "അറിയിപ്പ് ഇടവേള",
+  "timerPanelMinutes": "{minutes} മിനിറ്റ്",
+  "@timerPanelMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timerPanelOn": "ഓൺ",
+  "timerPanelOff": "ഓഫ്",
+  "timerPanelChainMode": "ശൃംഖല മോഡ്",
+  "timerPanelPresetSequence": "മുൻകൂട്ടി സജ്ജമാക്കിയ ക്രമം",
+  "timerPanelAnnouncementInterval": "അറിയിപ്പ് ഇടവേള",
+  "timerPanelAnnounceEveryMinutes": "ഓരോ {minutes} മിനിറ്റിലും അറിയിക്കുക",
+  "@timerPanelAnnounceEveryMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timerPanelChainPreset": "ശൃംഖല മുൻസജ്ജീകരണം",
+  "timerPanelCustomTimer": "ഇഷ്ടാനുസൃത ടൈമർ",
+  "timerPanelMinutesLabel": "മിനിറ്റുകൾ",
+  "timerPanelMinutesHint": "മിനിറ്റുകൾ നൽകുക (1-720)",
+  "timerPanelMinuteAbbreviation": "മിനിറ്റ്",
+  "timerPanelCancel": "റദ്ദാക്കുക",
+  "timerPanelWholeNumberError": "1 മുതൽ 720 വരെയുള്ള പൂർണ്ണ സംഖ്യ നൽകുക.",
+  "timerPanelSet": "സജ്ജമാക്കുക",
+  "timerPanelSequenceMinutes": "{values} മിനിറ്റ്",
+  "@timerPanelSequenceMinutes": {
+    "placeholders": {
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "timerPanelPomodoroPreset": "പൊമൊഡോറോ 25-5x4",
+  "timerPanelSprintPreset": "സ്പ്രിന്റ് 50-10x2",
+  "timerPanelQuickPreset": "ക്വിക്ക് 15-3x3",
+  "stopwatchPanelElapsed": "കഴിഞ്ഞ സമയം",
+  "stopwatchPanelLaps": "{count} ലാപ്പുകൾ",
+  "@stopwatchPanelLaps": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stopwatchPanelPause": "താൽക്കാലികമായി നിർത്തുക",
+  "stopwatchPanelStart": "ആരംഭിക്കുക",
+  "stopwatchPanelLap": "ലാപ്പ്",
+  "stopwatchPanelReset": "പുനഃസജ്ജമാക്കുക",
+  "stopwatchPanelLapTimes": "ലാപ്പ് സമയങ്ങൾ",
+  "stopwatchPanelSpeech": "സംസാരം",
+  "stopwatchPanelShowMilliseconds": "മില്ലിസെക്കൻഡുകൾ കാണിക്കുക",
+  "stopwatchPanelOn": "ഓൺ",
+  "stopwatchPanelOff": "ഓഫ്",
+  "stopwatchPanelSpeakDelay": "സംസാര വൈകൽ",
+  "stopwatchPanelSpeakElapsedEvery": "കഴിഞ്ഞ സമയം സംസാരിക്കുക ഓരോ",
+  "stopwatchPanelSeconds": "{seconds} സെക്കൻഡ്",
+  "@stopwatchPanelSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "stopwatchPanelMinutes": "{minutes} മിനിറ്റ്",
+  "@stopwatchPanelMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "driveModeClock": "ഘടികാരം",
+  "driveModeTimer": "ടൈമർ",
+  "driveModeStopwatch": "സ്റ്റോപ്പ്‌വാച്ച്",
+  "driveModeCurrentTime": "നിലവിലെ സമയം",
+  "driveModeRunning": "പ്രവർത്തിക്കുന്നു",
+  "driveModePaused": "താൽക്കാലികമായി നിർത്തി",
+  "driveModeReady": "തയ്യാറാണ്",
+  "driveModeDisplaySemantics": "{label}: {value}",
+  "@driveModeDisplaySemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "driveModePause": "താൽക്കാലികമായി നിർത്തുക",
+  "driveModeResume": "പുനരാരംഭിക്കുക",
+  "driveModeStart": "ആരംഭിക്കുക",
+  "driveModeMinutePreset": "{minutes} മിനിറ്റ്",
+  "@driveModeMinutePreset": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "driveModeAudioOn": "ഓഡിയോ ഓൺ",
+  "driveModeAudioOff": "ഓഡിയോ ഓഫ്",
+  "driveModeSpeakNow": "ഇപ്പോൾ പറയുക",
+  "driveModeTitle": "ഡ്രൈവ് മോഡ്",
+  "driveModeClose": "അടയ്ക്കുക",
+  "focusViewStop": "നിർത്തുക",
+  "focusViewStart": "ആരംഭിക്കുക",
+  "focusViewReset": "പുനഃസജ്ജമാക്കുക",
+  "focusViewCloseFocusMode": "ഫോക്കസ് മോഡ് അടയ്ക്കുക",
+  "focusViewAwake": "ഉണർന്നിരിക്കുക",
+  "focusViewClock": "ഘടികാരം",
+  "focusViewLightTheme": "ലൈറ്റ് തീം",
+  "focusViewDarkTheme": "ഡാർക്ക് തീം",
+  "focusViewDisableDim": "മങ്ങൽ പ്രവർത്തനരഹിതമാക്കുക",
+  "focusViewDimBrightness": "തെളിച്ചം കുറയ്ക്കുക",
+  "focusViewUnlockRotation": "റൊട്ടേഷൻ അൺലോക്ക് ചെയ്യുക",
+  "focusViewRotateHorizontal": "തിരശ്ചീനമായി തിരിക്കുക",
+  "focusViewFullscreenModeEntered": "പൂർണ്ണസ്‌ക്രീൻ മോഡിൽ പ്രവേശിച്ചു",
+  "focusViewDoubleTapToExit": "പുറത്തുകടക്കാൻ എവിടെയും രണ്ടുതവണ ടാപ്പ് ചെയ്യുക",
+  "settingsPanelDesktopAutostartChecking": "ഓട്ടോസ്റ്റാർട്ട് നില പരിശോധിക്കുന്നു…",
+  "settingsPanelAutostartNotConfigured": "ഓട്ടോസ്റ്റാർട്ട് ക്രമീകരിച്ചിട്ടില്ല.",
+  "settingsPanelAutostartInstalledDisabled": "ഓട്ടോസ്റ്റാർട്ട് ഇൻസ്റ്റാൾ ചെയ്തിട്ടുണ്ടെങ്കിലും പ്രവർത്തനരഹിതമാണ്.",
+  "settingsPanelAutostartFailed": "ഓട്ടോസ്റ്റാർട്ട് സേവനം പരാജയപ്പെട്ടു.",
+  "settingsPanelAutostartRunning": "ഓട്ടോസ്റ്റാർട്ട് സജീവമാണ്.",
+  "settingsPanelAutostartNextLogin": "അടുത്ത ലോഗിനിൽ ഓട്ടോസ്റ്റാർട്ട് പ്രവർത്തിക്കും.",
+  "settingsPanelDesktopAutostartTitle": "ലോഗിനിൽ സ്വയം ആരംഭിക്കുക",
+  "settingsPanelDesktopAutostartDescription": "സൈൻ ഇൻ ചെയ്യുമ്പോൾ Solas Flow ആരംഭിക്കുന്ന ഉപയോക്തൃ systemd സേവനം നിയന്ത്രിക്കുക.",
+  "settingsPanelEnable": "പ്രവർത്തനക്ഷമമാക്കുക",
+  "settingsPanelRemove": "നീക്കം ചെയ്യുക",
+  "settingsPanelRefreshStatus": "നില പുതുക്കുക",
+  "settingsPanelChooseModelFolder": "മോഡൽ ഫോൾഡർ തിരഞ്ഞെടുക്കുക",
+  "settingsPanelOfflineModelFailed": "ഓഫ്‌ലൈൻ മോഡൽ {action} ചെയ്യാനായില്ല: {error}",
+  "@settingsPanelOfflineModelFailed": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelClear": "മായ്ക്കുക",
+  "settingsPanelImport": "ഇറക്കുമതി ചെയ്യുക",
+  "settingsPanelLocalOfflineModel": "പ്രാദേശിക ഓഫ്‌ലൈൻ സംഭാഷണ മോഡൽ",
+  "settingsPanelOfflineModelDescription": "പൂർണ്ണമായും ഓഫ്‌ലൈൻ സംഭാഷണത്തിനായി അനുയോജ്യമായ Sherpa-ONNX മോഡൽ ഡയറക്ടറി ഇറക്കുമതി ചെയ്യുക. തിരഞ്ഞെടുത്ത മോഡൽ ആപ്പ് സ്റ്റോറേജിലേക്ക് പകർത്തും.",
+  "settingsPanelModelLanguage": "മോഡൽ ഭാഷ",
+  "settingsPanelEnglish": "ഇംഗ്ലീഷ്",
+  "settingsPanelMalayalam": "മലയാളം",
+  "settingsPanelImportFolder": "ഫോൾഡർ ഇറക്കുമതി ചെയ്യുക",
+  "settingsPanelUseBuiltinVoice": "അന്തർനിർമ്മിത ശബ്ദം ഉപയോഗിക്കുക",
+  "settingsPanelTestLanguage": "{language} പരീക്ഷിക്കുക",
+  "@settingsPanelTestLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelModelLanguageDescription": "ഇറക്കുമതി ചെയ്ത ഓഫ്‌ലൈൻ മോഡലിന്റെ ഭാഷ തിരഞ്ഞെടുക്കുക.",
+  "settingsPanelVeryLow": "വളരെ കുറവ്",
+  "settingsPanelLow": "കുറവ്",
+  "settingsPanelMedium": "ഇടത്തരം",
+  "settingsPanelHigh": "കൂടുതൽ",
+  "settingsPanelVeryHigh": "വളരെ കൂടുതൽ",
+  "settingsPanelKokoroEnglishVoice": "Kokoro ഇംഗ്ലീഷ് ശബ്ദം",
+  "settingsPanelRetry": "വീണ്ടും ശ്രമിക്കുക",
+  "settingsPanelDownload": "ഡൗൺലോഡ് ചെയ്യുക",
+  "settingsPanelCancel": "റദ്ദാക്കുക",
+  "settingsPanelSoundRain": "മഴ",
+  "settingsPanelSoundWaterfall": "വെള്ളച്ചാട്ടം",
+  "settingsPanelSoundFire": "തീ",
+  "settingsPanelSoundStream": "നീരൊഴുക്ക്",
+  "settingsPanelNone": "ഒന്നുമില്ല",
+  "settingsPanelAoedeVoice": "Aoede",
+  "settingsPanelKoreVoice": "Kore",
+  "settingsPanelPuckVoice": "Puck",
+  "settingsPanelCharonVoice": "Charon",
+  "settingsPanelPiperMeeraVoice": "Meera",
+  "settingsPanelPiperArjunVoice": "Arjun",
+  "settingsPanelPiperLessacVoice": "Lessac",
+  "settingsPanelPiperRyanVoice": "Ryan",
+  "settingsPanelKokoroBellaVoice": "Bella",
+  "settingsPanelKokoroAdamVoice": "Adam",
+  "settingsPanelKokoroEmmaVoice": "Emma",
+  "settingsPanelKokoroGeorgeVoice": "George",
+  "settingsPanelKokoroMapleVoice": "Maple",
+  "settingsPanelKokoroSolVoice": "Sol",
+  "settingsPanelKokoroValeVoice": "Vale",
+  "settingsPanelMalayalamFemale": "മലയാളം സ്ത്രീ ശബ്ദം",
+  "settingsPanelMalayalamMale": "മലയാളം പുരുഷ ശബ്ദം",
+  "settingsPanelMalayalamNative": "മലയാളം ശബ്ദം",
+  "settingsPanelFemale": "സ്ത്രീ ശബ്ദം",
+  "settingsPanelMale": "പുരുഷ ശബ്ദം",
+  "settingsPanelIndianEnglish": "ഇന്ത്യൻ ഇംഗ്ലീഷ്",
+  "settingsPanelUsEnglish": "അമേരിക്കൻ ഇംഗ്ലീഷ്",
+  "settingsPanelUkEnglish": "ബ്രിട്ടീഷ് ഇംഗ്ലീഷ്",
+  "settingsPanelSystemTtsOnly": "സിസ്റ്റം TTS മാത്രം",
+  "settingsPanelSherpaOnly": "Sherpa-ONNX മാത്രം",
+  "settingsPanelAutoBestAvailable": "ഓട്ടോമാറ്റിക് — ലഭ്യമായ മികച്ചത്",
+  "settingsPanelGoogleSpeechServices": "Google Speech Services",
+  "settingsPanelSamsungTextToSpeech": "Samsung Text-to-Speech",
+  "settingsPanelAuto": "ഓട്ടോമാറ്റിക്",
+  "settingsPanelRotateAllMalayalamVoices": "എല്ലാ മലയാള ശബ്ദങ്ങളും മാറിമാറി ഉപയോഗിക്കുക",
+  "settingsPanelRotateVoicesDefault": "ശബ്ദങ്ങൾ മാറിമാറി ഉപയോഗിക്കുക",
+  "settingsPanelAutoSystemDefault": "ഓട്ടോമാറ്റിക് (സിസ്റ്റം ഡിഫോൾട്ട്)",
+  "settingsPanelUseDeviceDefaultEngine": "ഉപകരണത്തിന്റെ ഡിഫോൾട്ട് സംഭാഷണ എഞ്ചിൻ ഉപയോഗിക്കുക",
+  "settingsPanelUseDeviceSpeechEngine": "ഉപകരണ സംഭാഷണ എഞ്ചിൻ മാത്രം ഉപയോഗിക്കുക",
+  "settingsPanelFallbackVoicePlatforms": "ലഭ്യമെങ്കിൽ അന്തർനിർമ്മിത ഓഫ്‌ലൈൻ ശബ്ദം ഉപയോഗിക്കുക",
+  "settingsPanelAutoVoiceDescription": "ലഭ്യമായ മികച്ച ശബ്ദം സ്വയം തിരഞ്ഞെടുക്കുക",
+  "settingsPanelManualMode": "മാനുവൽ",
+  "settingsPanelSelectedQuietHours": "തിരഞ്ഞെടുത്ത നിശ്ശബ്ദ സമയങ്ങൾ ഉപയോഗിക്കുക",
+  "settingsPanelAutomaticMode": "ഓട്ടോമാറ്റിക്",
+  "settingsPanelMuteAfterNightIdle": "രാത്രിയിൽ ഉപകരണം നിഷ്‌ക്രിയമായ ശേഷം മ്യൂട്ട് ചെയ്യുക",
+  "settingsPanelStandardMalayalam": "സാധാരണ മലയാളം",
+  "settingsPanelAlternatesVoices": "ലഭ്യമായ ശബ്ദങ്ങൾ മാറിമാറി ഉപയോഗിക്കുന്നു",
+  "settingsPanelUnknownVoice": "അറിയാത്ത ശബ്ദം",
+  "settingsPanelDarkThemeDescription": "ഇരുണ്ട രൂപം ഉപയോഗിക്കുക",
+  "settingsPanelMasterAudio": "പ്രധാന ഓഡിയോ",
+  "settingsPanelAllAudioOn": "സംസാരവും പശ്ചാത്തല ഓഡിയോയും പ്രവർത്തനക്ഷമമാണ്",
+  "settingsPanelAllAudioOff": "സംസാരവും പശ്ചാത്തല ഓഡിയോയും പ്രവർത്തനരഹിതമാണ്",
+  "settingsPanelGoalReminders": "ലക്ഷ്യ ഓർമ്മപ്പെടുത്തലുകൾ",
+  "settingsPanelAddGoalToEnableReminders": "ഓർമ്മപ്പെടുത്തലുകൾ പ്രവർത്തനക്ഷമമാക്കാൻ ലക്ഷ്യം ചേർക്കുക",
+  "settingsPanelSpeakSavedGoalEvery": "സംരക്ഷിച്ച ലക്ഷ്യം ഓരോ {minutes} മിനിറ്റിലും പറയുക",
+  "@settingsPanelSpeakSavedGoalEvery": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsPanelGoalReminderInterval": "ലക്ഷ്യ ഓർമ്മപ്പെടുത്തൽ ഇടവേള",
+  "settingsPanelAddGoal": "ലക്ഷ്യം ചേർക്കുക",
+  "settingsPanelAdd": "ചേർക്കുക",
+  "settingsPanelNoGoalsSaved": "ലക്ഷ്യങ്ങളൊന്നും സംരക്ഷിച്ചിട്ടില്ല",
+  "settingsPanelRemoveGoal": "ലക്ഷ്യം നീക്കം ചെയ്യുക",
+  "settingsPanelNoiseVolume": "ശബ്ദത്തിന്റെ വോള്യം",
+  "settingsPanelSpeechVolume": "സംസാര വോള്യം",
+  "settingsPanelBoostTtsVolume": "സംസാര വോള്യം വർധിപ്പിക്കുക",
+  "settingsPanelMaximumSpeechVolumeDescription": "സംസാര ഔട്ട്പുട്ട് ലഭ്യമായ പരമാവധി വോള്യത്തിലേക്ക് ഉയർത്തുക",
+  "settingsPanelSpeechEngine": "സംസാര എഞ്ചിൻ",
+  "settingsPanelTestVoice": "ശബ്ദം പരീക്ഷിക്കുക",
+  "settingsPanelPlaySample": "സാമ്പിൾ പ്ലേ ചെയ്യുക",
+  "settingsPanelLanguageList": "ശബ്ദ ഭാഷാ പട്ടിക",
+  "settingsPanelPreferredVoice": "മുൻഗണനാ ശബ്ദം",
+  "settingsPanelVoice": "ശബ്ദം",
+  "settingsPanelFontSize": "ഫോണ്ട് വലുപ്പം",
+  "settingsPanelStartLandscape": "പൂർണ്ണ സ്‌ക്രീൻ തിരശ്ചീനമായി ആരംഭിക്കുക",
+  "settingsPanelShowClockFullscreen": "പൂർണ്ണ സ്‌ക്രീനിൽ ഘടികാരം കാണിക്കുക",
+  "settingsPanelShowClockFullscreenDescription": "ടൈമറിന് മുകളിൽ നിലവിലെ സമയം കാണിക്കുക",
+  "settingsPanelFullscreenClockSize": "പൂർണ്ണ സ്‌ക്രീൻ ഘടികാര വലുപ്പം",
+  "settingsPanelEnableSleepMode": "സ്ലീപ്പ് മോഡ് പ്രവർത്തനക്ഷമമാക്കുക",
+  "settingsPanelQuietHoursSpeech": "നിശ്ശബ്ദ സമയങ്ങളിൽ സംസാരം നിർത്തുക",
+  "settingsPanelMode": "മോഡ്",
+  "settingsPanelSleepMode": "സ്ലീപ്പ് മോഡ്",
+  "settingsPanelBackupAppSettings": "ആപ്പ് ക്രമീകരണങ്ങൾ ബാക്കപ്പ് ചെയ്യുക",
+  "settingsPanelBackupDescription": "ക്രമീകരണങ്ങൾ ഫയലിലേക്ക് എക്സ്പോർട്ട് ചെയ്യുക",
+  "settingsPanelRestoreAppSettings": "ആപ്പ് ക്രമീകരണങ്ങൾ പുനഃസ്ഥാപിക്കുക",
+  "settingsPanelRestoreDescription": "ബാക്കപ്പ് ഫയലിൽ നിന്ന് ക്രമീകരണങ്ങൾ ഇറക്കുമതി ചെയ്യുക",
+  "settingsPanelChooseBackupFolder": "ബാക്കപ്പ് ഫോൾഡർ തിരഞ്ഞെടുക്കുക",
+  "helpPanelSleepModeOff": "സ്ലീപ്പ് മോഡ് ഓഫാണ്",
+  "helpPanelSleepModeManual": "മാനുവൽ നിശ്ശബ്ദ സമയം",
+  "helpPanelSleepModeAutomatic": "ഓട്ടോമാറ്റിക് രാത്രി മോഡ്",
+  "helpPanelCurrentRange": "നിശ്ശബ്ദ സമയം: {range}",
+  "@helpPanelCurrentRange": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "helpPanelQuickStart": "വേഗത്തിൽ തുടങ്ങുക",
+  "helpPanelConfigureTimerTitle": "ടൈമർ ക്രമീകരിക്കുക",
+  "helpPanelConfigureTimerDescription": "ടൈമർ ടാബിൽ ഒരു മുൻസജ്ജീകരണം തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ ഇഷ്ടാനുസൃത സമയം സജ്ജമാക്കുക.",
+  "helpPanelSetSleepTitle": "ഉറക്ക സമയം സജ്ജമാക്കുക",
+  "helpPanelSetSleepDescription": "സ്ലീപ്പ് മോഡ് പ്രവർത്തനക്ഷമമാക്കി സംസാരം നിർത്താൻ നിശ്ശബ്ദ സമയം തിരഞ്ഞെടുക്കുക.",
+  "helpPanelWidgetControlsTitle": "ഹോം സ്‌ക്രീൻ വിജറ്റ് ഉപയോഗിക്കുക",
+  "helpPanelWidgetControlsDescription": "ആപ്പ് തുറക്കാതെ ടൈമർ ആരംഭിക്കുക, നിർത്തുക, പുനഃസജ്ജമാക്കുക.",
+  "helpPanelFaq": "സഹായം",
+  "helpPanelSpeakingClockTitle": "സംസാരിക്കുന്ന ഘടികാരം",
+  "helpPanelSpeakingClockAnnouncements": "അറിയിപ്പ് ഇടവേളകൾ തിരഞ്ഞെടുക്കുകയും ക്രമീകരണങ്ങളിൽ സംസാരം പ്രവർത്തനക്ഷമമാക്കുകയും ചെയ്യുക.",
+  "helpPanelSpeakingClockQuotes": "ഉദ്ധരണികൾ പ്രവർത്തനക്ഷമമാക്കി വിഭാഗവും വൈകലും തിരഞ്ഞെടുക്കുക.",
+  "helpPanelTimerSetupTitle": "ടൈമർ സജ്ജീകരണം",
+  "helpPanelTimerSetupPreset": "ഒരു മുൻസജ്ജീകരണം തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ ഇഷ്ടാനുസൃത ടൈമർ സമയം സജ്ജമാക്കുക.",
+  "helpPanelTimerSetupSpeech": "സംസാര അറിയിപ്പുകൾ പ്രവർത്തനക്ഷമമാക്കി അവയുടെ ഇടവേള ക്രമീകരിക്കുക.",
+  "helpPanelTimerSetupChain": "പഠന, ഇടവേള ടൈമറുകളുടെ ക്രമം പ്രവർത്തിപ്പിക്കാൻ ശൃംഖല മോഡ് ഉപയോഗിക്കുക.",
+  "helpPanelSleepModeTitle": "സ്ലീപ്പ് മോഡ്",
+  "helpPanelSleepModeRange": "ക്രമീകരണങ്ങളിൽ നിശ്ശബ്ദ സമയത്തിന്റെ ആരംഭവും അവസാനവും സജ്ജമാക്കുക.",
+  "helpPanelSleepModeManualDescription": "മാനുവൽ മോഡ് നിങ്ങൾ തിരഞ്ഞെടുത്ത സമയങ്ങൾ ഉപയോഗിക്കുന്നു.",
+  "helpPanelSleepModeAutomaticDescription": "ഓട്ടോമാറ്റിക് മോഡ് രാത്രി ഉപകരണ നിഷ്‌ക്രിയത കണ്ടെത്തുന്നു.",
+  "helpPanelSleepModeResumeDescription": "നിശ്ശബ്ദ സമയം അവസാനിക്കുമ്പോൾ സംസാരം പുനരാരംഭിക്കും.",
+  "helpPanelHomeWidgetTitle": "ഹോം സ്‌ക്രീൻ വിജറ്റ്",
+  "helpPanelHomeWidgetSpeech": "സംസാരം പ്രവർത്തനക്ഷമമായിരിക്കുമ്പോൾ വിജറ്റിന് ടൈമർ നില പറയാം.",
+  "helpPanelHomeWidgetTimer": "ടൈമർ ആരംഭിക്കാനും നിർത്താനും പുനഃസജ്ജമാക്കാനും വിജറ്റ് നിയന്ത്രണങ്ങൾ ഉപയോഗിക്കുക.",
+  "helpPanelHomeWidgetQuickSessions": "വേഗത്തിലുള്ള സെഷൻ ബട്ടണുകൾ സാധാരണ ടൈമർ ദൈർഘ്യങ്ങൾ ആരംഭിക്കുന്നു.",
+  "helpPanelHomeWidgetStatus": "വിജറ്റ് നില നിലവിലെ ടൈമർ സെഷനെ പ്രതിഫലിപ്പിക്കുന്നു.",
+  "helpPanelTipsTitle": "സൂചനകൾ",
+  "helpPanelTipsSync": "ക്രമീകരണങ്ങൾ ഈ ഉപകരണത്തിൽ സൂക്ഷിക്കുന്നു.",
+  "helpPanelTipsPermissions": "വിശ്വസനീയമായ ടൈമർ അറിയിപ്പുകൾക്കായി അറിയിപ്പുകളും പശ്ചാത്തല പ്രവർത്തനവും അനുവദിക്കുക.",
+  "helpPanelTipsBackground": "തടസ്സമില്ലാത്ത ടൈമിംഗിനായി ആപ്പിന് പശ്ചാത്തലത്തിൽ പ്രവർത്തിക്കാൻ അനുമതി നൽകുക.",
+  "settingsPanelGoalField": "ലക്ഷ്യം",
+  "settingsPanelDownloadNotDownloaded": "ഡൗൺലോഡ് ചെയ്തിട്ടില്ല · 140 MiB. അതുവരെ ഇംഗ്ലീഷ് സംഭാഷണത്തിന് Piper തുടരും.",
+  "settingsPanelDownloadingKokoro": "Kokoro ഇംഗ്ലീഷ് ഡൗൺലോഡ് ചെയ്യുന്നു · {amount}",
+  "@settingsPanelDownloadingKokoro": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelDownloadingKokoroPercent": "Kokoro ഇംഗ്ലീഷ് ഡൗൺലോഡ് ചെയ്യുന്നു · {percent}% · {amount}",
+  "@settingsPanelDownloadingKokoroPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelDownloadVerifying": "ഡൗൺലോഡ് പൂർത്തിയായി · SHA-256 പരിശോധിക്കുന്നു",
+  "settingsPanelDownloadInstalling": "ഓഫ്‌ലൈൻ ഇംഗ്ലീഷ് ശബ്ദം ഇൻസ്റ്റാൾ ചെയ്യുന്നു",
+  "settingsPanelDownloadReady": "തയ്യാർ · Kokoro v1.1 ഇംഗ്ലീഷ് ഓഫ്‌ലൈനായി പ്രവർത്തിക്കുന്നു",
+  "settingsPanelDownloadFailed": "ഡൗൺലോഡ് പരാജയപ്പെട്ടു · {error}",
+  "@settingsPanelDownloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelDownloadFailedFallback": "കണക്ഷൻ പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.",
+  "settingsPanelDownloadCancelled": "ഡൗൺലോഡ് റദ്ദാക്കി · ഉൾപ്പെടുത്തിയ Piper ശബ്ദം തുടർന്നും ലഭ്യമാണ്.",
+  "mainDesktopTimerFinishedBody": "{minutes} മിനിറ്റ് ടൈമർ പൂർത്തിയായി.",
+  "@mainDesktopTimerFinishedBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -450,7 +451,12 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
   }
 
   /// Start / Stop / Reset row shown at the bottom for Timer and Stopwatch.
-  Widget _buildActionButtons(Color fg, Color primary, Color outline) {
+  Widget _buildActionButtons(
+    AppLocalizations l10n,
+    Color fg,
+    Color primary,
+    Color outline,
+  ) {
     final bool isTimer = _mode == FullscreenFocusMode.timer;
     final bool running = isTimer ? _timerRunning : _stopwatchRunning;
 
@@ -507,7 +513,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
       child: Row(
         children: [
           actionBtn(
-            running ? 'Stop' : 'Start',
+            running ? l10n.focusViewStop : l10n.focusViewStart,
             running ? Icons.pause_rounded : Icons.play_arrow_rounded,
             running
                 ? (isTimer ? widget.onTimerStop : widget.onStopwatchStop)
@@ -516,7 +522,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
           ),
           const SizedBox(width: 10),
           actionBtn(
-            'Reset',
+            l10n.focusViewReset,
             Icons.refresh_rounded,
             isTimer ? widget.onTimerReset : widget.onStopwatchReset,
           ),
@@ -543,6 +549,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // Use AppColors tokens directly for consistent fullscreen theming
     final c = _darkTheme ? AppColors.dark : AppColors.light;
     final bg = c.background;
@@ -630,7 +637,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                         child: Row(
                           children: [
                             IconButton.filledTonal(
-                              tooltip: 'Close focus mode',
+                              tooltip: l10n.focusViewCloseFocusMode,
                               onPressed: () {
                                 _onControlInteraction();
                                 Navigator.of(context).pop();
@@ -654,7 +661,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                                       variant: variant,
                                       selectedBg: selectedBg,
                                       icon: Icons.lock_clock_rounded,
-                                      label: 'Awake',
+                                      label: l10n.focusViewAwake,
                                       selected: _alwaysOn,
                                       onTap: () {
                                         _onControlInteraction();
@@ -673,7 +680,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                                       variant: variant,
                                       selectedBg: selectedBg,
                                       icon: Icons.access_time_rounded,
-                                      label: 'Clock',
+                                      label: l10n.focusViewClock,
                                       selected: _showClock,
                                       onTap: () {
                                         _onControlInteraction();
@@ -698,8 +705,8 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                                     const SizedBox(width: 6),
                                     IconButton(
                                       tooltip: _darkTheme
-                                          ? 'Light theme'
-                                          : 'Dark theme',
+                                          ? l10n.focusViewLightTheme
+                                          : l10n.focusViewDarkTheme,
                                       onPressed: () async {
                                         _onControlInteraction();
                                         setState(
@@ -717,8 +724,8 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                                     if (_supportsScreenBrightness)
                                       IconButton(
                                         tooltip: _dimBrightness
-                                            ? 'Disable dim'
-                                            : 'Dim brightness',
+                                            ? l10n.focusViewDisableDim
+                                            : l10n.focusViewDimBrightness,
                                         onPressed: () {
                                           _onControlInteraction();
                                           setState(
@@ -739,8 +746,8 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                                       ),
                                     IconButton(
                                       tooltip: _forceLandscape
-                                          ? 'Unlock Rotation'
-                                          : 'Rotate Horizontal',
+                                          ? l10n.focusViewUnlockRotation
+                                          : l10n.focusViewRotateHorizontal,
                                       onPressed: () {
                                         _onControlInteraction();
                                         setState(
@@ -767,12 +774,10 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                           ],
                         ),
                       ),
-
                       const Spacer(),
-
                       // ── Start/Stop/Reset (Timer & Stopwatch modes) ────────
                       if (showActionButtons) ...[
-                        _buildActionButtons(fg, primary, outline),
+                        _buildActionButtons(l10n, fg, primary, outline),
                         const SizedBox(height: 14),
                       ],
                     ],
@@ -796,7 +801,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          'Fullscreen mode entered',
+                          l10n.focusViewFullscreenModeEntered,
                           style: TextStyle(
                             color: fg,
                             fontWeight: FontWeight.w600,
@@ -824,7 +829,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          'Double tap anywhere to exit',
+                          l10n.focusViewDoubleTapToExit,
                           style: TextStyle(
                             color: fg,
                             fontWeight: FontWeight.w600,

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 enum DriveMode { clock, timer, stopwatch }
 
 /// A large-control presentation of the owner's live clock and timing state.
@@ -127,10 +129,10 @@ class _DriveModeViewState extends State<DriveModeView> {
     super.dispose();
   }
 
-  String get _label => switch (_mode) {
-    DriveMode.clock => 'Clock',
-    DriveMode.timer => 'Timer',
-    DriveMode.stopwatch => 'Stopwatch',
+  String _label(AppLocalizations l10n) => switch (_mode) {
+    DriveMode.clock => l10n.driveModeClock,
+    DriveMode.timer => l10n.driveModeTimer,
+    DriveMode.stopwatch => l10n.driveModeStopwatch,
   };
 
   bool get _running => switch (_mode) {
@@ -195,7 +197,7 @@ class _DriveModeViewState extends State<DriveModeView> {
     );
   }
 
-  Widget _modeSelector() => Row(
+  Widget _modeSelector(AppLocalizations l10n) => Row(
     children: [
       for (final mode in DriveMode.values) ...[
         if (mode != DriveMode.clock) const SizedBox(width: 8),
@@ -204,9 +206,9 @@ class _DriveModeViewState extends State<DriveModeView> {
             selected: _mode == mode,
             child: _button(
               label: switch (mode) {
-                DriveMode.clock => 'Clock',
-                DriveMode.timer => 'Timer',
-                DriveMode.stopwatch => 'Stopwatch',
+                DriveMode.clock => l10n.driveModeClock,
+                DriveMode.timer => l10n.driveModeTimer,
+                DriveMode.stopwatch => l10n.driveModeStopwatch,
               },
               highlighted: _mode == mode,
               onPressed: () => _selectMode(mode),
@@ -217,27 +219,28 @@ class _DriveModeViewState extends State<DriveModeView> {
     ],
   );
 
-  Widget _display() {
+  Widget _display(AppLocalizations l10n) {
     final text = switch (_mode) {
       DriveMode.clock => _clockText,
       DriveMode.timer => _timerText,
       DriveMode.stopwatch => _stopwatchText,
     };
+    final label = _label(l10n);
     final status = _mode == DriveMode.clock
-        ? 'Current time'
+        ? l10n.driveModeCurrentTime
         : _running
-        ? 'Running'
+        ? l10n.driveModeRunning
         : _paused
-        ? 'Paused'
-        : 'Ready';
+        ? l10n.driveModePaused
+        : l10n.driveModeReady;
     return Column(
       children: [
-        Text(_label, style: const TextStyle(color: _muted, fontSize: 22)),
+        Text(label, style: const TextStyle(color: _muted, fontSize: 22)),
         const SizedBox(height: 12),
         Expanded(
           child: Center(
             child: Semantics(
-              label: '$_label: $text',
+              label: l10n.driveModeDisplaySemantics(label, text),
               excludeSemantics: true,
               child: FittedBox(
                 fit: BoxFit.contain,
@@ -262,7 +265,7 @@ class _DriveModeViewState extends State<DriveModeView> {
     );
   }
 
-  Widget _controls() => Column(
+  Widget _controls(AppLocalizations l10n) => Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
@@ -270,10 +273,10 @@ class _DriveModeViewState extends State<DriveModeView> {
         _button(
           label:
               '${_running
-                  ? 'Pause'
+                  ? l10n.driveModePause
                   : _paused
-                  ? 'Resume'
-                  : 'Start'} $_label',
+                  ? l10n.driveModeResume
+                  : l10n.driveModeStart} ${_label(l10n)}',
           icon: _running ? Icons.pause_rounded : Icons.play_arrow_rounded,
           highlighted: true,
           onPressed: _toggleTiming,
@@ -287,7 +290,7 @@ class _DriveModeViewState extends State<DriveModeView> {
               if (minutes != 15) const SizedBox(width: 8),
               Expanded(
                 child: _button(
-                  label: '$minutes min',
+                  label: l10n.driveModeMinutePreset(minutes),
                   onPressed: _timerRunning || _timerPaused
                       ? null
                       : () {
@@ -307,9 +310,13 @@ class _DriveModeViewState extends State<DriveModeView> {
             child: Semantics(
               button: true,
               toggled: _audioEnabled,
-              label: _audioEnabled ? 'Audio on' : 'Audio off',
+              label: _audioEnabled
+                  ? l10n.driveModeAudioOn
+                  : l10n.driveModeAudioOff,
               child: _button(
-                label: _audioEnabled ? 'Audio on' : 'Audio off',
+                label: _audioEnabled
+                    ? l10n.driveModeAudioOn
+                    : l10n.driveModeAudioOff,
                 icon: _audioEnabled
                     ? Icons.volume_up_rounded
                     : Icons.volume_off_rounded,
@@ -324,7 +331,7 @@ class _DriveModeViewState extends State<DriveModeView> {
           const SizedBox(width: 12),
           Expanded(
             child: _button(
-              label: 'Speak now',
+              label: l10n.driveModeSpeakNow,
               icon: Icons.record_voice_over_rounded,
               onPressed: () => widget.onSpeakNow(_mode),
             ),
@@ -335,77 +342,80 @@ class _DriveModeViewState extends State<DriveModeView> {
   );
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: _background,
-    child: SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final landscape =
-              constraints.maxWidth >= 600 &&
-              constraints.maxWidth > constraints.maxHeight;
-          final minHeight = landscape ? 340.0 : 560.0;
-          final contentHeight = constraints.maxHeight < minHeight
-              ? minHeight
-              : constraints.maxHeight;
-          final content = Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: landscape
-                          ? _modeSelector()
-                          : const Text(
-                              'Drive Mode',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: _background,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final landscape =
+                constraints.maxWidth >= 600 &&
+                constraints.maxWidth > constraints.maxHeight;
+            final minHeight = landscape ? 340.0 : 560.0;
+            final contentHeight = constraints.maxHeight < minHeight
+                ? minHeight
+                : constraints.maxHeight;
+            final content = Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: landscape
+                            ? _modeSelector(l10n)
+                            : Text(
+                                l10n.driveModeTitle,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                    ),
-                    const SizedBox(width: 12),
-                    _button(
-                      label: 'Close',
-                      icon: Icons.close_rounded,
-                      onPressed: widget.onClose,
-                    ),
+                      ),
+                      const SizedBox(width: 12),
+                      _button(
+                        label: l10n.driveModeClose,
+                        icon: Icons.close_rounded,
+                        onPressed: widget.onClose,
+                      ),
+                    ],
+                  ),
+                  if (!landscape) ...[
+                    const SizedBox(height: 12),
+                    _modeSelector(l10n),
                   ],
-                ),
-                if (!landscape) ...[
-                  const SizedBox(height: 12),
-                  _modeSelector(),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: landscape
+                        ? Row(
+                            children: [
+                              Expanded(flex: 3, child: _display(l10n)),
+                              const SizedBox(width: 24),
+                              Expanded(flex: 2, child: _controls(l10n)),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              Expanded(child: _display(l10n)),
+                              const SizedBox(height: 24),
+                              _controls(l10n),
+                            ],
+                          ),
+                  ),
                 ],
-                const SizedBox(height: 20),
-                Expanded(
-                  child: landscape
-                      ? Row(
-                          children: [
-                            Expanded(flex: 3, child: _display()),
-                            const SizedBox(width: 24),
-                            Expanded(flex: 2, child: _controls()),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            Expanded(child: _display()),
-                            const SizedBox(height: 24),
-                            _controls(),
-                          ],
-                        ),
-                ),
-              ],
-            ),
-          );
-          return constraints.maxHeight < minHeight
-              ? SingleChildScrollView(
-                  child: SizedBox(height: contentHeight, child: content),
-                )
-              : content;
-        },
+              ),
+            );
+            return constraints.maxHeight < minHeight
+                ? SingleChildScrollView(
+                    child: SizedBox(height: contentHeight, child: content),
+                  )
+                : content;
+          },
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

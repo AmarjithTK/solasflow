@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 
 import '../theme/palette.dart' show AppColorAccess;
 import 'primary_button.dart';
@@ -107,13 +108,23 @@ class TimerPanel extends StatelessWidget {
     return ('00', '00', null);
   }
 
+  String _chainPresetLabel(BuildContext context, String preset) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (preset) {
+      'Pomodoro 25-5x4' => l10n.timerPanelPomodoroPreset,
+      'Sprint 50-10x2' => l10n.timerPanelSprintPreset,
+      'Quick 15-3x3' => l10n.timerPanelQuickPreset,
+      _ => preset,
+    };
+  }
+
   String _endLabel(BuildContext context) {
     if (remainingSeconds <= 0) return '';
     final end = DateTime.now().add(Duration(seconds: remainingSeconds));
     final time = MaterialLocalizations.of(
       context,
     ).formatTimeOfDay(TimeOfDay.fromDateTime(end));
-    return 'Ends at $time';
+    return AppLocalizations.of(context)!.timerPanelEndsAt(time);
   }
 
   double get _progress {
@@ -143,9 +154,8 @@ class TimerPanel extends StatelessWidget {
             // ── Timer display area (subtle surface, not heavy card) ──
             Semantics(
               button: true,
-              label: 'Timer display',
-              hint:
-                  'Tap to open fullscreen. Double-tap for immersive fullscreen.',
+              label: AppLocalizations.of(context)!.timerPanelDisplay,
+              hint: AppLocalizations.of(context)!.timerPanelFullscreenHint,
               child: GestureDetector(
                 onTap: onFullscreenPressed,
                 onDoubleTap: onFullscreenImmersivePressed,
@@ -183,7 +193,9 @@ class TimerPanel extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Remaining',
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.timerPanelRemaining,
                                     style: GoogleFonts.inter(
                                       color: c.textMuted,
                                       fontSize: 12,
@@ -217,7 +229,9 @@ class TimerPanel extends StatelessWidget {
                                   top: 0,
                                   bottom: 0,
                                   child: IconButton(
-                                    tooltip: 'Remove one minute',
+                                    tooltip: AppLocalizations.of(
+                                      context,
+                                    )!.timerPanelRemoveMinute,
                                     constraints: const BoxConstraints.tightFor(
                                       width: 48,
                                       height: 48,
@@ -249,7 +263,9 @@ class TimerPanel extends StatelessWidget {
                                   top: 0,
                                   bottom: 0,
                                   child: IconButton(
-                                    tooltip: 'Add five minutes',
+                                    tooltip: AppLocalizations.of(
+                                      context,
+                                    )!.timerPanelAddFiveMinutes,
                                     constraints: const BoxConstraints.tightFor(
                                       width: 48,
                                       height: 48,
@@ -334,7 +350,9 @@ class TimerPanel extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Step ${chainIndex + 1}',
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.timerPanelStep(chainIndex + 1),
                                   style: GoogleFonts.inter(
                                     color: c.accent,
                                     fontSize: 11,
@@ -358,7 +376,9 @@ class TimerPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: PrimaryButton(
-                    label: isRunning ? 'Pause' : 'Start',
+                    label: isRunning
+                        ? AppLocalizations.of(context)!.timerPanelPause
+                        : AppLocalizations.of(context)!.timerPanelStart,
                     icon: isRunning
                         ? Icons.pause_rounded
                         : Icons.play_arrow_rounded,
@@ -368,7 +388,7 @@ class TimerPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: SecondaryButton(
-                    label: 'Reset',
+                    label: AppLocalizations.of(context)!.timerPanelReset,
                     icon: Icons.refresh_rounded,
                     onPressed: resetTimer,
                   ),
@@ -393,28 +413,28 @@ class TimerPanel extends StatelessWidget {
               children: [
                 _FeatureToggle(
                   icon: Icons.record_voice_over_rounded,
-                  label: 'Speech',
+                  label: AppLocalizations.of(context)!.timerPanelSpeech,
                   active: timerSpeakOn,
                   onTap: () => onTimerSpeakOnChanged(!timerSpeakOn),
                 ),
                 const SizedBox(width: 10),
                 _FeatureToggle(
                   icon: Icons.music_note_rounded,
-                  label: 'Noise',
+                  label: AppLocalizations.of(context)!.timerPanelNoise,
                   active: timerNoiseOn,
                   onTap: () => onTimerNoiseOnChanged(!timerNoiseOn),
                 ),
                 const SizedBox(width: 10),
                 _FeatureToggle(
                   icon: Icons.link_rounded,
-                  label: 'Chain',
+                  label: AppLocalizations.of(context)!.timerPanelChain,
                   active: chainModeOn,
                   onTap: () => onChainModeChanged(!chainModeOn),
                 ),
                 const SizedBox(width: 10),
                 _FeatureToggle(
                   icon: Icons.access_time_rounded,
-                  label: 'Clock',
+                  label: AppLocalizations.of(context)!.timerPanelClock,
                   active: fullscreenShowClock,
                   onTap: () =>
                       onFullscreenShowClockChanged(!fullscreenShowClock),
@@ -428,7 +448,7 @@ class TimerPanel extends StatelessWidget {
               children: [
                 _FeatureToggle(
                   icon: Icons.label_rounded,
-                  label: 'Tagging',
+                  label: AppLocalizations.of(context)!.timerPanelTagging,
                   active: taggingOn,
                   onTap: () => onTaggingOnChanged(!taggingOn),
                 ),
@@ -440,14 +460,14 @@ class TimerPanel extends StatelessWidget {
                 children: [
                   _FeatureToggle(
                     icon: Icons.menu_book_rounded,
-                    label: 'Study',
+                    label: AppLocalizations.of(context)!.timerPanelStudy,
                     active: sessionTag == 'study',
                     onTap: () => onSessionTagChanged('study'),
                   ),
                   const SizedBox(width: 10),
                   _FeatureToggle(
                     icon: Icons.hourglass_top_rounded,
-                    label: 'Non-study',
+                    label: AppLocalizations.of(context)!.timerPanelNonStudy,
                     active: sessionTag == 'non-study',
                     onTap: () => onSessionTagChanged('non-study'),
                   ),
@@ -476,7 +496,9 @@ class TimerPanel extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Time Utilization',
+                              AppLocalizations.of(
+                                context,
+                              )!.timerPanelTimeUtilization,
                               style: GoogleFonts.inter(
                                 color: c.textPrimary,
                                 fontSize: 14,
@@ -508,27 +530,31 @@ class TimerPanel extends StatelessWidget {
 
             SettingsToggleRow(
               icon: Icons.timer_outlined,
-              label: 'Show milliseconds',
+              label: AppLocalizations.of(context)!.timerPanelShowMilliseconds,
               value: timerShowMilliseconds,
               onChanged: onTimerShowMillisecondsChanged,
             ),
             SettingsRow(
               icon: Icons.timer_outlined,
-              label: 'Announce every',
-              value: '$timerAnnounceEvery min',
+              label: AppLocalizations.of(context)!.timerPanelAnnounceEvery,
+              value: AppLocalizations.of(
+                context,
+              )!.timerPanelMinutes(timerAnnounceEvery),
               onTap: () => _showAnnounceSheet(context),
             ),
             SettingsRow(
               icon: Icons.link_rounded,
-              label: 'Chain mode',
-              value: chainModeOn ? 'On' : 'Off',
+              label: AppLocalizations.of(context)!.timerPanelChainMode,
+              value: chainModeOn
+                  ? AppLocalizations.of(context)!.timerPanelOn
+                  : AppLocalizations.of(context)!.timerPanelOff,
               onTap: () => onChainModeChanged(!chainModeOn),
             ),
             if (chainModeOn)
               SettingsRow(
                 icon: Icons.list_alt_rounded,
-                label: 'Preset sequence',
-                value: chainPresetKey,
+                label: AppLocalizations.of(context)!.timerPanelPresetSequence,
+                value: _chainPresetLabel(context, chainPresetKey),
                 onTap: () => _showChainSheet(context),
                 showDivider: false,
               ),
@@ -552,7 +578,7 @@ class TimerPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Announcement interval',
+                AppLocalizations.of(context)!.timerPanelAnnouncementInterval,
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -578,7 +604,9 @@ class TimerPanel extends StatelessWidget {
                         color: selected ? c.accent : c.textMuted,
                       ),
                       title: Text(
-                        'Announce every $mins min',
+                        AppLocalizations.of(
+                          context,
+                        )!.timerPanelAnnounceEveryMinutes(mins),
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
@@ -614,7 +642,7 @@ class TimerPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chain preset',
+                AppLocalizations.of(context)!.timerPanelChainPreset,
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -640,7 +668,7 @@ class TimerPanel extends StatelessWidget {
                         color: selected ? c.accent : c.textMuted,
                       ),
                       title: Text(
-                        entry.key,
+                        _chainPresetLabel(context, entry.key),
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
@@ -648,7 +676,9 @@ class TimerPanel extends StatelessWidget {
                         ),
                       ),
                       subtitle: Text(
-                        '${entry.value.join(' / ')} min',
+                        AppLocalizations.of(
+                          context,
+                        )!.timerPanelSequenceMinutes(entry.value.join(' / ')),
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: c.textSecondary,
@@ -678,7 +708,7 @@ class TimerPanel extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(
-            'Custom timer',
+            AppLocalizations.of(context)!.timerPanelCustomTimer,
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -691,9 +721,11 @@ class TimerPanel extends StatelessWidget {
             keyboardType: TextInputType.number,
             style: GoogleFonts.inter(fontSize: 16, color: c.textPrimary),
             decoration: InputDecoration(
-              labelText: 'Minutes',
-              hintText: 'Enter minutes (1-720)',
-              suffixText: 'min',
+              labelText: AppLocalizations.of(context)!.timerPanelMinutesLabel,
+              hintText: AppLocalizations.of(context)!.timerPanelMinutesHint,
+              suffixText: AppLocalizations.of(
+                context,
+              )!.timerPanelMinuteAbbreviation,
               errorText: inputError,
             ),
             onChanged: (_) {
@@ -705,7 +737,7 @@ class TimerPanel extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.timerPanelCancel),
             ),
             FilledButton(
               onPressed: () {
@@ -714,11 +746,13 @@ class TimerPanel extends StatelessWidget {
                   Navigator.of(ctx).pop(parsed);
                 } else {
                   setDialogState(
-                    () => inputError = 'Enter a whole number from 1 to 720.',
+                    () => inputError = AppLocalizations.of(
+                      context,
+                    )!.timerPanelWholeNumberError,
                   );
                 }
               },
-              child: const Text('Set'),
+              child: Text(AppLocalizations.of(context)!.timerPanelSet),
             ),
           ],
         ),
@@ -784,7 +818,9 @@ class _FeatureToggle extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  active ? 'On' : 'Off',
+                  active
+                      ? AppLocalizations.of(context)!.timerPanelOn
+                      : AppLocalizations.of(context)!.timerPanelOff,
                   style: GoogleFonts.inter(
                     color: active ? c.accent : c.textMuted,
                     fontSize: 11,

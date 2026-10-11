@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import 'section_header.dart';
 
@@ -40,7 +41,9 @@ class PresetGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SectionHeader(label: 'Quick presets'),
+        SectionHeader(
+          label: AppLocalizations.of(context)!.presetGridQuickPresets,
+        ),
         const SizedBox(height: 4),
         LayoutBuilder(
           builder: (context, constraints) {

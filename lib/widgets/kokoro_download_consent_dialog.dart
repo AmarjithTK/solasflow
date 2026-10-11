@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class KokoroDownloadConsentDialog extends StatelessWidget {
   const KokoroDownloadConsentDialog({
     required this.onAccept,
@@ -13,20 +15,17 @@ class KokoroDownloadConsentDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Download the Kokoro English voice?'),
-      content: const Text(
-        'Solas Flow can download a 140 MiB English speech model for more '
-        'natural English announcements. The download is verified and then '
-        'available offline. English and Malayalam bundled voices remain '
-        'available if you skip it. You can download, cancel, or retry later '
-        'from Settings.',
-      ),
+      title: Text(AppLocalizations.of(context)!.kokoroDownloadTitle),
+      content: Text(AppLocalizations.of(context)!.kokoroDownloadDescription),
       actions: [
-        TextButton(onPressed: onDecline, child: const Text('Keep Piper')),
+        TextButton(
+          onPressed: onDecline,
+          child: Text(AppLocalizations.of(context)!.kokoroKeepPiper),
+        ),
         FilledButton.icon(
           onPressed: onAccept,
           icon: const Icon(Icons.download_rounded),
-          label: const Text('Accept and download'),
+          label: Text(AppLocalizations.of(context)!.kokoroAcceptAndDownload),
         ),
       ],
     );

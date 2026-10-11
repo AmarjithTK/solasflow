@@ -258,10 +258,13 @@ class SettingsService {
     return AppSettings.fromJson(decoded);
   }
 
-  Future<String?> exportToUserFolder({required String contents}) async {
+  Future<String?> exportToUserFolder({
+    required String contents,
+    required String dialogTitle,
+  }) async {
     try {
       final directory = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Choose backup folder',
+        dialogTitle: dialogTitle,
       );
       if (directory == null) return null;
       final now = DateTime.now();
@@ -304,4 +307,3 @@ class SettingsService {
     }
   }
 }
-

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class HelpPanel extends StatelessWidget {
   final bool muteSpeechAfterMidnight;
@@ -14,7 +15,12 @@ class HelpPanel extends StatelessWidget {
     required this.sleepEndLabel,
   });
 
-  Widget _quickStep(BuildContext context, int index, String title, String subtitle) {
+  Widget _quickStep(
+    BuildContext context,
+    int index,
+    String title,
+    String subtitle,
+  ) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
@@ -50,7 +56,8 @@ class HelpPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
+                Text(
+                  title,
                   style: TextStyle(
                     color: cs.onSurface,
                     fontWeight: FontWeight.w800,
@@ -58,7 +65,8 @@ class HelpPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(subtitle,
+                Text(
+                  subtitle,
                   style: TextStyle(
                     color: cs.onSurfaceVariant,
                     fontSize: 12,
@@ -96,7 +104,8 @@ class HelpPanel extends StatelessWidget {
         childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
         iconColor: cs.primary,
         collapsedIconColor: cs.onSurfaceVariant,
-        title: Text(title,
+        title: Text(
+          title,
           style: TextStyle(
             color: cs.onSurface,
             fontWeight: FontWeight.w800,
@@ -104,32 +113,35 @@ class HelpPanel extends StatelessWidget {
           ),
         ),
         children: points
-            .map((text) => Padding(
-              padding: const EdgeInsets.only(bottom: 5),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Icon(
-                      Icons.check_circle_outline,
-                      size: 14,
-                      color: cs.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(text,
-                      style: TextStyle(
-                        color: cs.onSurfaceVariant,
-                        fontSize: 13,
-                        height: 1.3,
+            .map(
+              (text) => Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Icon(
+                        Icons.check_circle_outline,
+                        size: 14,
+                        color: cs.primary,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 13,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ))
+            )
             .toList(),
       ),
     );
@@ -138,12 +150,13 @@ class HelpPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final range = '$sleepStartLabel → $sleepEndLabel';
     final sleepModeStatus = !muteSpeechAfterMidnight
-        ? 'Sleep mode is OFF'
+        ? l10n.helpPanelSleepModeOff
         : (nightMuteMode == 'manual'
-              ? 'Sleep mode: ON • Manual'
-              : 'Sleep mode: ON • Automatic');
+              ? l10n.helpPanelSleepModeManual
+              : l10n.helpPanelSleepModeAutomatic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +182,8 @@ class HelpPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(sleepModeStatus,
+                    Text(
+                      sleepModeStatus,
                       style: TextStyle(
                         color: cs.onSurface,
                         fontSize: 13,
@@ -177,7 +191,8 @@ class HelpPanel extends StatelessWidget {
                       ),
                     ),
                     if (muteSpeechAfterMidnight)
-                      Text('Current range: $range',
+                      Text(
+                        l10n.helpPanelCurrentRange(range),
                         style: TextStyle(
                           color: cs.onSurfaceVariant,
                           fontSize: 12,
@@ -190,7 +205,8 @@ class HelpPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Quick Start',
+        Text(
+          l10n.helpPanelQuickStart,
           style: TextStyle(
             color: cs.onSurface,
             fontWeight: FontWeight.w900,
@@ -199,22 +215,26 @@ class HelpPanel extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         _quickStep(
-          context, 1,
-          'Configure timer and speech',
-          'Open Timer Setup, choose minutes, speech interval, and optional chain preset.',
+          context,
+          1,
+          l10n.helpPanelConfigureTimerTitle,
+          l10n.helpPanelConfigureTimerDescription,
         ),
         _quickStep(
-          context, 2,
-          'Set sleep behavior',
-          'Open Settings, enable Sleep mode, pick Manual or Automatic, and choose time range.',
+          context,
+          2,
+          l10n.helpPanelSetSleepTitle,
+          l10n.helpPanelSetSleepDescription,
         ),
         _quickStep(
-          context, 3,
-          'Use widget controls',
-          'From home screen widget, toggle speech, start/stop timer, or launch quick 25m/resume.',
+          context,
+          3,
+          l10n.helpPanelWidgetControlsTitle,
+          l10n.helpPanelWidgetControlsDescription,
         ),
         const SizedBox(height: 8),
-        Text('FAQ',
+        Text(
+          l10n.helpPanelFaq,
           style: TextStyle(
             color: cs.onSurface,
             fontWeight: FontWeight.w900,
@@ -223,50 +243,49 @@ class HelpPanel extends StatelessWidget {
         ),
         _faqItem(
           context,
-          title: 'Speaking Clock',
+          title: l10n.helpPanelSpeakingClockTitle,
           points: [
-            'Turn ON SpeakClock to hear time announcements at your selected interval.',
-            'Optional motivation quotes are spoken after each time announcement.',
+            l10n.helpPanelSpeakingClockAnnouncements,
+            l10n.helpPanelSpeakingClockQuotes,
           ],
         ),
         _faqItem(
           context,
-          title: 'Timer Setup',
+          title: l10n.helpPanelTimerSetupTitle,
           points: [
-            'Choose a preset or Custom → Minutes (1–720) to set the timer.',
-            'Enable speech to hear remaining-time messages.',
-            'Chain mode runs preset sequences like Pomodoro automatically.',
+            l10n.helpPanelTimerSetupPreset,
+            l10n.helpPanelTimerSetupSpeech,
+            l10n.helpPanelTimerSetupChain,
           ],
         ),
         _faqItem(
           context,
-          title: 'Sleep Mode',
+          title: l10n.helpPanelSleepModeTitle,
           initiallyExpanded: true,
           points: [
-            'Choose custom sleep range with Start and End time pickers.',
-            'Manual mode: speech is muted for the full configured range.',
-            'Automatic mode: after 5 minutes inactivity during sleep range, mute auto-activates.',
-            'When you use phone again during sleep range, current time is spoken after 5 seconds.',
+            l10n.helpPanelSleepModeRange,
+            l10n.helpPanelSleepModeManualDescription,
+            l10n.helpPanelSleepModeAutomaticDescription,
+            l10n.helpPanelSleepModeResumeDescription,
           ],
         ),
         _faqItem(
           context,
-          title: 'Home Screen Widget',
+          title: l10n.helpPanelHomeWidgetTitle,
           points: [
-            'Speech button instantly turns timer speech ON/OFF.',
-            'Start/Stop controls timer directly from home screen.',
-            '25m and Resume buttons start quick sessions.',
-            'Widget status shows Speech, Timer, and Night state.',
+            l10n.helpPanelHomeWidgetSpeech,
+            l10n.helpPanelHomeWidgetTimer,
+            l10n.helpPanelHomeWidgetQuickSessions,
+            l10n.helpPanelHomeWidgetStatus,
           ],
         ),
         _faqItem(
           context,
-          title: 'Tips',
+          title: l10n.helpPanelTipsTitle,
           points: [
-            'If widget command feels delayed, wait 1-2 seconds for sync.',
-            'Keep notification and battery permissions allowed for stable background behavior.',
-            'If Android stops SolasFlow after reboot, reopen it and allow background use. '
-                'The app has no Accessibility Service.',
+            l10n.helpPanelTipsSync,
+            l10n.helpPanelTipsPermissions,
+            l10n.helpPanelTipsBackground,
           ],
         ),
       ],

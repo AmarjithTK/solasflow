@@ -23,7 +23,6 @@
   "volumeLabel": "Volume",
   "voiceLabel": "Voice Selection",
   "darkThemeLabel": "Dark Theme",
-  "motivationLabel": "Show Motivation",
   "motivationCategoryLabel": "Motivation Category",
   "motivationDelayLabel": "Quote Delay (seconds)",
   "clockIntervalLabel": "Clock Interval (minutes)",
@@ -31,9 +30,6 @@
   "nightMuteMode": "Night Mute Mode",
   "sleepStartLabel": "Sleep Start Time",
   "sleepEndLabel": "Sleep End Time",
-  "longPressToDone": "Long press timer to mark done",
-  "sessionCompleted": "Session Completed!",
-  "motivationQuote": "Motivation",
   "today": "Today",
   "yesterday": "Yesterday",
   "quickActionStart25m": "Start 25m",
@@ -65,5 +61,540 @@
   "repeatButton": "Repeat",
   "dismissButton": "Dismiss",
   "openButton": "Open",
-  "exitButton": "Exit"
+  "exitButton": "Exit",
+  "stopwatchTab": "Stopwatch",
+  "mainSpeechEngineChangeFailed": "Unable to change speech engine: {error}",
+  "@mainSpeechEngineChangeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainSettingsOpenFailed": "Unable to open Settings: {error}",
+  "@mainSettingsOpenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainBackupSavedTitle": "Backup Saved",
+  "mainSettingsExported": "Settings exported successfully.",
+  "mainJsonCopied": "JSON copied to clipboard",
+  "mainCopyJson": "Copy JSON",
+  "mainDone": "Done",
+  "mainBackupFailedTitle": "Backup failed",
+  "mainBackupFileFailed": "The file could not be saved: {error}. Copy the settings JSON instead?",
+  "@mainBackupFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainCancel": "Cancel",
+  "mainBackupFailed": "Backup failed: {error}",
+  "@mainBackupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainRestoreSettingsTitle": "Restore Settings",
+  "mainRestoreSettingsWarning": "This will replace the app preferences in this backup. Local desktop offline-model selections are not included and will stay unchanged. The restored preferences will take effect immediately. Continue?",
+  "mainRestoreButton": "Restore",
+  "mainSettingsRestored": "Settings restored successfully!",
+  "mainRestoreFailed": "Restore failed: {error}",
+  "@mainRestoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainDesktopAlwaysOnTopNote": "Always on top is a window-manager hint. Some Wayland desktops ignore it; use the compositor’s window rules if needed.",
+  "mainDesktopActionFailed": "Desktop action failed: {error}",
+  "@mainDesktopActionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainStartupIncomplete": "Startup is incomplete: {error}",
+  "@mainStartupIncomplete": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mainTimerDurationRangeError": "Enter a value between 1 and 720",
+  "mainTimerFinishedTitle": "Timer finished",
+  "mainRepeatSameTimer": "Repeat Same Timer",
+  "mainStartPresetTimer": "Start New Preset Timer",
+  "mainMinuteShort": "{minutes} min",
+  "@mainMinuteShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "mainCustomDurationMinutes": "Custom duration (minutes)",
+  "mainCloseTimer": "Close timer",
+  "mainStartCustomTimer": "Start custom",
+  "mainTurnAudioOn": "Turn audio on",
+  "mainTurnAudioOff": "Turn audio off",
+  "mainDesktopControls": "Desktop controls",
+  "mainDriveModeCompact": "Drive Mode — compact",
+  "mainDriveModeFullscreen": "Drive Mode — fullscreen",
+  "mainKeepRunningWhenClosed": "Keep running when closed",
+  "mainAlwaysOnTopDesktopHint": "Always on top (desktop hint)",
+  "mainHideToBackground": "Hide to background",
+  "dashboardTimeUtilization": "Time Utilization",
+  "dashboardLoadError": "Unable to load session history.",
+  "dashboardNoSessions": "No sessions logged yet.\nEnable tagging and complete a timer to see data.",
+  "daySummaryStudy": "Study",
+  "daySummaryNonStudy": "Non-study",
+  "presetGridQuickPresets": "Quick presets",
+  "kokoroDownloadTitle": "Download the Kokoro English voice?",
+  "kokoroDownloadDescription": "Solas Flow can download a 140 MiB English speech model for more natural English announcements. The download is verified and then available offline. English and Malayalam bundled voices remain available if you skip it. You can download, cancel, or retry later from Settings.",
+  "kokoroKeepPiper": "Keep Piper",
+  "kokoroAcceptAndDownload": "Accept and download",
+  "clockPanelCurrentTime": "CURRENT TIME",
+  "clockPanelSound": "Sound",
+  "clockPanelNoise": "Noise",
+  "clockPanelQuotes": "Quotes",
+  "clockPanelBackground": "Background",
+  "clockPanelAnnounceInterval": "Announce interval",
+  "clockPanelMinutes": "{count} min",
+  "@clockPanelMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelEveryMinutes": "Every {count} min",
+  "@clockPanelEveryMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelRepeatCount": "Repeat count",
+  "clockPanelTimes": "{count} times",
+  "@clockPanelTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelQuoteCategory": "Quote category",
+  "clockPanelQuoteDelay": "Quote delay",
+  "clockPanelSecondsDelay": "{seconds} sec delay",
+  "@clockPanelSecondsDelay": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "clockPanelShowSeconds": "Show seconds",
+  "clockPanelShowMilliseconds": "Show milliseconds",
+  "clockPanelOn": "On",
+  "clockPanelOff": "Off",
+  "clockPanelCategoryGeneral": "General",
+  "clockPanelCategoryGeneralMalayalam": "General Malayalam",
+  "clockPanelCategoryFocus": "Focus",
+  "clockPanelCategoryDiscipline": "Discipline",
+  "clockPanelCategoryCalm": "Calm",
+  "clockPanelCategoryPositivity": "Positivity",
+  "clockPanelCategoryHistoricFigures": "Historic Figures",
+  "timerPanelEndsAt": "Ends at {time}",
+  "@timerPanelEndsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timerPanelDisplay": "Timer display",
+  "timerPanelFullscreenHint": "Tap to open fullscreen. Double-tap for immersive fullscreen.",
+  "timerPanelRemaining": "Remaining",
+  "timerPanelRemoveMinute": "Remove one minute",
+  "timerPanelAddFiveMinutes": "Add five minutes",
+  "timerPanelStep": "Step {step}",
+  "@timerPanelStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "timerPanelPause": "Pause",
+  "timerPanelStart": "Start",
+  "timerPanelReset": "Reset",
+  "timerPanelSpeech": "Speech",
+  "timerPanelNoise": "Noise",
+  "timerPanelChain": "Chain",
+  "timerPanelClock": "Clock",
+  "timerPanelTagging": "Tagging",
+  "timerPanelStudy": "Study",
+  "timerPanelNonStudy": "Non-study",
+  "timerPanelTimeUtilization": "Time Utilization",
+  "timerPanelShowMilliseconds": "Show milliseconds",
+  "timerPanelAnnounceEvery": "Announce every",
+  "timerPanelMinutes": "{minutes} min",
+  "@timerPanelMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timerPanelOn": "On",
+  "timerPanelOff": "Off",
+  "timerPanelChainMode": "Chain mode",
+  "timerPanelPresetSequence": "Preset sequence",
+  "timerPanelAnnouncementInterval": "Announcement interval",
+  "timerPanelAnnounceEveryMinutes": "Announce every {minutes} min",
+  "@timerPanelAnnounceEveryMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timerPanelChainPreset": "Chain preset",
+  "timerPanelCustomTimer": "Custom timer",
+  "timerPanelMinutesLabel": "Minutes",
+  "timerPanelMinutesHint": "Enter minutes (1-720)",
+  "timerPanelMinuteAbbreviation": "min",
+  "timerPanelCancel": "Cancel",
+  "timerPanelWholeNumberError": "Enter a whole number from 1 to 720.",
+  "timerPanelSet": "Set",
+  "timerPanelSequenceMinutes": "{values} min",
+  "@timerPanelSequenceMinutes": {
+    "placeholders": {
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "timerPanelPomodoroPreset": "Pomodoro 25-5x4",
+  "timerPanelSprintPreset": "Sprint 50-10x2",
+  "timerPanelQuickPreset": "Quick 15-3x3",
+  "stopwatchPanelElapsed": "ELAPSED",
+  "stopwatchPanelLaps": "{count} laps",
+  "@stopwatchPanelLaps": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stopwatchPanelPause": "Pause",
+  "stopwatchPanelStart": "Start",
+  "stopwatchPanelLap": "Lap",
+  "stopwatchPanelReset": "Reset",
+  "stopwatchPanelLapTimes": "Lap times",
+  "stopwatchPanelSpeech": "Speech",
+  "stopwatchPanelShowMilliseconds": "Show milliseconds",
+  "stopwatchPanelOn": "On",
+  "stopwatchPanelOff": "Off",
+  "stopwatchPanelSpeakDelay": "Speak delay",
+  "stopwatchPanelSpeakElapsedEvery": "Speak elapsed every",
+  "stopwatchPanelSeconds": "{seconds} sec",
+  "@stopwatchPanelSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "stopwatchPanelMinutes": "{minutes} min",
+  "@stopwatchPanelMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "driveModeClock": "Clock",
+  "driveModeTimer": "Timer",
+  "driveModeStopwatch": "Stopwatch",
+  "driveModeCurrentTime": "Current time",
+  "driveModeRunning": "Running",
+  "driveModePaused": "Paused",
+  "driveModeReady": "Ready",
+  "driveModeDisplaySemantics": "{label}: {value}",
+  "@driveModeDisplaySemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "driveModePause": "Pause",
+  "driveModeResume": "Resume",
+  "driveModeStart": "Start",
+  "driveModeMinutePreset": "{minutes} min",
+  "@driveModeMinutePreset": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "driveModeAudioOn": "Audio on",
+  "driveModeAudioOff": "Audio off",
+  "driveModeSpeakNow": "Speak now",
+  "driveModeTitle": "Drive Mode",
+  "driveModeClose": "Close",
+  "focusViewStop": "Stop",
+  "focusViewStart": "Start",
+  "focusViewReset": "Reset",
+  "focusViewCloseFocusMode": "Close focus mode",
+  "focusViewAwake": "Awake",
+  "focusViewClock": "Clock",
+  "focusViewLightTheme": "Light theme",
+  "focusViewDarkTheme": "Dark theme",
+  "focusViewDisableDim": "Disable dim",
+  "focusViewDimBrightness": "Dim brightness",
+  "focusViewUnlockRotation": "Unlock Rotation",
+  "focusViewRotateHorizontal": "Rotate Horizontal",
+  "focusViewFullscreenModeEntered": "Fullscreen mode entered",
+  "focusViewDoubleTapToExit": "Double tap anywhere to exit",
+  "settingsPanelDesktopAutostartChecking": "Checking autostart status…",
+  "settingsPanelAutostartNotConfigured": "Autostart is not configured.",
+  "settingsPanelAutostartInstalledDisabled": "Autostart is installed but disabled.",
+  "settingsPanelAutostartFailed": "Autostart service failed.",
+  "settingsPanelAutostartRunning": "Autostart is active.",
+  "settingsPanelAutostartNextLogin": "Autostart will run at next login.",
+  "settingsPanelDesktopAutostartTitle": "Start automatically at login",
+  "settingsPanelDesktopAutostartDescription": "Manage the user-level systemd service that starts Solas Flow when you sign in.",
+  "settingsPanelEnable": "Enable",
+  "settingsPanelRemove": "Remove",
+  "settingsPanelRefreshStatus": "Refresh status",
+  "settingsPanelChooseModelFolder": "Choose model folder",
+  "settingsPanelOfflineModelFailed": "Could not {action} offline model: {error}",
+  "@settingsPanelOfflineModelFailed": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelClear": "clear",
+  "settingsPanelImport": "import",
+  "settingsPanelLocalOfflineModel": "Local offline speech model",
+  "settingsPanelOfflineModelDescription": "Import a compatible Sherpa-ONNX model directory for fully offline speech. The selected model is copied into app storage.",
+  "settingsPanelModelLanguage": "Model language",
+  "settingsPanelEnglish": "English",
+  "settingsPanelMalayalam": "Malayalam",
+  "settingsPanelImportFolder": "Import folder",
+  "settingsPanelUseBuiltinVoice": "Use built-in voice",
+  "settingsPanelTestLanguage": "Test {language}",
+  "@settingsPanelTestLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelModelLanguageDescription": "Choose the language for the imported offline model.",
+  "settingsPanelVeryLow": "Very low",
+  "settingsPanelLow": "Low",
+  "settingsPanelMedium": "Medium",
+  "settingsPanelHigh": "High",
+  "settingsPanelVeryHigh": "Very high",
+  "settingsPanelKokoroEnglishVoice": "Kokoro English voice",
+  "settingsPanelRetry": "Retry",
+  "settingsPanelDownload": "Download",
+  "settingsPanelCancel": "Cancel",
+  "settingsPanelSoundRain": "Rain",
+  "settingsPanelSoundWaterfall": "Waterfall",
+  "settingsPanelSoundFire": "Fire",
+  "settingsPanelSoundStream": "Stream",
+  "settingsPanelNone": "None",
+  "settingsPanelAoedeVoice": "Aoede",
+  "settingsPanelKoreVoice": "Kore",
+  "settingsPanelPuckVoice": "Puck",
+  "settingsPanelCharonVoice": "Charon",
+  "settingsPanelPiperMeeraVoice": "Meera",
+  "settingsPanelPiperArjunVoice": "Arjun",
+  "settingsPanelPiperLessacVoice": "Lessac",
+  "settingsPanelPiperRyanVoice": "Ryan",
+  "settingsPanelKokoroBellaVoice": "Bella",
+  "settingsPanelKokoroAdamVoice": "Adam",
+  "settingsPanelKokoroEmmaVoice": "Emma",
+  "settingsPanelKokoroGeorgeVoice": "George",
+  "settingsPanelKokoroMapleVoice": "Maple",
+  "settingsPanelKokoroSolVoice": "Sol",
+  "settingsPanelKokoroValeVoice": "Vale",
+  "settingsPanelMalayalamFemale": "Malayalam female voice",
+  "settingsPanelMalayalamMale": "Malayalam male voice",
+  "settingsPanelMalayalamNative": "Malayalam voice",
+  "settingsPanelFemale": "Female voice",
+  "settingsPanelMale": "Male voice",
+  "settingsPanelIndianEnglish": "Indian English",
+  "settingsPanelUsEnglish": "US English",
+  "settingsPanelUkEnglish": "UK English",
+  "settingsPanelSystemTtsOnly": "System TTS only",
+  "settingsPanelSherpaOnly": "Sherpa-ONNX only",
+  "settingsPanelAutoBestAvailable": "Automatic — best available",
+  "settingsPanelGoogleSpeechServices": "Google Speech Services",
+  "settingsPanelSamsungTextToSpeech": "Samsung Text-to-Speech",
+  "settingsPanelAuto": "Automatic",
+  "settingsPanelRotateAllMalayalamVoices": "Rotate all Malayalam voices",
+  "settingsPanelRotateVoicesDefault": "Rotate voices",
+  "settingsPanelAutoSystemDefault": "Automatic (system default)",
+  "settingsPanelUseDeviceDefaultEngine": "Use the device's default speech engine",
+  "settingsPanelUseDeviceSpeechEngine": "Use only the device speech engine",
+  "settingsPanelFallbackVoicePlatforms": "Use the built-in offline voice when available",
+  "settingsPanelAutoVoiceDescription": "Choose the best available voice automatically",
+  "settingsPanelManualMode": "Manual",
+  "settingsPanelSelectedQuietHours": "Use the selected quiet hours",
+  "settingsPanelAutomaticMode": "Automatic",
+  "settingsPanelMuteAfterNightIdle": "Mute after the device has been idle at night",
+  "settingsPanelStandardMalayalam": "Standard Malayalam",
+  "settingsPanelAlternatesVoices": "Alternates between available voices",
+  "settingsPanelUnknownVoice": "Unknown voice",
+  "settingsPanelDarkThemeDescription": "Use a dark appearance",
+  "settingsPanelMasterAudio": "Master audio",
+  "settingsPanelAllAudioOn": "Speech and ambient audio are enabled",
+  "settingsPanelAllAudioOff": "Speech and ambient audio are disabled",
+  "settingsPanelGoalReminders": "Goal reminders",
+  "settingsPanelAddGoalToEnableReminders": "Add a goal to enable reminders",
+  "settingsPanelSpeakSavedGoalEvery": "Speak a saved goal every {minutes} minutes",
+  "@settingsPanelSpeakSavedGoalEvery": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsPanelGoalReminderInterval": "Goal reminder interval",
+  "settingsPanelAddGoal": "Add goal",
+  "settingsPanelAdd": "Add",
+  "settingsPanelNoGoalsSaved": "No goals saved",
+  "settingsPanelRemoveGoal": "Remove goal",
+  "settingsPanelNoiseVolume": "Noise volume",
+  "settingsPanelSpeechVolume": "Speech volume",
+  "settingsPanelBoostTtsVolume": "Boost speech volume",
+  "settingsPanelMaximumSpeechVolumeDescription": "Raise speech output to the maximum available volume",
+  "settingsPanelSpeechEngine": "Speech engine",
+  "settingsPanelTestVoice": "Test voice",
+  "settingsPanelPlaySample": "Play sample",
+  "settingsPanelLanguageList": "Voice language list",
+  "settingsPanelPreferredVoice": "Preferred voice",
+  "settingsPanelVoice": "Voice",
+  "settingsPanelFontSize": "Font size",
+  "settingsPanelStartLandscape": "Start fullscreen in landscape",
+  "settingsPanelShowClockFullscreen": "Show clock in fullscreen",
+  "settingsPanelShowClockFullscreenDescription": "Display the current time above the timer",
+  "settingsPanelFullscreenClockSize": "Fullscreen clock size",
+  "settingsPanelEnableSleepMode": "Enable sleep mode",
+  "settingsPanelQuietHoursSpeech": "Silence speech during quiet hours",
+  "settingsPanelMode": "Mode",
+  "settingsPanelSleepMode": "Sleep mode",
+  "settingsPanelBackupAppSettings": "Back up app settings",
+  "settingsPanelBackupDescription": "Export your settings to a file",
+  "settingsPanelRestoreAppSettings": "Restore app settings",
+  "settingsPanelRestoreDescription": "Import settings from a backup file",
+  "settingsPanelChooseBackupFolder": "Choose backup folder",
+  "helpPanelSleepModeOff": "Sleep mode is off",
+  "helpPanelSleepModeManual": "Manual quiet hours",
+  "helpPanelSleepModeAutomatic": "Automatic night mode",
+  "helpPanelCurrentRange": "Quiet hours: {range}",
+  "@helpPanelCurrentRange": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "helpPanelQuickStart": "Quick start",
+  "helpPanelConfigureTimerTitle": "Configure the timer",
+  "helpPanelConfigureTimerDescription": "Choose a preset or set a custom duration on the Timer tab.",
+  "helpPanelSetSleepTitle": "Set sleep hours",
+  "helpPanelSetSleepDescription": "Enable sleep mode and choose quiet hours to silence speech.",
+  "helpPanelWidgetControlsTitle": "Use the home screen widget",
+  "helpPanelWidgetControlsDescription": "Start, pause, or reset the timer without opening the app.",
+  "helpPanelFaq": "Help",
+  "helpPanelSpeakingClockTitle": "Speaking clock",
+  "helpPanelSpeakingClockAnnouncements": "Choose announcement intervals and enable speech in Settings.",
+  "helpPanelSpeakingClockQuotes": "Enable quotes and choose a category and delay.",
+  "helpPanelTimerSetupTitle": "Timer setup",
+  "helpPanelTimerSetupPreset": "Select a preset or set a custom timer duration.",
+  "helpPanelTimerSetupSpeech": "Enable speech announcements and adjust their interval.",
+  "helpPanelTimerSetupChain": "Use chain mode to run a sequence of study and break timers.",
+  "helpPanelSleepModeTitle": "Sleep mode",
+  "helpPanelSleepModeRange": "Set the quiet-hours start and end times in Settings.",
+  "helpPanelSleepModeManualDescription": "Manual mode uses the times you selected.",
+  "helpPanelSleepModeAutomaticDescription": "Automatic mode detects nighttime device inactivity.",
+  "helpPanelSleepModeResumeDescription": "Speech resumes when quiet hours end.",
+  "helpPanelHomeWidgetTitle": "Home screen widget",
+  "helpPanelHomeWidgetSpeech": "The widget can speak timer status when speech is enabled.",
+  "helpPanelHomeWidgetTimer": "Use the widget controls to start, pause, or reset the timer.",
+  "helpPanelHomeWidgetQuickSessions": "Quick-session buttons start common timer durations.",
+  "helpPanelHomeWidgetStatus": "Widget status reflects the current timer session.",
+  "helpPanelTipsTitle": "Tips",
+  "helpPanelTipsSync": "Settings are stored on this device.",
+  "helpPanelTipsPermissions": "Allow notifications and background activity for reliable timer alerts.",
+  "helpPanelTipsBackground": "Keep the app allowed to run in the background for uninterrupted timing.",
+  "settingsPanelGoalField": "Goal",
+  "settingsPanelDownloadNotDownloaded": "Not downloaded · 140 MiB. English speech continues with Piper until then.",
+  "settingsPanelDownloadingKokoro": "Downloading Kokoro English · {amount}",
+  "@settingsPanelDownloadingKokoro": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelDownloadingKokoroPercent": "Downloading Kokoro English · {percent}% · {amount}",
+  "@settingsPanelDownloadingKokoroPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelDownloadVerifying": "Download complete · verifying SHA-256",
+  "settingsPanelDownloadInstalling": "Installing the offline English voice",
+  "settingsPanelDownloadReady": "Ready · Kokoro v1.1 English works offline",
+  "settingsPanelDownloadFailed": "Download failed · {error}",
+  "@settingsPanelDownloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPanelDownloadFailedFallback": "Check your connection and retry.",
+  "settingsPanelDownloadCancelled": "Download cancelled · the bundled Piper voice remains available.",
+  "mainDesktopTimerFinishedBody": "{minutes} minute timer completed.",
+  "@mainDesktopTimerFinishedBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }

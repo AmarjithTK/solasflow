@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -113,7 +115,7 @@ class ClockPanel extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'CURRENT TIME',
+                        AppLocalizations.of(context)!.clockPanelCurrentTime,
                         style: GoogleFonts.inter(
                           color: c.textMuted,
                           fontSize: 12,
@@ -170,21 +172,21 @@ class ClockPanel extends StatelessWidget {
               children: [
                 _FeatureToggle(
                   icon: Icons.volume_up_rounded,
-                  label: 'Sound',
+                  label: AppLocalizations.of(context)!.clockPanelSound,
                   active: clockSpeakTime,
                   onTap: () => onClockSpeakTimeChanged(!clockSpeakTime),
                 ),
                 const SizedBox(width: 10),
                 _FeatureToggle(
                   icon: Icons.music_note_rounded,
-                  label: 'Noise',
+                  label: AppLocalizations.of(context)!.clockPanelNoise,
                   active: clockNoiseOn,
                   onTap: () => onClockNoiseOnChanged(!clockNoiseOn),
                 ),
                 const SizedBox(width: 10),
                 _FeatureToggle(
                   icon: Icons.format_quote_rounded,
-                  label: 'Quotes',
+                  label: AppLocalizations.of(context)!.clockPanelQuotes,
                   active: motivationOn,
                   onTap: () => onMotivationChanged(!motivationOn),
                 ),
@@ -196,7 +198,7 @@ class ClockPanel extends StatelessWidget {
               children: [
                 _FeatureToggle(
                   icon: Icons.phonelink_lock_rounded,
-                  label: 'Background',
+                  label: AppLocalizations.of(context)!.clockPanelBackground,
                   active: backgroundPersistenceOn,
                   onTap: () =>
                       onBackgroundPersistenceChanged(!backgroundPersistenceOn),
@@ -208,65 +210,75 @@ class ClockPanel extends StatelessWidget {
             // ── Inline options (no bottom sheet) ─────────────────
             SettingsRow(
               icon: Icons.timer_outlined,
-              label: 'Announce interval',
-              value: '$clockIntervalMins min',
+              label: AppLocalizations.of(context)!.clockPanelAnnounceInterval,
+              value: AppLocalizations.of(
+                context,
+              )!.clockPanelMinutes(clockIntervalMins),
               onTap: () => _showIntSheet(
                 context: context,
-                title: 'Announce interval',
+                title: AppLocalizations.of(context)!.clockPanelAnnounceInterval,
                 values: clockIntervalOptions,
                 selectedValue: clockIntervalMins,
-                labelBuilder: (v) => 'Every $v min',
+                labelBuilder: (v) =>
+                    AppLocalizations.of(context)!.clockPanelEveryMinutes(v),
                 onSelected: onClockIntervalChanged,
               ),
             ),
             SettingsRow(
               icon: Icons.repeat_rounded,
-              label: 'Repeat count',
-              value:
-                  '$clockSpeakRepeatCount time${clockSpeakRepeatCount > 1 ? 's' : ''}',
+              label: AppLocalizations.of(context)!.clockPanelRepeatCount,
+              value: AppLocalizations.of(
+                context,
+              )!.clockPanelTimes(clockSpeakRepeatCount),
               onTap: () => _showIntSheet(
                 context: context,
-                title: 'Repeat count',
+                title: AppLocalizations.of(context)!.clockPanelRepeatCount,
                 values: clockSpeakRepeatOptions,
                 selectedValue: clockSpeakRepeatCount,
-                labelBuilder: (v) => '$v time${v > 1 ? 's' : ''}',
+                labelBuilder: (v) =>
+                    AppLocalizations.of(context)!.clockPanelTimes(v),
                 onSelected: onClockSpeakRepeatCountChanged,
               ),
             ),
             SettingsRow(
               icon: Icons.format_quote_rounded,
-              label: 'Quote category',
-              value: motivationCategory,
+              label: AppLocalizations.of(context)!.clockPanelQuoteCategory,
+              value: _motivationCategoryLabel(context, motivationCategory),
               onTap: () => _showStringSheet(
                 context: context,
-                title: 'Quote category',
+                title: AppLocalizations.of(context)!.clockPanelQuoteCategory,
                 values: motivationCategories,
                 selectedValue: motivationCategory,
+                labelBuilder: (value) =>
+                    _motivationCategoryLabel(context, value),
                 onSelected: onMotivationCategoryChanged,
               ),
             ),
             SettingsRow(
               icon: Icons.timer_outlined,
-              label: 'Quote delay',
-              value: '$motivationDelaySeconds sec delay',
+              label: AppLocalizations.of(context)!.clockPanelQuoteDelay,
+              value: AppLocalizations.of(
+                context,
+              )!.clockPanelSecondsDelay(motivationDelaySeconds),
               onTap: () => _showIntSheet(
                 context: context,
-                title: 'Quote delay',
+                title: AppLocalizations.of(context)!.clockPanelQuoteDelay,
                 values: motivationDelayOptions,
                 selectedValue: motivationDelaySeconds,
-                labelBuilder: (v) => '$v sec delay',
+                labelBuilder: (v) =>
+                    AppLocalizations.of(context)!.clockPanelSecondsDelay(v),
                 onSelected: onMotivationDelayChanged,
               ),
             ),
             SettingsToggleRow(
               icon: Icons.visibility_rounded,
-              label: 'Show seconds',
+              label: AppLocalizations.of(context)!.clockPanelShowSeconds,
               value: clockShowSeconds,
               onChanged: (val) => onClockShowSecondsChanged(val),
             ),
             SettingsToggleRow(
               icon: Icons.speed_rounded,
-              label: 'Show milliseconds',
+              label: AppLocalizations.of(context)!.clockPanelShowMilliseconds,
               value: clockShowMilliseconds,
               onChanged: (val) => onClockShowMillisecondsChanged(val),
               showDivider: false,
@@ -275,6 +287,20 @@ class ClockPanel extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _motivationCategoryLabel(BuildContext context, String category) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (category) {
+      'General' => l10n.clockPanelCategoryGeneral,
+      'General Malayalam' => l10n.clockPanelCategoryGeneralMalayalam,
+      'Focus' => l10n.clockPanelCategoryFocus,
+      'Discipline' => l10n.clockPanelCategoryDiscipline,
+      'Calm' => l10n.clockPanelCategoryCalm,
+      'Positivity' => l10n.clockPanelCategoryPositivity,
+      'Historic Figures' => l10n.clockPanelCategoryHistoricFigures,
+      _ => category,
+    };
   }
 
   Future<void> _showIntSheet({
@@ -348,6 +374,7 @@ class ClockPanel extends StatelessWidget {
     required String title,
     required List<String> values,
     required String selectedValue,
+    required String Function(String) labelBuilder,
     required ValueChanged<String?> onSelected,
   }) async {
     final c = context.appColors;
@@ -384,7 +411,7 @@ class ClockPanel extends StatelessWidget {
                     color: selected ? c.accent : c.textMuted,
                   ),
                   title: Text(
-                    value,
+                    labelBuilder(value),
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -458,7 +485,9 @@ class _FeatureToggle extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  active ? 'On' : 'Off',
+                  active
+                      ? AppLocalizations.of(context)!.clockPanelOn
+                      : AppLocalizations.of(context)!.clockPanelOff,
                   style: GoogleFonts.inter(
                     color: active ? c.accent : c.textMuted,
                     fontSize: 11,

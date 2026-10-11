@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 
 import '../theme/palette.dart' show AppColorAccess;
 import 'primary_button.dart';
@@ -58,10 +59,10 @@ class StopwatchPanel extends StatelessWidget {
     return value;
   }
 
-  String _delayLabel(int seconds) {
-    if (seconds < 60) return '$seconds sec';
-    if (seconds % 60 == 0) return '${seconds ~/ 60} min';
-    return '$seconds sec';
+  String _delayLabel(int seconds, AppLocalizations l10n) {
+    if (seconds < 60) return l10n.stopwatchPanelSeconds(seconds);
+    if (seconds % 60 == 0) return l10n.stopwatchPanelMinutes(seconds ~/ 60);
+    return l10n.stopwatchPanelSeconds(seconds);
   }
 
   String _lapDelta(int index) {
@@ -83,9 +84,7 @@ class StopwatchPanel extends StatelessWidget {
         return int.parse(parts[0]) * 60 + seconds;
       }
       if (parts.length == 3) {
-        return int.parse(parts[0]) * 3600 +
-            int.parse(parts[1]) * 60 +
-            seconds;
+        return int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60 + seconds;
       }
       return null;
     } catch (_) {
@@ -119,7 +118,10 @@ class StopwatchPanel extends StatelessWidget {
               child: Center(
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 36,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
                     color: c.surface,
                     borderRadius: BorderRadius.circular(16),
@@ -129,7 +131,7 @@ class StopwatchPanel extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'ELAPSED',
+                        AppLocalizations.of(context)!.stopwatchPanelElapsed,
                         style: GoogleFonts.inter(
                           color: c.textMuted,
                           fontSize: 12,
@@ -154,7 +156,9 @@ class StopwatchPanel extends StatelessWidget {
                       if (lapCount > 0) ...[
                         const SizedBox(height: 8),
                         Text(
-                          '$lapCount laps',
+                          AppLocalizations.of(
+                            context,
+                          )!.stopwatchPanelLaps(lapCount),
                           style: GoogleFonts.inter(
                             color: c.textMuted,
                             fontSize: 13,
@@ -174,15 +178,19 @@ class StopwatchPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: PrimaryButton(
-                    label: isRunning ? 'Pause' : 'Start',
-                    icon: isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    label: isRunning
+                        ? AppLocalizations.of(context)!.stopwatchPanelPause
+                        : AppLocalizations.of(context)!.stopwatchPanelStart,
+                    icon: isRunning
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
                     onPressed: isRunning ? stopStopwatch : startStopwatch,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: SecondaryButton(
-                    label: 'Lap',
+                    label: AppLocalizations.of(context)!.stopwatchPanelLap,
                     icon: Icons.flag_rounded,
                     onPressed: isRunning ? onLap : null,
                   ),
@@ -190,7 +198,7 @@ class StopwatchPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: SecondaryButton(
-                    label: 'Reset',
+                    label: AppLocalizations.of(context)!.stopwatchPanelReset,
                     icon: Icons.refresh_rounded,
                     onPressed: resetStopwatch,
                   ),
@@ -201,12 +209,17 @@ class StopwatchPanel extends StatelessWidget {
 
             // ── Lap list ─────────────────────────────────────────
             if (lapTimes.isNotEmpty) ...[
-              const SectionHeader(label: 'Lap times'),
+              SectionHeader(
+                label: AppLocalizations.of(context)!.stopwatchPanelLapTimes,
+              ),
               const SizedBox(height: 4),
               ...List.generate(math.min(lapTimes.length, 20), (index) {
                 final i = lapTimes.length - 1 - index;
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
@@ -265,20 +278,31 @@ class StopwatchPanel extends StatelessWidget {
             // ── Settings rows ────────────────────────────────────
             SettingsRow(
               icon: Icons.record_voice_over_rounded,
-              label: 'Speech',
-              value: stopwatchSpeakOn ? 'On' : 'Off',
+              label: AppLocalizations.of(context)!.stopwatchPanelSpeech,
+              value: stopwatchSpeakOn
+                  ? AppLocalizations.of(context)!.stopwatchPanelOn
+                  : AppLocalizations.of(context)!.stopwatchPanelOff,
               onTap: () => onStopwatchSpeakOnChanged(!stopwatchSpeakOn),
             ),
             SettingsRow(
               icon: Icons.speed_rounded,
-              label: 'Show milliseconds',
-              value: stopwatchShowMilliseconds ? 'On' : 'Off',
-              onTap: () => onStopwatchShowMillisecondsChanged(!stopwatchShowMilliseconds),
+              label: AppLocalizations.of(
+                context,
+              )!.stopwatchPanelShowMilliseconds,
+              value: stopwatchShowMilliseconds
+                  ? AppLocalizations.of(context)!.stopwatchPanelOn
+                  : AppLocalizations.of(context)!.stopwatchPanelOff,
+              onTap: () => onStopwatchShowMillisecondsChanged(
+                !stopwatchShowMilliseconds,
+              ),
             ),
             SettingsRow(
               icon: Icons.timer_outlined,
-              label: 'Speak delay',
-              value: _delayLabel(stopwatchSpeakDelaySeconds),
+              label: AppLocalizations.of(context)!.stopwatchPanelSpeakDelay,
+              value: _delayLabel(
+                stopwatchSpeakDelaySeconds,
+                AppLocalizations.of(context)!,
+              ),
               onTap: () => _showDelaySheet(context),
               showDivider: false,
             ),
@@ -302,7 +326,7 @@ class StopwatchPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Speak elapsed every',
+                AppLocalizations.of(context)!.stopwatchPanelSpeakElapsedEvery,
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -328,7 +352,7 @@ class StopwatchPanel extends StatelessWidget {
                         color: selected ? c.accent : c.textMuted,
                       ),
                       title: Text(
-                        _delayLabel(value),
+                        _delayLabel(value, AppLocalizations.of(context)!),
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,

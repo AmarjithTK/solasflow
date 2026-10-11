@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 
 import '../models/session_log.dart';
 import '../services/session_log_service.dart';
@@ -32,7 +33,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _load();
   }
 
-
   void _onSessionsChanged() => _load();
 
   Future<void> _load() async {
@@ -49,7 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       debugPrint('[DB] Dashboard history load failed: $error');
       if (!mounted || generation != _loadGeneration) return;
       setState(() {
-        _loadError = 'Unable to load session history.';
+        _loadError = AppLocalizations.of(context)!.dashboardLoadError;
         _loading = false;
       });
     }
@@ -68,7 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Time Utilization',
+          AppLocalizations.of(context)!.dashboardTimeUtilization,
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
         backgroundColor: cs.surface,
@@ -78,26 +78,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: _loadError != null
           ? Center(child: Text(_loadError!))
           : _loading
-              ? const Center(child: CircularProgressIndicator())
-              : _summaries.isEmpty
-              ? Center(
-                  child: Text(
-                    'No sessions logged yet.\nEnable tagging and complete a timer to see data.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: cs.onSurfaceVariant,
-                      fontSize: 14,
-                    ),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  itemCount: _summaries.length,
-                  itemBuilder: (context, index) {
-                    final (date, summary) = _summaries[index];
-                    return DaySummaryCard(date: date, summary: summary);
-                  },
+          ? const Center(child: CircularProgressIndicator())
+          : _summaries.isEmpty
+          ? Center(
+              child: Text(
+                AppLocalizations.of(context)!.dashboardNoSessions,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 14,
                 ),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              itemCount: _summaries.length,
+              itemBuilder: (context, index) {
+                final (date, summary) = _summaries[index];
+                return DaySummaryCard(date: date, summary: summary);
+              },
+            ),
     );
   }
 }

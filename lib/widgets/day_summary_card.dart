@@ -76,7 +76,7 @@ class DaySummaryCard extends StatelessWidget {
                 // Study row
                 _SummaryRow(
                   icon: Icons.menu_book_rounded,
-                  label: 'Study',
+                  label: AppLocalizations.of(context)!.daySummaryStudy,
                   time: summary.studyFormatted,
                   color: studyColor,
                 ),
@@ -84,7 +84,7 @@ class DaySummaryCard extends StatelessWidget {
                 // Non-study row
                 _SummaryRow(
                   icon: Icons.hourglass_top_rounded,
-                  label: 'Non-study',
+                  label: AppLocalizations.of(context)!.daySummaryNonStudy,
                   time: summary.nonStudyFormatted,
                   color: nonStudyColor,
                 ),
