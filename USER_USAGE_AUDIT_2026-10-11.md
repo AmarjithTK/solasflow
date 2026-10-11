@@ -34,8 +34,9 @@ Implementation status is source-reviewed, not device/UI reproduced. Findings not
 | U02, U05, U10, U12, U14, U26–U27 | Fixed in code: paused chain edits update persisted runtime configuration; selecting the current chain preset is a no-op; Repeat Same Timer preserves exact seconds; clock quotes run without time speech and delayed time announcements use the current time; English Rotate is retained and voice/language changes cancel stale speech callbacks. |
 | U11 | Partial: delayed completion speech checks the finished run/revision before firing. An already-speaking completion message is not selectively interrupted on dismissal/restart; finding remains open. |
 | U29, U30, U46–U47 | Fixed in code: strict System/Sherpa modes skip Malayalam asset bypass; Linux eSpeak/Speech Dispatcher fallbacks receive configured volume; external Linux speech processes are tracked for cancellation; Kokoro cancellation is checked after download/extraction and immediately before replacing the installed model. |
+| U48 | Fixed in code: Settings listens to live voice and engine-status notifiers, so voices and the reported runtime refresh while the Settings route remains open. |
 
-Verification after the latest speech-service edits: `dart analyze lib/services/speech_service.dart lib/main.dart` reported no issues. Local `espeak-ng` and `spd-say` help confirmed the configured amplitude/volume options. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform/model-download behavior remains unverified.
+Verification after the live Settings update: `dart analyze lib/main.dart lib/services/speech_service.dart lib/widgets/settings_panel.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform/model-download behavior remains unverified.
 
 ## Most urgent journeys at the audit baseline
 

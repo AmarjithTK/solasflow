@@ -529,6 +529,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   /// List of available TTS voices fetched from system
   List<Map<dynamic, dynamic>> voices = [];
+  final ValueNotifier<List<Map<dynamic, dynamic>>> _settingsVoices =
+      ValueNotifier(const []);
 
   /// Current voice index in the voices list
   int voiceIndex = 0;
@@ -1219,7 +1221,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (Platform.isAndroid && _installedEngines.isEmpty) {
       _installedEngines = await _speechService.getInstalledEngines(flutterTts);
     }
-    final settingsVoices = voices;
+    
     if (!mounted) return;
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -1265,8 +1267,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
           volumeLists: volumeLists,
           isSpeechActive: isSpeechActive,
           speechQueueLength: speechQueue.length,
-          speechEngineRuntime: _speechService.lastEngineUsed,
-          speechEngineRuntimeDetail: _speechService.lastEngineDetail,
+          speechEngineRuntime: _speechService.engineUsed,
+          speechEngineRuntimeDetail: _speechService.engineDetail,
           showEnglishVoiceDownload: Platform.isLinux,
           speechModelDownloadStatus: _speechService.kokoroDownloadStatus,
           onDownloadEnglishVoice: _downloadKokoroVoiceFromSettings,
@@ -1278,7 +1280,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           onClearDesktopModel: (language) =>
               _speechService.clearDesktopModel(language),
           onTestSpeech: _testSpeech,
-          voices: settingsVoices,
+          voices: _settingsVoices,
           availableEngines: _installedEngines,
           onSoundChanged: (val) {
             setState(() {
@@ -2006,6 +2008,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         final dVoices = _speechService.desktopVoices();
         setState(() {
           voices = dVoices;
+          _settingsVoices.value = dVoices;
           _speechLanguageService.allVoices = dVoices;
         });
       }
@@ -2056,6 +2059,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (Platform.isLinux) {
       final dVoices = _speechService.desktopVoices();
       voices = dVoices;
+      _settingsVoices.value = dVoices;
       _speechLanguageService.allVoices = dVoices;
       _desktopService.onQuitRequested = () => unawaited(_exitAppFully());
       await _desktopService.initialize();
@@ -2669,6 +2673,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           if (mounted && identical(tts, flutterTts)) {
             setState(() {
               voices = merged;
+              _settingsVoices.value = merged;
               _speechLanguageService.allVoices = merged;
             });
           }
@@ -2683,6 +2688,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         if (mounted) {
           setState(() {
             voices = dVoices;
+            _settingsVoices.value = dVoices;
             _speechLanguageService.allVoices = dVoices;
           });
         }
@@ -4686,6 +4692,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     // Remove callback to avoid memory leaks
     FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
     _fullscreenFocusMode.dispose();
+    _settingsVoices.dispose();
     super.dispose();
   }
 

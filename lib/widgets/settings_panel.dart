@@ -16,10 +16,10 @@ class SettingsPanel extends ConsumerStatefulWidget {
   final List<double> volumeLists;
   final bool isSpeechActive;
   final int speechQueueLength;
-  final List<Map<dynamic, dynamic>> voices;
+  final ValueListenable<List<Map<dynamic, dynamic>>> voices;
   final List<String> availableEngines;
-  final String speechEngineRuntime;
-  final String speechEngineRuntimeDetail;
+  final ValueListenable<String> speechEngineRuntime;
+  final ValueListenable<String> speechEngineRuntimeDetail;
   final bool showEnglishVoiceDownload;
   final ValueListenable<SpeechModelDownloadStatus> speechModelDownloadStatus;
   final ValueListenable<String> customModelStatus;
@@ -114,10 +114,41 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
   @override
   void initState() {
     super.initState();
+    _addLiveSpeechListeners();
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
       _refreshDesktopAutostart();
     }
   }
+
+  void _addLiveSpeechListeners() {
+    widget.voices.addListener(_refreshLiveSpeechState);
+    widget.speechEngineRuntime.addListener(_refreshLiveSpeechState);
+    widget.speechEngineRuntimeDetail.addListener(_refreshLiveSpeechState);
+  }
+
+  void _removeLiveSpeechListeners(SettingsPanel panel) {
+    panel.voices.removeListener(_refreshLiveSpeechState);
+    panel.speechEngineRuntime.removeListener(_refreshLiveSpeechState);
+    panel.speechEngineRuntimeDetail.removeListener(_refreshLiveSpeechState);
+  }
+
+  void _refreshLiveSpeechState() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _removeLiveSpeechListeners(oldWidget);
+    _addLiveSpeechListeners();
+  }
+
+  @override
+  void dispose() {
+    _removeLiveSpeechListeners(widget);
+    super.dispose();
+  }
+
 
   Future<void> _refreshDesktopAutostart() async {
     try {
@@ -556,9 +587,10 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     ];
 
     final currentLanguageMode = s.voiceListMode.toLowerCase();
+    final availableVoices = widget.voices.value;
     final List<Map<dynamic, dynamic>> languageVoices;
     if (currentLanguageMode == 'malayalam') {
-      final ml = widget.voices.where((v) {
+      final ml = availableVoices.where((v) {
         final loc = (v['locale']?.toString() ?? '').toLowerCase().replaceAll(
           '_',
           '-',
@@ -571,7 +603,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               {'name': 'Standard Malayalam', 'locale': 'ml-IN'},
             ];
     } else if (currentLanguageMode == 'english') {
-      languageVoices = widget.voices.where((v) {
+      languageVoices = availableVoices.where((v) {
         final loc = (v['locale']?.toString() ?? '').toLowerCase().replaceAll(
           '_',
           '-',
@@ -579,14 +611,14 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         return loc.startsWith('en');
       }).toList();
     } else {
-      final ml = widget.voices.where((v) {
+      final ml = availableVoices.where((v) {
         final loc = (v['locale']?.toString() ?? '').toLowerCase().replaceAll(
           '_',
           '-',
         );
         return loc.startsWith('ml');
       }).toList();
-      final en = widget.voices.where((v) {
+      final en = availableVoices.where((v) {
         final loc = (v['locale']?.toString() ?? '').toLowerCase().replaceAll(
           '_',
           '-',
@@ -718,11 +750,11 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               },
             ),
           ),
-          if (widget.speechEngineRuntime.isNotEmpty)
+          if (widget.speechEngineRuntime.value.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(52, 0, 14, 8),
               child: Text(
-                '${widget.speechEngineRuntime} — ${widget.speechEngineRuntimeDetail}',
+                '${widget.speechEngineRuntime.value} — ${widget.speechEngineRuntimeDetail.value}',
                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                 maxLines: 2,
               ),

@@ -13,8 +13,8 @@ import 'desktop_tts_controller.dart';
 import 'malayalam_tts_service.dart';
 class SpeechService {
   Map<String, dynamic>? _sherpaManifestCache;
-  String _lastEngineUsed = 'system';
-  String _lastEngineDetail = 'System TTS ready';
+  final ValueNotifier<String> engineUsed = ValueNotifier('system');
+  final ValueNotifier<String> engineDetail = ValueNotifier('System TTS ready');
   late final DesktopTtsController _desktopOffline = DesktopTtsController(
     _linuxRuntimeBaseDir(),
     _desktopModelsDirectory(),
@@ -47,12 +47,12 @@ class SpeechService {
   Completer<void>? _desktopPlaybackCompleter;
   Process? _externalSpeechProcess;
 
-  String get lastEngineUsed => _lastEngineUsed;
-  String get lastEngineDetail => _lastEngineDetail;
+  String get lastEngineUsed => engineUsed.value;
+  String get lastEngineDetail => engineDetail.value;
 
   void _setEngineStatus(String used, String detail) {
-    _lastEngineUsed = used;
-    _lastEngineDetail = detail;
+    engineUsed.value = used;
+    engineDetail.value = detail;
   }
 
   String normalizeSpeechEngineMode(String mode) {
@@ -217,7 +217,7 @@ class SpeechService {
         'sherpa_unavailable',
         'Offline voice setup failed: $error',
       );
-      customModelStatus.value = _lastEngineDetail;
+      customModelStatus.value = engineDetail.value;
     }
   }
 
@@ -356,7 +356,7 @@ class SpeechService {
         'sherpa_unavailable',
         'Persistent offline speech failed: $error',
       );
-      customModelStatus.value = _lastEngineDetail;
+      customModelStatus.value = engineDetail.value;
       return false;
     } finally {
       if (await outFile.exists()) await outFile.delete();
