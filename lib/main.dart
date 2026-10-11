@@ -537,14 +537,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
   final ValueNotifier<List<Map<dynamic, dynamic>>> _settingsVoices =
       ValueNotifier(const []);
 
-  /// Current voice index in the voices list
-  int voiceIndex = 0;
-
-  /// Flag indicating if background audio is currently playing
-
-  /// Flag indicating if background audio is currently playing
-  bool audioPlaying = false;
-
   /// ============================================================================
   /// TIMER STATE - Timer display & countdown management
   /// ============================================================================
@@ -607,18 +599,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// ANNOUNCEMENT TIMING - 10-second gap enforcement between speech segments
   /// ============================================================================
   /// Prevents rapid repeated announcements from overlapping
-
-  /// Timestamp of last clock announcement (prevents <10s re-announcements)
-  int lastClockSpoke = 0;
-
-  /// Timestamp of last timer announcement (prevents <10s re-announcements)
-  int lastTimerSpoke = 0;
-
-  /// Timestamp of last stopwatch announcement (prevents <10s re-announcements)
-  int lastStopwatchSpoke = 0;
-
-  /// Timestamp of last goal reminder announcement
-  int lastGoalReminderSpoke = 0;
 
   /// Stopwatch ticker interval
   Timer? stopwatchInterval;
@@ -2628,22 +2608,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
     // Master Audio OFF — prevent all ambient audio
     if (_isAudioMuted()) {
       unawaited(_audioService.stopBackground());
-      if (mounted) setState(() => audioPlaying = false);
       return;
     }
     final bool shouldTimerPlay = timerInterval != null && timerNoiseOn;
     final bool shouldClockPlay = clockOn && clockNoiseOn;
     final bool shouldPlay = shouldTimerPlay || shouldClockPlay;
-
-    if (audioPlaying != shouldPlay) {
-      if (mounted) {
-        setState(() {
-          audioPlaying = shouldPlay;
-        });
-      } else {
-        audioPlaying = shouldPlay;
-      }
-    }
 
     if (shouldPlay) {
       unawaited(
@@ -2695,10 +2664,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     _speakAfterGap(
       text: text,
-      getLatestOtherSpoke: () =>
-          max(max(lastClockSpoke, lastTimerSpoke), lastStopwatchSpoke),
-      markSpoke: () =>
-          lastGoalReminderSpoke = DateTime.now().millisecondsSinceEpoch,
       isStillValid: () => goalReminderOn && goalReminderItems.isNotEmpty,
       onFire: () => speak(text),
     );
@@ -2819,16 +2784,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
           debugPrint('TTS getVoices attempt $attempt failed: $error');
         }
         await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
-      }
-      if (Platform.isLinux) {
-        final dVoices = _speechService.desktopVoices();
-        if (mounted) {
-          setState(() {
-            voices = dVoices;
-            _settingsVoices.value = dVoices;
-            _speechLanguageService.allVoices = dVoices;
-          });
-        }
       }
     } finally {
       completer.complete();
@@ -3272,8 +3227,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void _speakAfterGap({
     required String text,
-    required int Function() getLatestOtherSpoke,
-    required void Function() markSpoke,
     required VoidCallback onFire,
     bool Function()? isStillValid,
   }) {
@@ -3295,7 +3248,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
             return;
           }
           _lastAnnouncementElapsedMs = _announcementClock.elapsedMilliseconds;
-          markSpoke();
           onFire();
         });
   }
@@ -3381,9 +3333,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final scheduleGeneration = _clockScheduleGeneration;
     _speakAfterGap(
       text: text,
-      getLatestOtherSpoke: () =>
-          max(max(lastTimerSpoke, lastStopwatchSpoke), lastGoalReminderSpoke),
-      markSpoke: () => lastClockSpoke = DateTime.now().millisecondsSinceEpoch,
       isStillValid: () =>
           clockOn &&
           (clockSpeakTime || motivationOn) &&
@@ -3465,9 +3414,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final timerVoice = _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
     _speakAfterGap(
       text: text,
-      getLatestOtherSpoke: () =>
-          max(max(lastClockSpoke, lastStopwatchSpoke), lastGoalReminderSpoke),
-      markSpoke: () => lastTimerSpoke = DateTime.now().millisecondsSinceEpoch,
       isStillValid: () =>
           timerSpeakOn &&
           (finishedRunId == null ||
@@ -3547,10 +3493,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final speechGeneration = _stopwatchSpeechGeneration;
     _speakAfterGap(
       text: text,
-      getLatestOtherSpoke: () =>
-          max(max(lastClockSpoke, lastTimerSpoke), lastGoalReminderSpoke),
-      markSpoke: () =>
-          lastStopwatchSpoke = DateTime.now().millisecondsSinceEpoch,
       isStillValid: () =>
           speechGeneration == _stopwatchSpeechGeneration &&
           (explicit || (stopwatchInterval != null && stopwatchSpeakOn)),
