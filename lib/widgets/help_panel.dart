@@ -233,7 +233,7 @@ class HelpPanel extends StatelessWidget {
           context,
           title: 'Timer Setup',
           points: [
-            'Set minutes with slider or quick presets.',
+            'Choose a preset or Custom → Minutes (1–720) to set the timer.',
             'Enable speech to hear remaining-time messages.',
             'Chain mode runs preset sequences like Pomodoro automatically.',
           ],
@@ -265,7 +265,8 @@ class HelpPanel extends StatelessWidget {
           points: [
             'If widget command feels delayed, wait 1-2 seconds for sync.',
             'Keep notification and battery permissions allowed for stable background behavior.',
-            'After reboot, enable Accessibility Service in Settings for auto-restart.',
+            'If Android stops SolasFlow after reboot, reopen it and allow background use. '
+                'The app has no Accessibility Service.',
           ],
         ),
       ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
@@ -16,6 +17,7 @@ class FullscreenFocusView extends StatefulWidget {
   final bool Function() isTimerRunningBuilder;
   final bool Function() isStopwatchRunningBuilder;
   final FullscreenFocusMode initialMode;
+  final ValueListenable<FullscreenFocusMode> modeUpdates;
   final bool initialDarkTheme;
   final bool initialDimBrightness;
   final bool initialForceLandscape;
@@ -46,6 +48,7 @@ class FullscreenFocusView extends StatefulWidget {
     required this.isTimerRunningBuilder,
     required this.isStopwatchRunningBuilder,
     required this.initialMode,
+    required this.modeUpdates,
     required this.initialDarkTheme,
     required this.initialDimBrightness,
     required this.initialForceLandscape,
@@ -106,6 +109,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
   void initState() {
     super.initState();
     _mode = widget.initialMode;
+    widget.modeUpdates.addListener(_handleModeUpdate);
     _darkTheme = widget.initialDarkTheme;
     _dimBrightness = widget.initialDimBrightness;
     _dimBrightnessLevel = widget.initialDimBrightnessLevel;
@@ -145,6 +149,22 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
       });
     }
   }
+  void _handleModeUpdate() {
+    final nextMode = widget.modeUpdates.value;
+    if (!mounted || nextMode == _mode) return;
+    setState(() => _mode = nextMode);
+  }
+
+  @override
+  void didUpdateWidget(covariant FullscreenFocusView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.modeUpdates != widget.modeUpdates) {
+      oldWidget.modeUpdates.removeListener(_handleModeUpdate);
+      widget.modeUpdates.addListener(_handleModeUpdate);
+      _handleModeUpdate();
+    }
+  }
+
 
   void _restartControlsHideTimer() {
     _controlsHideTimer?.cancel();
@@ -499,6 +519,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
 
   @override
   void dispose() {
+    widget.modeUpdates.removeListener(_handleModeUpdate);
     _tick?.cancel();
     _controlsHideTimer?.cancel();
     _enqueuePlatformEffect(() async {

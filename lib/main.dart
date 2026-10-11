@@ -566,6 +566,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   /// 3-second auto-clear timer for widget armed state.
   Timer? _widgetArmedTimer;
+  static const Duration _widgetActionConfirmationWindow = Duration(seconds: 3);
 
   /// Formatted display string (MM:SS)
   String timerValue = "00:00";
@@ -828,6 +829,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   int _lastStopwatchNotificationSecond = -1;
 
   int _lastStopwatchAutoAnnouncedSecond = -1;
+  int _stopwatchSpeechGeneration = 0;
 
   /// Enable/disable chain mode (consecutive presets)
   bool chainModeOn = false;
@@ -849,6 +851,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   /// True while the focus fullscreen route is on top.
   bool _fullscreenFocusOpen = false;
+  final ValueNotifier<FullscreenFocusMode> _fullscreenFocusMode =
+      ValueNotifier(FullscreenFocusMode.clock);
 
   /// True when the timer has finished but the dialog hasn't been
   /// dismissed yet.  Used by the foreground notification to show
@@ -1146,13 +1150,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (!mounted) return;
     switch (type) {
       case 'start_25m':
-        setState(() {
-          currentTabIndex = 1;
-          chainModeOn = false;
-          seconds = 25 * 60;
-          timerValue = '25:00';
-        });
-        startTimer();
+        setState(() => currentTabIndex = 1);
+        _startTimerFromMinutes(25);
         break;
       case 'resume_last':
         final last = await _readLastTimerSeconds();
@@ -1763,6 +1762,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             : (timerInterval != null || currentTabIndex == 1
                   ? FullscreenFocusMode.timer
                   : FullscreenFocusMode.clock));
+    _fullscreenFocusMode.value = initialMode;
     if (_fullscreenFocusOpen) return;
     _fullscreenFocusOpen = true;
     await Navigator.of(context)
@@ -1770,6 +1770,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           MaterialPageRoute(
             builder: (_) => FullscreenFocusView(
               initialMode: initialMode,
+              modeUpdates: _fullscreenFocusMode,
               initialDarkTheme: fullscreenDarkTheme,
               initialDimBrightness: fullscreenDimBrightness,
               initialDimBrightnessLevel: fullscreenDimBrightnessLevel,
@@ -1830,6 +1831,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         )
         .whenComplete(() {
           _fullscreenFocusOpen = false;
+          _fullscreenFocusMode.value = FullscreenFocusMode.clock;
         });
     await SystemChrome.setPreferredOrientations([]);
   }
@@ -2241,15 +2243,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _applyAudioSettings();
     await _reconcileForeground(force: true);
 
-    if (!_fullscreenFocusOpen) {
-      unawaited(
-        _openFullscreenFocus(
-          specificMode: FullscreenFocusMode.timer,
-          forceHorizontal: true,
-          startImmersive: true,
-        ),
-      );
-    }
+    unawaited(
+      _openFullscreenFocus(
+        specificMode: FullscreenFocusMode.timer,
+        forceHorizontal: true,
+        startImmersive: true,
+      ),
+    );
   }
 
   Future<void> _writeWidgetState() async {
@@ -2304,6 +2304,21 @@ class _MainScreenState extends ConsumerState<MainScreen>
         final id = raw['id']?.toString();
         final action = raw['action']?.toString();
         if (id == null || action == null) continue;
+        if (action == 'toggle_speech_master' ||
+            action == 'open_fullscreen_clock') {
+          final receivedAtEpochMs =
+              int.tryParse(raw['receivedAtEpochMs']?.toString() ?? '') ?? 0;
+          final ageMs =
+              DateTime.now().millisecondsSinceEpoch - receivedAtEpochMs;
+          if (ageMs < 0 ||
+              ageMs >= _widgetActionConfirmationWindow.inMilliseconds) {
+            await _widgetChannel.invokeMethod<bool>(
+              'ackWidgetAction',
+              {'id': id},
+            );
+            continue;
+          }
+        }
         await _handleWidgetAction(action);
         await _widgetChannel.invokeMethod<bool>('ackWidgetAction', {'id': id});
         if (!mounted) return;
@@ -2348,7 +2363,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _widgetArmedTimer?.cancel();
       _widgetArmedAction = type;
       unawaited(_writeWidgetArmedState(type));
-      _widgetArmedTimer = Timer(const Duration(seconds: 3), () {
+      _widgetArmedTimer = Timer(_widgetActionConfirmationWindow, () {
         if (!mounted) return;
         _widgetArmedAction = null;
         unawaited(_writeWidgetArmedState(''));
@@ -2451,6 +2466,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
           stopwatchSpeakOn = !stopwatchSpeakOn;
           _lsSave();
         });
+        if (!stopwatchSpeakOn) {
+          speechQueue.removeWhere((item) => item.isStopwatchAnnouncement);
+        }
         break;
       case 'toggle_goals_speech':
         setState(() {
@@ -3302,19 +3320,22 @@ class _MainScreenState extends ConsumerState<MainScreen>
     return 'Elapsed ${parts.join(', ')}';
   }
 
-  void _speakStopwatchMessage(String text) {
+  void _speakStopwatchMessage(String text, {bool explicit = false}) {
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;
     }
+    final speechGeneration = _stopwatchSpeechGeneration;
     _speakAfterGap(
       text: text,
       getLatestOtherSpoke: () =>
           max(max(lastClockSpoke, lastTimerSpoke), lastGoalReminderSpoke),
       markSpoke: () =>
           lastStopwatchSpoke = DateTime.now().millisecondsSinceEpoch,
-      isStillValid: () => stopwatchInterval != null && stopwatchSpeakOn,
-      onFire: () => speak(text),
+      isStillValid: () =>
+          speechGeneration == _stopwatchSpeechGeneration &&
+          (explicit || (stopwatchInterval != null && stopwatchSpeakOn)),
+      onFire: () => speak(text, isStopwatchAnnouncement: !explicit),
     );
   }
 
@@ -3347,6 +3368,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Future<void> _applyStopwatchRuntime(StopwatchRuntime runtime) async {
     if (!mounted || runtime.revision < _stopwatchRuntime.revision) return;
+    _stopwatchSpeechGeneration++;
     stopwatchInterval?.cancel();
     _stopwatchRuntime = runtime;
     final elapsedSeconds = runtime.elapsedMsAt(DateTime.now()) ~/ 1000;
@@ -3385,6 +3407,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void stopStopwatch() {
     if (!_stopwatchRuntime.isRunning) return;
+    _stopwatchSpeechGeneration++;
     final elapsed = _stopwatchRuntime.elapsedMsAt(DateTime.now());
     _stopwatchRuntime = _stopwatchRuntime.copyWith(
       isRunning: false,
@@ -3399,6 +3422,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void resetStopwatch() {
+    _stopwatchSpeechGeneration++;
     stopwatchInterval?.cancel();
     _stopwatchRuntime = StopwatchRuntime.idle().copyWith(
       revision: _stopwatchRuntime.revision + 1,
@@ -3417,7 +3441,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void speakStopwatchElapsedNow() {
-    _speakStopwatchMessage(_stopwatchElapsedSpeechText());
+    _speakStopwatchMessage(_stopwatchElapsedSpeechText(), explicit: true);
   }
 
   Future<void> _restoreTimerRuntime() async {
@@ -3743,7 +3767,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     if (selectedMinutes == null) {
       await _dismissFinishedTimer();
-      if (_fullscreenFocusOpen) {
+      if (_fullscreenFocusOpen &&
+          _fullscreenFocusMode.value == FullscreenFocusMode.timer) {
         await rootNavigator.maybePop();
       }
       return;
@@ -4525,10 +4550,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
           stopwatchSpeakDelaySeconds: stopwatchSpeakDelaySeconds,
           stopwatchSpeakDelayOptions: stopwatchSpeakDelayOptions,
           onStopwatchSpeakOnChanged: (val) {
+            final nowOn = val ?? true;
             setState(() {
-              stopwatchSpeakOn = val ?? true;
+              stopwatchSpeakOn = nowOn;
               _lsSave();
             });
+            if (!nowOn) {
+              speechQueue.removeWhere((item) => item.isStopwatchAnnouncement);
+            }
           },
           onStopwatchShowMillisecondsChanged: (val) {
             setState(() {
@@ -4545,6 +4574,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             setState(() {
               stopwatchSpeakDelaySeconds = val;
               _lastStopwatchAutoAnnouncedSecond = -1;
+              _stopwatchSpeechGeneration++;
               _lsSave();
             });
           },
@@ -4614,6 +4644,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _desktopService.dispose();
     // Remove callback to avoid memory leaks
     FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
+    _fullscreenFocusMode.dispose();
     super.dispose();
   }
 
@@ -4713,38 +4744,35 @@ class _MainScreenState extends ConsumerState<MainScreen>
                         : _buildStopwatchTab()),
             ),
           ),
-          bottomNavigationBar: orientation == Orientation.portrait
-              ? BottomNavBar(
-                  selectedIndex: currentTabIndex,
-                  onDestinationSelected: (index) {
-                    setState(() {
-                      currentTabIndex = index;
-                    });
-                    // Clear two-tap armed state when leaving timer tab
-                    if (index != 1) {
-                      _armedPresetTimer?.cancel();
-                      _armedPresetValue = null;
-                    }
-                  },
-                  destinations: const [
-                    NavDestination(
-                      icon: Icons.watch_later_outlined,
-                      activeIcon: Icons.watch_later_outlined,
-                      label: 'Clock',
-                    ),
-                    NavDestination(
-                      icon: Icons.hourglass_empty_rounded,
-                      activeIcon: Icons.hourglass_empty_rounded,
-                      label: 'Timer',
-                    ),
-                    NavDestination(
-                      icon: Icons.timer_outlined,
-                      activeIcon: Icons.timer_outlined,
-                      label: 'Stopwatch',
-                    ),
-                  ],
-                )
-              : null,
+          bottomNavigationBar: BottomNavBar(
+            selectedIndex: currentTabIndex,
+            onDestinationSelected: (index) {
+              setState(() {
+                currentTabIndex = index;
+              });
+              if (index != 1) {
+                _armedPresetTimer?.cancel();
+                _armedPresetValue = null;
+              }
+            },
+            destinations: const [
+              NavDestination(
+                icon: Icons.watch_later_outlined,
+                activeIcon: Icons.watch_later_outlined,
+                label: 'Clock',
+              ),
+              NavDestination(
+                icon: Icons.hourglass_empty_rounded,
+                activeIcon: Icons.hourglass_empty_rounded,
+                label: 'Timer',
+              ),
+              NavDestination(
+                icon: Icons.timer_outlined,
+                activeIcon: Icons.timer_outlined,
+                label: 'Stopwatch',
+              ),
+            ],
+          ),
         );
       },
     );

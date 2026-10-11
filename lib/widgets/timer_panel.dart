@@ -600,43 +600,56 @@ class TimerPanel extends StatelessWidget {
   Future<void> _showCustomTimeDialog(BuildContext context) async {
     final c = context.appColors;
     final controller = TextEditingController(text: '25');
+    String? inputError;
     final result = await showDialog<int>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          'Custom timer',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: c.textPrimary,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(
+            'Custom timer',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: c.textPrimary,
+            ),
           ),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          style: GoogleFonts.inter(fontSize: 16, color: c.textPrimary),
-          decoration: InputDecoration(
-            labelText: 'Minutes',
-            hintText: 'Enter minutes (1-720)',
-            suffixText: 'min',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final parsed = int.tryParse(controller.text.trim());
-              if (parsed != null && parsed >= 1 && parsed <= 720) {
-                Navigator.of(ctx).pop(parsed);
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            style: GoogleFonts.inter(fontSize: 16, color: c.textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Minutes',
+              hintText: 'Enter minutes (1-720)',
+              suffixText: 'min',
+              errorText: inputError,
+            ),
+            onChanged: (_) {
+              if (inputError != null) {
+                setDialogState(() => inputError = null);
               }
             },
-            child: const Text('Set'),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final parsed = int.tryParse(controller.text.trim());
+                if (parsed != null && parsed >= 1 && parsed <= 720) {
+                  Navigator.of(ctx).pop(parsed);
+                } else {
+                  setDialogState(
+                    () => inputError = 'Enter a whole number from 1 to 720.',
+                  );
+                }
+              },
+              child: const Text('Set'),
+            ),
+          ],
+        ),
       ),
     );
     controller.dispose();

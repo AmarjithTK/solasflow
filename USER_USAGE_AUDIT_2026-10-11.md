@@ -30,10 +30,11 @@ Implementation status is source-reviewed, not device/UI reproduced. Findings not
 | U35–U36 | Fixed in code: backup exports avoid same-minute collisions, write failures remain errors, and invalid/incomplete imports are rejected rather than treated as cancellation/default settings. |
 | U32–U34 | Fixed in code: restore reschedules/stops Clock from imported state, stops current speech and muted audio, and rebinds Android TTS from the imported engine selection. |
 | U37 | Scope clarified in Settings UI and restore confirmation: JSON backups cover app preferences, not local desktop offline-model selections; restore leaves those local selections unchanged. |
+| U18–U19, U38–U41, U49–U52 | Fixed in code: explicit stopwatch speech no longer depends on periodic speech/running state; reset/pause/schedule changes invalidate old stopwatch messages; fullscreen focus requests update the open route and timer dismissal preserves unrelated focus; Start 25m uses timer replacement; stale native confirmations expire from tap time; landscape retains tabs; Help copy and Custom input validation match reachable behavior. |
 
-Verification after the latest backup/restore edits: `dart analyze lib/main.dart lib/services/settings_service.dart lib/widgets/settings_panel.dart lib/models/app_settings.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform and timing behavior remains unverified.
+Verification after the latest interaction edits: `dart analyze lib/main.dart lib/models/speech_item.dart lib/widgets/fullscreen_focus_view.dart lib/widgets/timer_panel.dart lib/widgets/help_panel.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform and timing behavior remains unverified.
 
-## Most urgent journeys
+## Most urgent journeys at the audit baseline
 
 1. **Finish timer → notification Repeat → old completion dialog Close:** the new runtime becomes idle while its interval remains non-null, leaving a frozen countdown.
 2. **Reach a segment boundary with the UI ticker unavailable → reopen a chain:** background/restore paths mark the intermediate segment finished instead of advancing the advertised sequence.
@@ -1286,7 +1287,7 @@ The first audit's concrete chain-accounting numeric example should not be reused
 - Code validation, staging and guarded replacement make several local-model import/recovery suspicions unfounded. No claimed checksum omission or fabricated missing audio assets were retained.
 - Architecture size, dead code, generated-file policy, CI/build/package hygiene and unsupported wished-for controls were outside this second pass unless an existing user action demonstrably failed.
 
-## Suggested repair order — no fixes applied
+## Original suggested repair order (audit baseline)
 
 1. Bind timer completion/dialog/speech results to the owning run/revision and retire obsolete work before adopting replacement timers.
 2. Share durable chain-stage advancement across UI ticking, foreground task and expired-runtime restoration; preserve chain configuration and completed-cycle position.
@@ -1326,3 +1327,14 @@ Also addressed first-audit findings 01–02: imports no longer turn arbitrary JS
 Also addressed first-audit findings **03–05**: foreground-task completion logs tagged segments, timer runs carry their segment-start remaining seconds across persistence, pause/resume logs only the active interval, and each chain segment is recorded separately. Session IDs deduplicate a foreground/background completion of the same runtime revision. First-audit **26** now shows a bounded history-load error instead of an indefinite spinner.
 
 `dart analyze lib/main.dart lib/models/timer_runtime.dart lib/models/session_log.dart lib/services/session_log_service.dart lib/services/timer_runtime_store.dart lib/widgets/dashboard_screen.dart` reported no issues. Runtime smoke remains unavailable: no display session; tests remain prohibited unless requested.
+
+### Milestone 3–5 — audio, restore and interaction repairs
+
+| Finding | Repair |
+|---|---|
+| U08/U13/U15/U21–U25/U28/U31 | Notification playback teardown, per-module delayed speech validity, clock schedule generations, sleep-window boundary rechecks/audio restoration, timer-speech suppression and speech-only TTS gain. |
+| U32–U34/U37 | Restore applies clock and mute effects and rebinds Android TTS; backup UI explicitly excludes local desktop offline-model selections and states restore preserves them. |
+| U18/U19/U38/U39 | Explicit Drive stopwatch speech works while paused/automatic speech is off; stopwatch generations invalidate stale session announcements; existing focus routes update module mode and timer dismissal pops only timer focus. |
+| U40/U41/U49–U52 | Start 25m uses the replacement transition; native confirmations use arrival-time expiration; tab navigation stays reachable in landscape; Help and Custom timer validation reflect actual controls. |
+
+`dart analyze lib/main.dart lib/models/speech_item.dart lib/widgets/fullscreen_focus_view.dart lib/widgets/timer_panel.dart lib/widgets/help_panel.dart` reported no issues. App runtime/UI and Android/Kotlin builds remain unavailable/unrun; all other audit findings remain open.

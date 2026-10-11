@@ -109,6 +109,7 @@ class MainActivity : FlutterActivity() {
             JSONObject()
                 .put("id", UUID.randomUUID().toString())
                 .put("action", action)
+                .put("receivedAtEpochMs", System.currentTimeMillis())
         )
         prefs.edit().putString(ACTION_QUEUE_KEY, queue.toString()).commit()
     }
@@ -122,7 +123,11 @@ class MainActivity : FlutterActivity() {
             val id = item.optString("id")
             val action = item.optString("action")
             if (id.isEmpty() || action.isEmpty()) null
-            else mapOf("id" to id, "action" to action)
+            else mapOf(
+                "id" to id,
+                "action" to action,
+                "receivedAtEpochMs" to item.optString("receivedAtEpochMs", "0")
+            )
         }
     }
 
