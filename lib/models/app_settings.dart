@@ -194,7 +194,7 @@ class AppSettings {
       favoriteVoiceLocale: () => _cleanNullable(favoriteVoiceLocale),
       appFontSizeMultiplier: appFontSizeMultiplier.clamp(0.8, 1.5).toDouble(),
       fullscreenDimBrightnessLevel: fullscreenDimBrightnessLevel
-          .clamp(0.01, 1)
+          .clamp(0.01, 0.5)
           .toDouble(),
       sessionTag: normalizedTag,
     );
