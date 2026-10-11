@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/session_log.dart';
 
 /// A card showing study/non-study totals for a single day.
@@ -20,14 +20,15 @@ class DaySummaryCard extends StatelessWidget {
     this.onTap,
   });
 
-  String _dayLabel() {
+  String _dayLabel(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final target = DateTime(date.year, date.month, date.day);
     final diff = today.difference(target).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Yesterday';
-    return DateFormat('d MMM y').format(date);
+    final localizations = AppLocalizations.of(context)!;
+    if (diff == 0) return localizations.today;
+    if (diff == 1) return localizations.yesterday;
+    return MaterialLocalizations.of(context).formatMediumDate(date);
   }
 
   @override
@@ -53,7 +54,7 @@ class DaySummaryCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      _dayLabel(),
+                      _dayLabel(context),
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

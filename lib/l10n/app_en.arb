@@ -33,5 +33,7 @@
   "sleepEndLabel": "Sleep End Time",
   "longPressToDone": "Long press timer to mark done",
   "sessionCompleted": "Session Completed!",
-  "motivationQuote": "Motivation"
+  "motivationQuote": "Motivation",
+  "today": "Today",
+  "yesterday": "Yesterday"
 }

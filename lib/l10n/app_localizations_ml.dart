@@ -111,4 +111,10 @@ class AppLocalizationsMl extends AppLocalizations {
 
   @override
   String get motivationQuote => 'പ്രചോദനം';
+
+  @override
+  String get today => 'ഇന്ന്';
+
+  @override
+  String get yesterday => 'ഇന്നലെ';
 }

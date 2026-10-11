@@ -109,4 +109,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get motivationQuote => 'Motivation';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
 }

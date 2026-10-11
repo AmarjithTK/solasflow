@@ -33,5 +33,7 @@
   "sleepEndLabel": "ഉറക്കമുണരുന്ന സമയം",
   "longPressToDone": "പൂർത്തിയായെന്ന് അടയാളപ്പെടുത്താൻ ടൈമറിൽ ദീർഘനേരം അമർത്തുക",
   "sessionCompleted": "സെഷൻ പൂർത്തിയായി!",
-  "motivationQuote": "പ്രചോദനം"
+  "motivationQuote": "പ്രചോദനം",
+  "today": "ഇന്ന്",
+  "yesterday": "ഇന്നലെ"
 }
