@@ -1377,8 +1377,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             debugPrint('[SettingsPanel] onVoiceListModeChanged val=$val');
             if (val == null) return;
             _voiceSessionManager.resetSession();
-            speechQueue.clear();
-            unawaited(_stopTts());
+            _cancelPendingSpeech();
             setState(() {
               final normalized = _speechService.normalizeVoiceLanguageMode(val);
               debugPrint('[SettingsPanel] normalized language=$normalized');
@@ -1390,7 +1389,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     voice['name']?.toString() == favoriteVoiceName &&
                     voice['locale']?.toString() == favoriteVoiceLocale,
               );
-              if (!hasFavorite) {
+              if (favoriteVoiceName != '__rotate__' && !hasFavorite) {
                 favoriteVoiceName = null;
                 favoriteVoiceLocale = null;
               }
@@ -1418,9 +1417,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
           },
           onFavoriteVoiceChanged: (val) {
             debugPrint('[SettingsPanel] onFavoriteVoiceChanged val=$val');
+            _cancelPendingSpeech();
             setState(() {
-              if (val == null || val == '__auto__' || val == '__rotate__') {
+              if (val == null || val == '__auto__') {
                 favoriteVoiceName = null;
+                favoriteVoiceLocale = null;
+              } else if (val == '__rotate__') {
+                favoriteVoiceName = '__rotate__';
                 favoriteVoiceLocale = null;
               } else {
                 final parts = val.split('|');
@@ -3127,7 +3130,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void startClock() {
     stopClock();
     if (!clockOn) return;
-    if (clockSpeakTime) speakClock(timeToWords());
+    if (clockSpeakTime || motivationOn) speakClock(timeToWords());
     _nextClockAt = DateTime.now().add(Duration(minutes: clockIntervalMins));
     _scheduleNextClockAnnouncement();
     unawaited(_reconcileForeground(force: true));
@@ -3147,7 +3150,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         '[CLOCK] Interval fired at $firedAt; deadline=$due; '
         'lateness=${firedAt.difference(due).inMilliseconds}ms',
       );
-      if (clockSpeakTime) speakClock(timeToWords());
+      if (clockSpeakTime || motivationOn) speakClock(timeToWords());
       _nextClockAt = _timerService.nextClockAnnouncementAt(
         firedAt: firedAt,
         intervalMinutes: clockIntervalMins,
@@ -3195,22 +3198,25 @@ class _MainScreenState extends ConsumerState<MainScreen>
       markSpoke: () => lastClockSpoke = DateTime.now().millisecondsSinceEpoch,
       isStillValid: () =>
           clockOn &&
-          clockSpeakTime &&
+          (clockSpeakTime || motivationOn) &&
           scheduleGeneration == _clockScheduleGeneration,
       onFire: () {
         debugPrint('[CLOCK] Queuing announcement at ${DateTime.now()}');
         speechQueue.removeWhere((item) => item.isClockAnnouncement);
-        final repeatCount = clockSpeakRepeatCount.clamp(1, 3);
-        for (var i = 0; i < repeatCount; i++) {
-          speechQueue.add(
-            SpeechItem(
-              text,
-              isClockAnnouncement: true,
-              delayMs: i == 0 ? 0 : 350,
-              language: useMalayalam ? 'ml' : 'en',
-              voice: clockVoice,
-            ),
-          );
+        if (clockSpeakTime) {
+          final currentText = timeToWords();
+          final repeatCount = clockSpeakRepeatCount.clamp(1, 3);
+          for (var i = 0; i < repeatCount; i++) {
+            speechQueue.add(
+              SpeechItem(
+                currentText,
+                isClockAnnouncement: true,
+                delayMs: i == 0 ? 0 : 350,
+                language: useMalayalam ? 'ml' : 'en',
+                voice: clockVoice,
+              ),
+            );
+          }
         }
         if (motivationOn) {
           final quoteText = _nextQuoteForCategory(motivationCategory);
@@ -3252,7 +3258,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
   }
 
-  void speakTimerMessage(String text) {
+  void speakTimerMessage(
+    String text, {
+    String? finishedRunId,
+    int? finishedRevision,
+  }) {
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;
@@ -3265,7 +3275,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
       getLatestOtherSpoke: () =>
           max(max(lastClockSpoke, lastStopwatchSpoke), lastGoalReminderSpoke),
       markSpoke: () => lastTimerSpoke = DateTime.now().millisecondsSinceEpoch,
-      isStillValid: () => timerSpeakOn,
+      isStillValid: () =>
+          timerSpeakOn &&
+          (finishedRunId == null ||
+              (_timerRuntime.status == TimerRuntimeStatus.finished &&
+                  _timerRuntime.runId == finishedRunId &&
+                  _timerRuntime.revision == finishedRevision)),
       onFire: () => speak(
         text,
         voice: timerVoice,
@@ -3694,6 +3709,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
           useMalayalam
               ? _malayalamTtsService.timerFinished()
               : 'Timer finished',
+          finishedRunId: _timerRuntime.runId,
+          finishedRevision: _timerRuntime.revision,
         );
       }
       final alarmGeneration = ++_alarmGeneration;
@@ -3720,17 +3737,23 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void _startTimerFromMinutes(int minutes) {
     final safeMinutes = minutes.clamp(1, 720).toInt();
+    _startTimerFromDurationSeconds(safeMinutes * 60);
+  }
+
+  void _startTimerFromDurationSeconds(int durationSeconds) {
+    final safeSeconds = durationSeconds.clamp(1, 720 * 60).toInt();
+    final displayMinutes = ((safeSeconds + 59) ~/ 60).clamp(1, 720);
     _stopMobileRingtone();
     stopTimer();
     setState(() {
       _isTimerFinished = false;
       chainModeOn = false;
       chainIndex = 0;
-      sliderValue = safeMinutes;
-      seconds = safeMinutes * 60;
-      timerValue = '${safeMinutes.toString().padLeft(2, '0')}:00';
-      timerDisplayValue = _formatTimerDisplayValue(seconds);
-      _activeTimerDurationSeconds = seconds;
+      sliderValue = displayMinutes;
+      seconds = safeSeconds;
+      timerValue = _formatTimerDisplayValue(safeSeconds);
+      timerDisplayValue = timerValue;
+      _activeTimerDurationSeconds = safeSeconds;
     });
     unawaited(_audioService.stopNotification());
     startTimer();
@@ -3748,9 +3771,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final finishedRevision = _timerRuntime.revision;
 
     _timerFinishedDialogOpen = true;
-    int? selectedMinutes;
+    int? selectedDurationSeconds;
     try {
-      selectedMinutes = _fullscreenFocusOpen
+      selectedDurationSeconds = _fullscreenFocusOpen
           ? await _showFullscreenTimerFinishedDialog()
           : await _showNormalTimerFinishedDialog();
     } finally {
@@ -3765,7 +3788,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         _timerRuntime.status != TimerRuntimeStatus.finished) {
       return;
     }
-    if (selectedMinutes == null) {
+    if (selectedDurationSeconds == null) {
       await _dismissFinishedTimer();
       if (_fullscreenFocusOpen &&
           _fullscreenFocusMode.value == FullscreenFocusMode.timer) {
@@ -3773,7 +3796,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       }
       return;
     }
-    _startTimerFromMinutes(selectedMinutes);
+    _startTimerFromDurationSeconds(selectedDurationSeconds);
   }
 
   Future<int?> _showNormalTimerFinishedDialog() async {
@@ -3810,7 +3833,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
               });
               return;
             }
-            Navigator.of(dialogContext).pop(minutes);
+            Navigator.of(dialogContext).pop(minutes * 60);
           }
 
           return Dialog.fullscreen(
@@ -3835,14 +3858,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
                               children: [
                                 OutlinedButton.icon(
                                   onPressed: () {
-                                    final repeatMinutes =
-                                        (_lastFinishedTimerDurationSeconds ~/
-                                                60)
-                                            .clamp(1, 720)
-                                            .toInt();
                                     Navigator.of(
                                       dialogContext,
-                                    ).pop(repeatMinutes);
+                                    ).pop(_lastFinishedTimerDurationSeconds);
                                   },
                                   icon: const Icon(Icons.replay_rounded),
                                   label: const Text('Repeat Same Timer'),
@@ -3871,7 +3889,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                                       style: presetStyle,
                                       onPressed: () => Navigator.of(
                                         dialogContext,
-                                      ).pop(minutes),
+                                      ).pop(minutes * 60),
                                       child: Text('$minutes min'),
                                     );
                                   },
@@ -3958,7 +3976,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
             borderRadius: BorderRadius.circular(16),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () => Navigator.of(dialogContext).pop(mins),
+              onTap: () =>
+                  Navigator.of(dialogContext).pop(mins * 60),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -4016,11 +4035,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     height: 58,
                     child: FilledButton.icon(
                       onPressed: () {
-                        final repeatMinutes =
-                            (_lastFinishedTimerDurationSeconds ~/ 60)
-                                .clamp(1, 720)
-                                .toInt();
-                        Navigator.of(dialogContext).pop(repeatMinutes);
+                        Navigator.of(
+                          dialogContext,
+                        ).pop(_lastFinishedTimerDurationSeconds);
                       },
                       icon: const Icon(Icons.replay_rounded),
                       label: const Text('Repeat Same Timer'),
@@ -4092,6 +4109,24 @@ class _MainScreenState extends ConsumerState<MainScreen>
           ),
         );
       },
+    );
+  }
+
+  void _saveChainSettingsToTimerRuntime() {
+    if (_timerRuntime.status == TimerRuntimeStatus.idle) return;
+    _timerRuntime = _timerRuntime.copyWith(
+      chainModeOn: chainModeOn,
+      chainPresetKey: chainPresetKey,
+      chainIndex: chainIndex,
+      revision: _timerRuntime.revision + 1,
+    );
+    unawaited(
+      _timerRuntimeStore.save(_timerRuntime).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        debugPrint('[STATE] Failed to save timer chain settings: $error');
+      }),
     );
   }
 
@@ -4313,7 +4348,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
               _lsSave();
             });
             if (!nowOn) {
-              speechQueue.removeWhere((item) => item.isClockAnnouncement);
+              speechQueue.removeWhere(
+                (item) => item.isClockAnnouncement && !item.isQuote,
+              );
             }
             if (needsStart) {
               startClock();
@@ -4459,19 +4496,23 @@ class _MainScreenState extends ConsumerState<MainScreen>
             });
           },
           onChainModeChanged: (val) {
+            final nextMode = val ?? false;
+            if (nextMode == chainModeOn) return;
             setState(() {
-              chainModeOn = val ?? false;
+              chainModeOn = nextMode;
               chainIndex = 0;
               _lsSave();
             });
+            _saveChainSettingsToTimerRuntime();
           },
           onChainPresetChanged: (val) {
-            if (val == null) return;
+            if (val == null || val == chainPresetKey) return;
             setState(() {
               chainPresetKey = val;
               chainIndex = 0;
               _lsSave();
             });
+            _saveChainSettingsToTimerRuntime();
           },
           taggingOn: taggingOn,
           sessionTag: sessionTag,
