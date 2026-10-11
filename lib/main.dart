@@ -1318,8 +1318,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
           ),
           soundList: soundList,
           volumeLists: volumeLists,
-          isSpeechActive: isSpeechActive,
-          speechQueueLength: speechQueue.length,
           speechEngineRuntime: _speechService.engineUsed,
           speechEngineRuntimeDetail: _speechService.engineDetail,
           showEnglishVoiceDownload: Platform.isLinux,
@@ -2070,7 +2068,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
         _todaySummaryDate = summaryDate;
         unawaited(_refreshTodaySummary());
       }
-      final timerDisplay = _formatTimerDisplayValue(seconds);
+      final remainingMilliseconds = _timerRuntime.endAtEpochMs == null
+          ? null
+          : (_timerRuntime.endAtEpochMs! - now.millisecondsSinceEpoch).clamp(
+              0,
+              720 * 60 * 1000,
+            );
+      final timerDisplay = _formatTimerDisplayValue(
+        seconds,
+        remainingMilliseconds: remainingMilliseconds,
+      );
       final stopwatchDisplay = _formatStopwatchElapsed(
         stopwatchElapsedSeconds,
         showMilliseconds: stopwatchShowMilliseconds,
@@ -3451,10 +3458,18 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
   }
 
-  String _formatTimerDisplayValue(int totalSeconds) {
-    final mins = (totalSeconds ~/ 60).toString().padLeft(2, '0');
-    final secs = (totalSeconds % 60).toString().padLeft(2, '0');
-    return '$mins:$secs';
+  String _formatTimerDisplayValue(
+    int totalSeconds, {
+    int? remainingMilliseconds,
+  }) {
+    final totalMilliseconds = timerShowMilliseconds
+        ? (remainingMilliseconds ?? totalSeconds * 1000)
+        : totalSeconds * 1000;
+    final mins = (totalMilliseconds ~/ 60000).toString().padLeft(2, '0');
+    final secs = ((totalMilliseconds ~/ 1000) % 60).toString().padLeft(2, '0');
+    if (!timerShowMilliseconds) return '$mins:$secs';
+    final millis = (totalMilliseconds % 1000).toString().padLeft(3, '0');
+    return '$mins:$secs.$millis';
   }
 
   String _formatStopwatchElapsed(
@@ -4593,7 +4608,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       child: ColoredBox(
         color: cs.surface,
         child: TimerPanel(
-          onExitApp: () => unawaited(_exitAppFully()),
           onFullscreenPressed: () => _openFullscreenFocus(
             specificMode: FullscreenFocusMode.timer,
             forceHorizontal: true,
@@ -4607,7 +4621,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
           sliderValue: sliderValue,
           remainingSeconds: seconds,
           durationSeconds: _activeTimerDurationSeconds,
-          voicesCount: voices.length,
           isRunning: timerInterval != null,
           presetValues: presetValues,
           startTimer: startTimer,
@@ -4617,11 +4630,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
           addTimeToRunningTimer: addTimeToRunningTimer,
           armedPresetValue: _armedPresetValue,
           onPresetTap: _onPresetTap,
-          onSliderChanged: (val) {
-            setState(() {
-              sliderValue = val.toInt();
-            });
-          },
           timerNoiseOn: timerNoiseOn,
           timerSpeakOn: timerSpeakOn,
           timerShowMilliseconds: timerShowMilliseconds,
@@ -4742,7 +4750,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       child: ColoredBox(
         color: cs.surface,
         child: StopwatchPanel(
-          onExitApp: () => unawaited(_exitAppFully()),
           onFullscreenPressed: () => _openFullscreenFocus(
             specificMode: FullscreenFocusMode.moduleC,
             forceHorizontal: true,

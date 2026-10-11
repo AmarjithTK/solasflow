@@ -21,7 +21,6 @@ class StopwatchPanel extends StatelessWidget {
   final VoidCallback? onLap;
   final int lapCount;
   final List<String> lapTimes;
-  final VoidCallback onExitApp;
 
   final bool stopwatchSpeakOn;
   final bool stopwatchShowMilliseconds;
@@ -43,7 +42,6 @@ class StopwatchPanel extends StatelessWidget {
     this.onLap,
     this.lapCount = 0,
     this.lapTimes = const [],
-    required this.onExitApp,
     required this.stopwatchSpeakOn,
     required this.stopwatchShowMilliseconds,
     required this.stopwatchSpeakDelaySeconds,

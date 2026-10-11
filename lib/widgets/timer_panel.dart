@@ -17,13 +17,11 @@ class TimerPanel extends StatelessWidget {
   final int sliderValue;
   final int durationSeconds;
   final int remainingSeconds;
-  final int voicesCount;
   final bool isRunning;
   final List<int> presetValues;
   final VoidCallback startTimer;
   final VoidCallback stopTimer;
   final VoidCallback resetTimer;
-  final ValueChanged<double> onSliderChanged;
   final ValueChanged<int> choosePreset;
   final ValueChanged<int> addTimeToRunningTimer;
 
@@ -49,7 +47,6 @@ class TimerPanel extends StatelessWidget {
   final ValueChanged<bool?> onFullscreenShowClockChanged;
   final VoidCallback onFullscreenPressed;
   final VoidCallback onFullscreenImmersivePressed;
-  final VoidCallback onExitApp;
 
   // Tagging (study/non-study)
   final bool taggingOn;
@@ -65,13 +62,11 @@ class TimerPanel extends StatelessWidget {
     required this.sliderValue,
     required this.durationSeconds,
     required this.remainingSeconds,
-    required this.voicesCount,
     required this.isRunning,
     required this.presetValues,
     required this.startTimer,
     required this.stopTimer,
     required this.resetTimer,
-    required this.onSliderChanged,
     required this.choosePreset,
     required this.addTimeToRunningTimer,
     this.armedPresetValue,
@@ -95,7 +90,6 @@ class TimerPanel extends StatelessWidget {
     required this.onFullscreenShowClockChanged,
     required this.onFullscreenPressed,
     required this.onFullscreenImmersivePressed,
-    required this.onExitApp,
     required this.taggingOn,
     required this.sessionTag,
     required this.onTaggingOnChanged,
@@ -384,24 +378,8 @@ class TimerPanel extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // ── Quick presets ──────────────────────────────────
             PresetGrid(
-              presets: const [
-                1,
-                2,
-                3,
-                5,
-                7,
-                10,
-                12,
-                15,
-                20,
-                25,
-                30,
-                35,
-                45,
-                60,
-              ],
+              presets: presetValues,
               selectedValue: sliderValue,
               armedValue: armedPresetValue,
               onTap: onPresetTap,
@@ -528,7 +506,12 @@ class TimerPanel extends StatelessWidget {
             ],
             const SizedBox(height: 24),
 
-            // ── Inline timer options (no bottom sheet) ──────────
+            SettingsToggleRow(
+              icon: Icons.timer_outlined,
+              label: 'Show milliseconds',
+              value: timerShowMilliseconds,
+              onChanged: onTimerShowMillisecondsChanged,
+            ),
             SettingsRow(
               icon: Icons.timer_outlined,
               label: 'Announce every',

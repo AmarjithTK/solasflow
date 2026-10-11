@@ -14,8 +14,6 @@ class SettingsPanel extends ConsumerStatefulWidget {
   // ── Side-effect callbacks only (audio, TTS, foreground service) ──
   final List<SoundOption> soundList;
   final List<double> volumeLists;
-  final bool isSpeechActive;
-  final int speechQueueLength;
   final ValueListenable<List<Map<dynamic, dynamic>>> voices;
   final List<String> availableEngines;
   final ValueListenable<String> speechEngineRuntime;
@@ -59,8 +57,6 @@ class SettingsPanel extends ConsumerStatefulWidget {
     super.key,
     required this.soundList,
     required this.volumeLists,
-    required this.isSpeechActive,
-    required this.speechQueueLength,
     required this.voices,
     this.availableEngines = const [],
     required this.speechEngineRuntime,
