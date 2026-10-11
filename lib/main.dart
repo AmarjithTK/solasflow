@@ -1218,11 +1218,50 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _startForegroundHealthCheck();
   }
 
-  void _openSettings() async {
-    if (Platform.isAndroid && _installedEngines.isEmpty) {
-      _installedEngines = await _speechService.getInstalledEngines(flutterTts);
+  Future<void> _changeSpeechEngineMode(String mode) async {
+    setState(() {
+      speechEngineMode = mode;
+      _lsSave();
+    });
+    try {
+      if (Platform.isAndroid &&
+          mode != 'auto' &&
+          mode != 'sherpa_only' &&
+          mode != 'system_only') {
+        await _speechService.setSpeechEngine(
+          flutterTts: flutterTts,
+          engine: mode,
+        );
+      }
+      await _initTts(forceRebind: true);
+    } catch (error, stackTrace) {
+      debugPrint('[ERROR] Speech engine change failed: $error\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to change speech engine: $error')),
+        );
+      }
     }
-    
+  }
+
+  void _openSettings() => unawaited(_openSettingsRoute());
+
+  Future<void> _openSettingsRoute() async {
+    try {
+      if (Platform.isAndroid && _installedEngines.isEmpty) {
+        _installedEngines = await _speechService.getInstalledEngines(
+          flutterTts,
+        );
+      }
+    } catch (error, stackTrace) {
+      debugPrint('[ERROR] Unable to load Settings voice engines: $error\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to open Settings: $error')),
+        );
+      }
+      return;
+    }
     if (!mounted) return;
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -1401,22 +1440,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
             });
             if (speechMasterOn) _applyAudioSettings();
           },
-          onSpeechEngineModeChanged: (val) async {
-            if (val == null) return;
-            setState(() {
-              speechEngineMode = val;
-              _lsSave();
-            });
-            if (Platform.isAndroid &&
-                val != 'auto' &&
-                val != 'sherpa_only' &&
-                val != 'system_only') {
-              await _speechService.setSpeechEngine(
-                flutterTts: flutterTts,
-                engine: val,
-              );
-            }
-            await _initTts(forceRebind: true);
+          onSpeechEngineModeChanged: (val) {
+            if (val != null) unawaited(_changeSpeechEngineMode(val));
           },
           onFavoriteVoiceChanged: (val) {
             debugPrint('[SettingsPanel] onFavoriteVoiceChanged val=$val');
@@ -2103,6 +2128,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
 
     await _audioService.init();
+    if (!mounted) return;
     if (Platform.isLinux) {
       final dVoices = _speechService.desktopVoices();
       voices = dVoices;
@@ -2110,6 +2136,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _speechLanguageService.allVoices = dVoices;
       _desktopService.onQuitRequested = () => unawaited(_exitAppFully());
       await _desktopService.initialize();
+      if (!mounted) return;
       if (_speechService.normalizeSpeechEngineMode(speechEngineMode) !=
           'system_only') {
         unawaited(
