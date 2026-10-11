@@ -1283,3 +1283,18 @@ The first audit's concrete chain-accounting numeric example should not be reused
 ## Verification boundary
 
 All new journeys are code-only. No sound, device-volume mutation, screenshot, layout rendering, modal interaction, systemd operation, real backup I/O, download/import or background/reboot behavior was exercised. These are evidence-backed source findings with explicit conditions, not UI-run or test-suite results.
+
+## Repair tracking — started
+
+Implemented in source, pending a runnable application-level scenario:
+
+| Finding | Repair |
+|---|---|
+| U01 / U07 | Generation-guarded completion work and run/revision-bound dialogs; newer local or externally adopted timers invalidate old completion results and retire the stale modal instead of dismissing the new runtime. |
+| U04 / U06 | A shared expired-runtime transition now advances the next chain segment in both foreground restoration and background reconciliation; final chain completion persists index zero. |
+| U35 | Backup names include subsecond uniqueness and file creation is exclusive, so an existing backup is never silently overwritten. |
+| U36 | Settings import rejects incomplete/unrelated JSON and propagates parse/read errors; export propagates write failures and offers clipboard JSON fallback. |
+
+Also addressed first-audit findings 01–02: imports no longer turn arbitrary JSON objects into default settings, and a settings snapshot that loaded successfully remains usable when write-back fails.
+
+**Verification so far:** `dart analyze lib/main.dart lib/services/settings_service.dart` — no issues. No runtime journey was exercised: the Linux device is detected but this session has neither `DISPLAY` nor `WAYLAND_DISPLAY`; the repository explicitly prohibits running tests unless requested. These source changes still need runtime verification on an available desktop/device. Other audited findings remain open; this table is not a claim that the audit backlog is complete.

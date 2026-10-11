@@ -47,7 +47,11 @@ class SettingsService {
       await prefs.remove(speechMasterOverrideKey);
     }
 
-    await save(settings);
+    try {
+      await save(settings);
+    } catch (error) {
+      debugPrint('Loaded settings could not be persisted: $error');
+    }
     return settings;
   }
 
@@ -223,35 +227,60 @@ class SettingsService {
     return const JsonEncoder.withIndent('  ').convert(settings.toJson());
   }
 
-  AppSettings? importFromJson(String jsonString) {
-    try {
-      final decoded = const JsonDecoder().convert(jsonString);
-      if (decoded is! Map<String, dynamic>) return null;
-      return AppSettings.fromJson(decoded);
-    } catch (error) {
-      debugPrint('Settings import failed: $error');
-      return null;
+  AppSettings importFromJson(String jsonString) {
+    final decoded = const JsonDecoder().convert(jsonString);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Expected a Solas Flow settings object.');
     }
+    const requiredKeys = {
+      'soundChosen',
+      'noiseVolume',
+      'speakVolume',
+      'clockOn',
+      'clockIntervalMins',
+      'timerSpeakOn',
+      'timerAnnounceEvery',
+      'appDarkTheme',
+      'speechMasterOn',
+    };
+    if (!requiredKeys.every(decoded.containsKey) ||
+        decoded['soundChosen'] is! String ||
+        decoded['noiseVolume'] is! num ||
+        decoded['speakVolume'] is! num ||
+        decoded['clockOn'] is! bool ||
+        decoded['clockIntervalMins'] is! num ||
+        decoded['timerSpeakOn'] is! bool ||
+        decoded['timerAnnounceEvery'] is! num ||
+        decoded['appDarkTheme'] is! bool ||
+        decoded['speechMasterOn'] is! bool) {
+      throw const FormatException('Invalid or incomplete Solas Flow settings.');
+    }
+    return AppSettings.fromJson(decoded);
   }
 
-  Future<String?> exportToUserFolder({required String defaultSound}) async {
+  Future<String?> exportToUserFolder({required String contents}) async {
     try {
       final directory = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Choose backup folder',
       );
       if (directory == null) return null;
-      final contents = await exportToJson(defaultSound: defaultSound);
       final now = DateTime.now();
       final date =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       final time =
-          '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+          '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}_${now.microsecondsSinceEpoch}';
       final file = File('$directory/SolasFlow_Settings_${date}_$time.json');
-      await file.writeAsString(contents, flush: true);
+      await file.create(exclusive: true);
+      try {
+        await file.writeAsString(contents, flush: true);
+      } catch (_) {
+        await file.delete();
+        rethrow;
+      }
       return file.path;
     } catch (error) {
       debugPrint('Settings export failed: $error');
-      return null;
+      rethrow;
     }
   }
 
@@ -267,7 +296,8 @@ class SettingsService {
       return importFromJson(await File(path).readAsString());
     } catch (error) {
       debugPrint('Settings import failed: $error');
-      return null;
+      rethrow;
     }
   }
 }
+

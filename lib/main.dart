@@ -109,6 +109,49 @@ import 'models/session_log.dart';
 import 'widgets/dashboard_screen.dart';
 import 'widgets/kokoro_download_consent_dialog.dart';
 
+const Map<String, List<int>> _timerChainSequences = {
+  'Pomodoro 25-5x4': [25, 5, 25, 5, 25, 5, 25, 15],
+  'Sprint 50-10x2': [50, 10, 50, 10],
+  'Quick 15-3x3': [15, 3, 15, 3, 15, 3],
+};
+
+TimerRuntime _advanceExpiredTimer(TimerRuntime runtime, DateTime now) {
+  if (runtime.status != TimerRuntimeStatus.running ||
+      runtime.remainingAt(now) > 0) {
+    return runtime;
+  }
+  if (runtime.chainModeOn) {
+    final sequence = _timerChainSequences[runtime.chainPresetKey] ?? const [25];
+    final nextIndex = runtime.chainIndex + 1;
+    if (nextIndex < sequence.length) {
+      final nextSeconds = sequence[nextIndex] * 60;
+      return TimerRuntime.running(
+        durationSeconds: nextSeconds,
+        remainingSeconds: nextSeconds,
+        now: now,
+        chainModeOn: true,
+        chainPresetKey: runtime.chainPresetKey,
+        chainIndex: nextIndex,
+        runId: runtime.runId,
+        revision: runtime.revision + 1,
+      );
+    }
+    return runtime.copyWith(
+      status: TimerRuntimeStatus.finished,
+      remainingSeconds: 0,
+      endAtEpochMs: () => null,
+      chainIndex: 0,
+      revision: runtime.revision + 1,
+    );
+  }
+  return runtime.copyWith(
+    status: TimerRuntimeStatus.finished,
+    remainingSeconds: 0,
+    endAtEpochMs: () => null,
+    revision: runtime.revision + 1,
+  );
+}
+
 @pragma('vm:entry-point')
 void startCallback() {
   FlutterForegroundTask.setTaskHandler(SolasFlowTaskHandler());
@@ -146,14 +189,12 @@ class SolasFlowTaskHandler extends TaskHandler {
     if (runtime.status == TimerRuntimeStatus.running) {
       final remaining = runtime.remainingAt(now);
       if (remaining == 0) {
-        runtime = runtime.copyWith(
-          status: TimerRuntimeStatus.finished,
-          remainingSeconds: 0,
-          endAtEpochMs: () => null,
-          revision: runtime.revision + 1,
-        );
-        await _store.save(runtime);
-        force = true;
+        final advanced = _advanceExpiredTimer(runtime, now);
+        if (advanced.revision != runtime.revision) {
+          runtime = advanced;
+          await _store.save(runtime);
+          force = true;
+        }
       } else if (remaining != runtime.remainingSeconds) {
         runtime = runtime.copyWith(remainingSeconds: remaining);
       }
@@ -417,6 +458,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   final TimerRuntimeStore _timerRuntimeStore = TimerRuntimeStore();
   TimerRuntime _timerRuntime = TimerRuntime.idle();
   bool _timerCompletionInFlight = false;
+  int _timerWorkGeneration = 0;
   bool _exiting = false;
   bool _driveModeOpen = false;
   int _alarmGeneration = 0;
@@ -790,13 +832,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// ============================================================================
   /// These define user-selectable options for different timer modes
 
-  /// Named chains of timer durations (in minutes) to run consecutively
-  /// Useful for Pomodoro technique: work 25min, break 5min (4 cycles), long break 15min
-  final Map<String, List<int>> chainPresets = {
-    'Pomodoro 25-5x4': [25, 5, 25, 5, 25, 5, 25, 15], // Classic Pomodoro
-    'Sprint 50-10x2': [50, 10, 50, 10], // Long focus + short breaks
-    'Quick 15-3x3': [15, 3, 15, 3, 15, 3], // Fast-paced cycles
-  };
+  /// Named chains of timer durations (in minutes) to run consecutively.
+  final Map<String, List<int>> chainPresets = _timerChainSequences;
 
   /// Sound file path for timer completion notification
   final String notifySound = "audio/notify.mp3";
@@ -1373,17 +1410,17 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Future<void> _handleBackupSettings() async {
     if (!mounted) return;
+    String? backupJson;
     try {
-      final filePath = await _settingsService.exportToUserFolder(
-        defaultSound: soundList.first.link,
-      );
-      if (!mounted) return;
-      if (filePath == null) return; // User cancelled directory picker
-
       final jsonStr = await _settingsService.exportToJson(
         defaultSound: soundList.first.link,
       );
+      backupJson = jsonStr;
+      final filePath = await _settingsService.exportToUserFolder(
+        contents: jsonStr,
+      );
       if (!mounted) return;
+      if (filePath == null) return; // User cancelled directory picker
 
       await showDialog<void>(
         context: context,
@@ -1434,6 +1471,37 @@ class _MainScreenState extends ConsumerState<MainScreen>
       );
     } catch (e) {
       if (!mounted) return;
+      final failedBackupJson = backupJson;
+      if (failedBackupJson != null) {
+        final copyJson = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Backup failed'),
+            content: Text(
+              'The file could not be saved: $e. Copy the settings JSON instead?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Copy JSON'),
+              ),
+            ],
+          ),
+        );
+        if (copyJson == true && mounted) {
+          await Clipboard.setData(ClipboardData(text: failedBackupJson));
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('JSON copied to clipboard')),
+          );
+          return;
+        }
+        return;
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Backup failed: $e')));
@@ -1444,7 +1512,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (!mounted) return;
     try {
       final imported = await _settingsService.importFromFile();
-      if (imported == null) return; // User cancelled or error
+      if (imported == null) return; // User cancelled the file picker
       if (!mounted) return;
 
       // Show a preview dialog before applying
@@ -2024,6 +2092,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Start a preset timer from widget (extracted for reuse with tag dialog).
   Future<void> _startPresetFromWidget(int mins) async {
     final safeMins = mins.clamp(1, 720);
+    _invalidateTimerWork();
     final totalSeconds = safeMins * 60;
     _armedPresetTimer?.cancel();
     _armedPresetValue = null;
@@ -3150,15 +3219,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
         return;
       }
     }
+    final replacesCurrentRun =
+        runtime.runId != _timerRuntime.runId ||
+        runtime.revision > _timerRuntime.revision ||
+        runtime.status != _timerRuntime.status;
+    if (replacesCurrentRun) _invalidateTimerWork();
     var next = runtime;
     if (next.status == TimerRuntimeStatus.running &&
         next.remainingAt(DateTime.now()) == 0) {
-      next = next.copyWith(
-        status: TimerRuntimeStatus.finished,
-        remainingSeconds: 0,
-        endAtEpochMs: () => null,
-        revision: next.revision + 1,
-      );
+      next = _advanceExpiredTimer(next, DateTime.now());
       await _timerRuntimeStore.save(next);
     }
     if (!mounted) return;
@@ -3170,6 +3239,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _timerRuntime = next;
       seconds = remaining;
       _activeTimerDurationSeconds = next.durationSeconds;
+      if (next.status == TimerRuntimeStatus.finished) {
+        _lastFinishedTimerDurationSeconds = next.durationSeconds;
+      }
       chainModeOn = next.chainModeOn;
       chainPresetKey = next.chainPresetKey;
       chainIndex = next.chainIndex;
@@ -3180,6 +3252,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
         timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
       }
     });
+    if (replacesCurrentRun && _timerFinishedDialogOpen) {
+      unawaited(
+        Navigator.of(context, rootNavigator: true).maybePop(),
+      );
+    }
     _applyAudioSettings();
     await _reconcileForeground(force: true);
     if (restored && next.status == TimerRuntimeStatus.finished && mounted) {
@@ -3187,6 +3264,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
         if (mounted) unawaited(_showTimerFinishedDialog());
       });
     }
+  }
+
+  void _invalidateTimerWork() {
+    _timerWorkGeneration++;
   }
 
   void tick(Timer timer) {
@@ -3231,6 +3312,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       return;
     }
     _timerCompletionInFlight = true;
+    final workGeneration = _timerWorkGeneration;
     try {
       if (chainModeOn) {
         final sequence = chainPresets[chainPresetKey] ?? const [25];
@@ -3249,7 +3331,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             revision: _timerRuntime.revision + 1,
           );
           await _timerRuntimeStore.save(_timerRuntime);
-          if (!mounted) return;
+          if (!mounted || workGeneration != _timerWorkGeneration) return;
           setState(() {
             seconds = nextSeconds;
             timerValue = _formatTimerDisplayValue(nextSeconds);
@@ -3278,10 +3360,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
         status: TimerRuntimeStatus.finished,
         remainingSeconds: 0,
         endAtEpochMs: () => null,
+        chainIndex: chainIndex,
         revision: _timerRuntime.revision + 1,
       );
       await _timerRuntimeStore.save(_timerRuntime);
-      if (!mounted) return;
+      if (!mounted || workGeneration != _timerWorkGeneration) return;
       setState(() {
         timerInterval = null;
         seconds = 0;
@@ -3291,6 +3374,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       });
       _applyAudioSettings();
       await _reconcileForeground(force: true);
+      if (!mounted || workGeneration != _timerWorkGeneration) return;
       if (Platform.isLinux) {
         unawaited(
           _desktopService.notify(
@@ -3352,17 +3436,34 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   Future<void> _showTimerFinishedDialog() async {
-    if (!mounted || _timerFinishedDialogOpen) return;
+    if (!mounted ||
+        _timerFinishedDialogOpen ||
+        _timerRuntime.status != TimerRuntimeStatus.finished) {
+      return;
+    }
     final rootNavigator = Navigator.of(context, rootNavigator: true);
+    final workGeneration = _timerWorkGeneration;
+    final finishedRunId = _timerRuntime.runId;
+    final finishedRevision = _timerRuntime.revision;
 
     _timerFinishedDialogOpen = true;
-    final selectedMinutes = _fullscreenFocusOpen
-        ? await _showFullscreenTimerFinishedDialog()
-        : await _showNormalTimerFinishedDialog();
-    _stopMobileRingtone();
-    _timerFinishedDialogOpen = false;
+    int? selectedMinutes;
+    try {
+      selectedMinutes = _fullscreenFocusOpen
+          ? await _showFullscreenTimerFinishedDialog()
+          : await _showNormalTimerFinishedDialog();
+    } finally {
+      _stopMobileRingtone();
+      _timerFinishedDialogOpen = false;
+    }
 
-    if (!mounted) return;
+    if (!mounted ||
+        workGeneration != _timerWorkGeneration ||
+        _timerRuntime.runId != finishedRunId ||
+        _timerRuntime.revision != finishedRevision ||
+        _timerRuntime.status != TimerRuntimeStatus.finished) {
+      return;
+    }
     if (selectedMinutes == null) {
       await _dismissFinishedTimer();
       if (_fullscreenFocusOpen) {
@@ -3694,6 +3795,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void startTimer() {
     if (timerInterval != null) return;
+    _invalidateTimerWork();
     _armedPresetTimer?.cancel();
     _armedPresetValue = null;
     if (seconds <= 0) {
@@ -3734,6 +3836,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void stopTimer() {
+    _invalidateTimerWork();
     if (timerInterval == null) return;
     seconds = _timerRuntime.remainingAt(DateTime.now());
     if (taggingOn && _sessionStartTime != null) {
@@ -3759,6 +3862,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void resetTimer() {
+    _invalidateTimerWork();
     if (timerInterval != null) stopTimer();
     timerInterval?.cancel();
     _timerRuntime = TimerRuntime.idle().copyWith(
@@ -3788,7 +3892,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void addTimeToRunningTimer(int additionalSeconds) {
-    if (timerInterval == null) return;
+    if (timerInterval == null ||
+        _timerRuntime.status != TimerRuntimeStatus.running) {
+      return;
+    }
+    _invalidateTimerWork();
     final remaining =
         (_timerRuntime.remainingAt(DateTime.now()) + additionalSeconds).clamp(
           1,
