@@ -385,9 +385,9 @@ class SolasFlowApp extends ConsumerWidget {
     return WithForegroundTask(
       child: Builder(
         builder: (context) {
-          final l10n = AppLocalizations.of(context);
           return MaterialApp(
-            title: l10n?.appTitle ?? 'SolasFlow',
+            onGenerateTitle: (context) =>
+                AppLocalizations.of(context)?.appTitle ?? 'SolasFlow',
             debugShowCheckedModeBanner: false,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
