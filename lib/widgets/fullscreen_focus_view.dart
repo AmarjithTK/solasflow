@@ -74,6 +74,8 @@ class FullscreenFocusView extends StatefulWidget {
 }
 
 class _FullscreenFocusViewState extends State<FullscreenFocusView> {
+  bool get _supportsScreenBrightness =>
+      !kIsWeb && defaultTargetPlatform != TargetPlatform.linux;
   Timer? _tick;
   Timer? _controlsHideTimer;
   bool _alwaysOn = true;
@@ -209,6 +211,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
   }
 
   void _applyBrightness() {
+    if (!_supportsScreenBrightness) return;
     final shouldDim = _dimBrightness;
     final dimLevel = _dimBrightnessLevel;
     _enqueuePlatformEffect(() async {
@@ -711,28 +714,29 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                                         color: fg,
                                       ),
                                     ),
-                                    IconButton(
-                                      tooltip: _dimBrightness
-                                          ? 'Disable dim'
-                                          : 'Dim brightness',
-                                      onPressed: () {
-                                        _onControlInteraction();
-                                        setState(
-                                          () =>
-                                              _dimBrightness = !_dimBrightness,
-                                        );
-                                        widget.onDimBrightnessChanged?.call(
-                                          _dimBrightness,
-                                        );
-                                        _applyBrightness();
-                                      },
-                                      icon: Icon(
-                                        _dimBrightness
-                                            ? Icons.brightness_2_rounded
-                                            : Icons.brightness_6_rounded,
-                                        color: fg,
+                                    if (_supportsScreenBrightness)
+                                      IconButton(
+                                        tooltip: _dimBrightness
+                                            ? 'Disable dim'
+                                            : 'Dim brightness',
+                                        onPressed: () {
+                                          _onControlInteraction();
+                                          setState(
+                                            () => _dimBrightness =
+                                                !_dimBrightness,
+                                          );
+                                          widget.onDimBrightnessChanged?.call(
+                                            _dimBrightness,
+                                          );
+                                          _applyBrightness();
+                                        },
+                                        icon: Icon(
+                                          _dimBrightness
+                                              ? Icons.brightness_2_rounded
+                                              : Icons.brightness_6_rounded,
+                                          color: fg,
+                                        ),
                                       ),
-                                    ),
                                     IconButton(
                                       tooltip: _forceLandscape
                                           ? 'Unlock Rotation'

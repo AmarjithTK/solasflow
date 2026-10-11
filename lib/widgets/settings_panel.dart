@@ -861,53 +861,55 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               widget.onFullscreenDarkThemeChanged(val);
             },
           ),
-          _settingsDivider(context),
-          _settingsSwitch(
-            context,
-            icon: Icons.brightness_4_rounded,
-            title: 'Dim brightness',
-            value: s.fullscreenDimBrightness,
-            onChanged: (val) {
-              widget.onFullscreenDimBrightnessChanged(val);
-            },
-          ),
-          if (s.fullscreenDimBrightness) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.brightness_low_rounded,
-                    size: 18,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withAlpha(150),
-                  ),
-                  Expanded(
-                    child: Slider(
-                      value: s.fullscreenDimBrightnessLevel,
-                      min: 0.01,
-                      max: 0.5,
-                      divisions: 49,
-                      label:
-                          '${(s.fullscreenDimBrightnessLevel * 100).round()}%',
-                      onChanged: (val) {
-                        widget.onFullscreenDimBrightnessLevelChanged(val);
-                      },
-                    ),
-                  ),
-                  Icon(
-                    Icons.brightness_high_rounded,
-                    size: 18,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withAlpha(150),
-                  ),
-                ],
-              ),
+          if (!kIsWeb && defaultTargetPlatform != TargetPlatform.linux) ...[
+            _settingsDivider(context),
+            _settingsSwitch(
+              context,
+              icon: Icons.brightness_4_rounded,
+              title: 'Dim brightness',
+              value: s.fullscreenDimBrightness,
+              onChanged: (val) {
+                widget.onFullscreenDimBrightnessChanged(val);
+              },
             ),
+            if (s.fullscreenDimBrightness) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.brightness_low_rounded,
+                      size: 18,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withAlpha(150),
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: s.fullscreenDimBrightnessLevel,
+                        min: 0.01,
+                        max: 0.5,
+                        divisions: 49,
+                        label:
+                            '${(s.fullscreenDimBrightnessLevel * 100).round()}%',
+                        onChanged: (val) {
+                          widget.onFullscreenDimBrightnessLevelChanged(val);
+                        },
+                      ),
+                    ),
+                    Icon(
+                      Icons.brightness_high_rounded,
+                      size: 18,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withAlpha(150),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            _settingsDivider(context),
           ],
-          _settingsDivider(context),
           _settingsSwitch(
             context,
             icon: Icons.screen_rotation_rounded,
