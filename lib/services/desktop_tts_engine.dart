@@ -418,14 +418,46 @@ class DesktopTtsEngine {
   Future<void>? _starting;
   Future<void> _queue = Future<void>.value();
   bool _closed = false;
+  bool _closeAcknowledged = false;
   int modelLoadCount = 0;
   final _cancellations = <Pointer<Int32>>{};
+  final ReceivePort _workerExit = ReceivePort();
+  final ReceivePort _workerErrors = ReceivePort();
+  final Completer<String> _workerFailure = Completer<String>();
+
+  DesktopTtsEngine() {
+    _workerExit.listen((_) => _reportWorkerFailure('Worker exited unexpectedly'));
+    _workerErrors.listen((dynamic error) {
+      final details = error is List && error.isNotEmpty ? error.first : error;
+      _reportWorkerFailure('Worker failed: $details');
+    });
+  }
+
+  void _reportWorkerFailure(String message) {
+    if (!_closeAcknowledged && !_workerFailure.isCompleted) {
+      _workerFailure.complete(message);
+    }
+  }
+
+  Future<T> _withWorkerFailure<T>(Future<T> response) => Future.any<T>([
+    response,
+    _workerFailure.future.then<T>(
+      (message) => throw StateError('Desktop speech $message'),
+    ),
+  ]);
 
   Future<void> _start() async {
     final ready = ReceivePort();
     try {
-      await Isolate.spawn(_worker, ready.sendPort);
-      _commands = await ready.first as SendPort;
+      await Isolate.spawn(
+        _worker,
+        ready.sendPort,
+        onError: _workerErrors.sendPort,
+        onExit: _workerExit.sendPort,
+      );
+      _commands = await _withWorkerFailure(
+        ready.first.then((message) => message as SendPort),
+      );
     } finally {
       ready.close();
     }
@@ -446,10 +478,13 @@ class DesktopTtsEngine {
       final reply = ReceivePort();
       try {
         _commands!.send([reply.sendPort, action, library, model, text, output]);
-        final response = await reply.first as Map;
+        final response = await _withWorkerFailure(
+          reply.first.then((message) => message as Map),
+        );
         if (response['error'] != null) {
           throw StateError(response['error'] as String);
         }
+        if (action == 'close') _closeAcknowledged = true;
         modelLoadCount = response['loads'] as int? ?? modelLoadCount;
       } finally {
         reply.close();
@@ -497,7 +532,12 @@ class DesktopTtsEngine {
     cancel();
     final task = _request('close', '', null);
     _closed = true;
-    await task;
-    _commands = null;
+    try {
+      await task;
+    } finally {
+      _commands = null;
+      _workerExit.close();
+      _workerErrors.close();
+    }
   }
 }
