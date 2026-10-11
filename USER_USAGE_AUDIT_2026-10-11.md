@@ -1298,3 +1298,16 @@ Implemented in source, pending a runnable application-level scenario:
 Also addressed first-audit findings 01–02: imports no longer turn arbitrary JSON objects into default settings, and a settings snapshot that loaded successfully remains usable when write-back fails.
 
 **Verification so far:** `dart analyze lib/main.dart lib/services/settings_service.dart` — no issues. No runtime journey was exercised: the Linux device is detected but this session has neither `DISPLAY` nor `WAYLAND_DISPLAY`; the repository explicitly prohibits running tests unless requested. These source changes still need runtime verification on an available desktop/device. Other audited findings remain open; this table is not a claim that the audit backlog is complete.
+
+### Milestone 2 — timer sessions, laps and history
+
+| Finding | Repair |
+|---|---|
+| U03 | Restored timer duration now populates the timer preset value, so Reset → Start uses the restored minutes. |
+| U16 / U17 | Stopwatch laps belong to the persisted stopwatch runtime; both ordinary and fullscreen Reset clear them, while stop/resume/restore preserve them. |
+| U42 / U43 | Enabling Tagging mid-run captures the then-current remaining time; disabling/resetting clears the session marker and logs only the tagged interval. |
+| U44 / U45 | Session writes publish a change revision that refreshes an open dashboard; dashboard also refreshes periodically and handles load errors. The timer’s today summary refreshes on local-day rollover and app resume. |
+
+Also addressed first-audit findings **03–05**: foreground-task completion logs tagged segments, timer runs carry their segment-start remaining seconds across persistence, pause/resume logs only the active interval, and each chain segment is recorded separately. Session IDs deduplicate a foreground/background completion of the same runtime revision. First-audit **26** now shows a bounded history-load error instead of an indefinite spinner.
+
+`dart analyze lib/main.dart lib/models/timer_runtime.dart lib/models/session_log.dart lib/services/session_log_service.dart lib/services/timer_runtime_store.dart lib/widgets/dashboard_screen.dart` reported no issues. Runtime smoke remains unavailable: no display session; tests remain prohibited unless requested.

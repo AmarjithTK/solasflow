@@ -9,6 +9,7 @@ class SessionLogService {
   static const String _prefsKey = 'SessionLogs';
   static const int retentionDays = 90;
   static Future<void> _writeTail = Future<void>.value();
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
   Future<void> logSession(SessionLog session) {
     _writeTail = _writeTail
@@ -18,8 +19,13 @@ class SessionLogService {
         .then((_) async {
           final prefs = await SharedPreferences.getInstance();
           final sessions = _decode(prefs.getStringList(_prefsKey) ?? const []);
+          if (session.sessionId.isNotEmpty &&
+              sessions.any((saved) => saved.sessionId == session.sessionId)) {
+            return;
+          }
           sessions.add(session);
           await _writeSessions(prefs, sessions);
+          revision.value++;
         });
     return _writeTail;
   }

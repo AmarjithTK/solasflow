@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,20 +19,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final _service = SessionLogService();
   List<(DateTime date, DailySummary summary)> _summaries = [];
   bool _loading = true;
+  String? _loadError;
+
+  Timer? _refreshTimer;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    SessionLogService.revision.addListener(_onSessionsChanged);
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) => _load());
     _load();
   }
 
+
+  void _onSessionsChanged() => _load();
+
   Future<void> _load() async {
-    final data = await _service.getRecentSummaries(days: 90);
-    if (!mounted) return;
-    setState(() {
-      _summaries = data;
-      _loading = false;
-    });
+    final generation = ++_loadGeneration;
+    try {
+      final data = await _service.getRecentSummaries(days: 90);
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _summaries = data;
+        _loadError = null;
+        _loading = false;
+      });
+    } catch (error) {
+      debugPrint('[DB] Dashboard history load failed: $error');
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _loadError = 'Unable to load session history.';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    SessionLogService.revision.removeListener(_onSessionsChanged);
+    super.dispose();
   }
 
   @override
@@ -46,9 +75,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         foregroundColor: cs.onSurface,
         elevation: 0,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _summaries.isEmpty
+      body: _loadError != null
+          ? Center(child: Text(_loadError!))
+          : _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _summaries.isEmpty
               ? Center(
                   child: Text(
                     'No sessions logged yet.\nEnable tagging and complete a timer to see data.',

@@ -7,12 +7,14 @@ class SessionLog {
   final DateTime endTime;
   final int durationSeconds;
   final String tag; // "study" | "non-study"
+  final String sessionId;
 
   const SessionLog({
     required this.startTime,
     required this.endTime,
     required this.durationSeconds,
     required this.tag,
+    this.sessionId = '',
   });
 
   bool get isStudy => tag == 'study';
@@ -32,6 +34,7 @@ class SessionLog {
     'endTime': endTime.toIso8601String(),
     'durationSeconds': durationSeconds,
     'tag': tag,
+    if (sessionId.isNotEmpty) 'sessionId': sessionId,
   };
 
   factory SessionLog.fromJson(Map<String, dynamic> json) => SessionLog(
@@ -39,6 +42,7 @@ class SessionLog {
     endTime: DateTime.parse(json['endTime'] as String),
     durationSeconds: json['durationSeconds'] as int,
     tag: json['tag'] as String,
+    sessionId: json['sessionId']?.toString() ?? '',
   );
   int secondsWithin(DateTime dayStart, DateTime dayEnd) {
     if (!startTime.isBefore(dayEnd) || !endTime.isAfter(dayStart)) return 0;

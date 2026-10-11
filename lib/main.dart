@@ -159,6 +159,7 @@ void startCallback() {
 
 class SolasFlowTaskHandler extends TaskHandler {
   final TimerRuntimeStore _store = TimerRuntimeStore();
+  final SessionLogService _sessionLogService = SessionLogService();
   int _lastPublishedRemaining = -1;
   int _lastStopwatchPublishedSeconds = -1;
   int _lastClockMinute = -1;
@@ -189,6 +190,23 @@ class SolasFlowTaskHandler extends TaskHandler {
     if (runtime.status == TimerRuntimeStatus.running) {
       final remaining = runtime.remainingAt(now);
       if (remaining == 0) {
+        if (settings.taggingOn) {
+          final segmentSeconds = runtime.segmentStartRemainingSeconds > 0
+              ? runtime.segmentStartRemainingSeconds
+              : runtime.remainingSeconds;
+          final sessionEnd = DateTime.fromMillisecondsSinceEpoch(
+            runtime.endAtEpochMs ?? now.millisecondsSinceEpoch,
+          );
+          await _sessionLogService.logSession(
+            SessionLog(
+              startTime: sessionEnd.subtract(Duration(seconds: segmentSeconds)),
+              endTime: sessionEnd,
+              durationSeconds: segmentSeconds,
+              tag: settings.sessionTag,
+              sessionId: '${runtime.runId}:${runtime.revision}',
+            ),
+          );
+        }
         final advanced = _advanceExpiredTimer(runtime, now);
         if (advanced.revision != runtime.revision) {
           runtime = advanced;
@@ -468,9 +486,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   /// Session recording state — captured when timer starts
   DateTime? _sessionStartTime;
+  int? _sessionStartRemainingSeconds;
 
   /// Today's summary display string for the timer panel
   String _todaySummary = '';
+  DateTime _todaySummaryDate = DateTime.now();
 
   /// Manages Android foreground service & persistent notifications
   /// Keeps app alive during long timer sessions
@@ -734,8 +754,35 @@ class _MainScreenState extends ConsumerState<MainScreen>
     (settings) => settings.copyWith(backgroundPersistenceOn: value),
   );
   bool get taggingOn => _settings.taggingOn;
-  set taggingOn(bool value) =>
-      _updateSettings((settings) => settings.copyWith(taggingOn: value));
+  set taggingOn(bool value) {
+    if (value && !taggingOn && timerInterval != null) {
+      _sessionStartTime = DateTime.now();
+      _sessionStartRemainingSeconds = _timerRuntime.remainingAt(
+        _sessionStartTime!,
+      );
+      _timerRuntime = _timerRuntime.copyWith(
+        segmentStartRemainingSeconds: _sessionStartRemainingSeconds,
+        revision: _timerRuntime.revision + 1,
+      );
+      unawaited(_timerRuntimeStore.save(_timerRuntime));
+    } else if (!value) {
+      if (taggingOn &&
+          timerInterval != null &&
+          _sessionStartTime != null) {
+        final remaining = _timerRuntime.remainingAt(DateTime.now());
+        final elapsed = (_sessionStartRemainingSeconds ?? remaining) - remaining;
+        if (elapsed > 0) {
+          _logCurrentSession(
+            elapsed,
+            sessionId: '${_timerRuntime.runId}:${_timerRuntime.revision}',
+          );
+        }
+      }
+      _sessionStartTime = null;
+      _sessionStartRemainingSeconds = null;
+    }
+    _updateSettings((settings) => settings.copyWith(taggingOn: value));
+  }
   String get sessionTag => _settings.sessionTag;
   set sessionTag(String value) =>
       _updateSettings((settings) => settings.copyWith(sessionTag: value));
@@ -1927,7 +1974,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
     displayTick = Timer.periodic(const Duration(milliseconds: 250), (_) {
       if (!mounted) return;
 
-      final display = _formatCurrentTime(DateTime.now());
+      final now = DateTime.now();
+      final display = _formatCurrentTime(now);
+      final summaryDate = DateTime(now.year, now.month, now.day);
+      if (summaryDate != _todaySummaryDate) {
+        _todaySummaryDate = summaryDate;
+        unawaited(_refreshTodaySummary());
+      }
       final timerDisplay = _formatTimerDisplayValue(seconds);
       final stopwatchDisplay = _formatStopwatchElapsed(
         stopwatchElapsedSeconds,
@@ -2058,15 +2111,26 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   /// Log the current timer session to persistent storage (tagging only).
-  void _logCurrentSession(int elapsedSeconds) {
-    if (_sessionStartTime == null) return;
+  int _taggedElapsedSeconds(int remainingSeconds) =>
+      ((_sessionStartRemainingSeconds ?? remainingSeconds) - remainingSeconds)
+          .clamp(0, 720 * 60);
+
+  /// Log one uninterrupted, tagged timer run segment.
+  void _logCurrentSession(
+    int elapsedSeconds, {
+    required String sessionId,
+  }) {
+    final startedAt = _sessionStartTime;
+    _sessionStartTime = null;
+    _sessionStartRemainingSeconds = null;
+    if (startedAt == null || elapsedSeconds <= 0) return;
     final session = SessionLog(
-      startTime: _sessionStartTime!,
+      startTime: startedAt,
       endTime: DateTime.now(),
       durationSeconds: elapsedSeconds,
       tag: sessionTag,
+      sessionId: sessionId,
     );
-    _sessionStartTime = null;
     unawaited(_sessionLogService.logSession(session));
     _refreshTodaySummary();
   }
@@ -2097,6 +2161,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _armedPresetTimer?.cancel();
     _armedPresetValue = null;
 
+    if (timerInterval != null && taggingOn && _sessionStartTime != null) {
+      final remaining = _timerRuntime.remainingAt(DateTime.now());
+      _logCurrentSession(
+        _taggedElapsedSeconds(remaining),
+        sessionId: '${_timerRuntime.runId}:${_timerRuntime.revision}',
+      );
+    }
     timerInterval?.cancel();
     timerInterval = null;
 
@@ -2112,7 +2183,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _isTimerFinished = false;
       fullscreenShowClock = true;
     });
-
     _timerRuntime = TimerRuntime.running(
       durationSeconds: totalSeconds,
       remainingSeconds: totalSeconds,
@@ -2127,7 +2197,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
       timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
     });
 
-    if (taggingOn) _sessionStartTime = DateTime.now();
+    _sessionStartTime = taggingOn ? DateTime.now() : null;
+    _sessionStartRemainingSeconds = taggingOn ? totalSeconds : null;
 
     await _timerRuntimeStore.save(_timerRuntime);
     await _saveLastTimerSeconds(totalSeconds);
@@ -2807,6 +2878,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _handleNightUsageStateChange(state);
     if (state == AppLifecycleState.resumed) {
+      final now = DateTime.now();
+      _todaySummaryDate = DateTime(now.year, now.month, now.day);
+      unawaited(_refreshTodaySummary());
       if (clockOn) _scheduleNextClockAnnouncement();
       _dispatchExternal(() async {
         if (timerInterval == null ||
@@ -3235,10 +3309,35 @@ class _MainScreenState extends ConsumerState<MainScreen>
     timerInterval?.cancel();
     timerInterval = null;
     final remaining = next.remainingAt(DateTime.now());
+    if (next.status == TimerRuntimeStatus.running && taggingOn) {
+      final segmentChanged =
+          _timerRuntime.status != TimerRuntimeStatus.running ||
+          _timerRuntime.runId != next.runId ||
+          _timerRuntime.chainIndex != next.chainIndex ||
+          _sessionStartTime == null;
+      if (segmentChanged) {
+        final segmentStartSeconds = next.segmentStartRemainingSeconds > 0
+            ? next.segmentStartRemainingSeconds
+            : remaining;
+        final endAt = next.endAtEpochMs ?? DateTime.now().millisecondsSinceEpoch;
+        _sessionStartTime = DateTime.fromMillisecondsSinceEpoch(
+          endAt - segmentStartSeconds * 1000,
+        );
+        _sessionStartRemainingSeconds = segmentStartSeconds;
+      }
+    } else {
+      _sessionStartTime = null;
+      _sessionStartRemainingSeconds = null;
+    }
     setState(() {
       _timerRuntime = next;
       seconds = remaining;
       _activeTimerDurationSeconds = next.durationSeconds;
+      if (next.durationSeconds > 0) {
+        sliderValue = ((next.durationSeconds + 59) ~/ 60)
+            .clamp(1, 720)
+            .toInt();
+      }
       if (next.status == TimerRuntimeStatus.finished) {
         _lastFinishedTimerDurationSeconds = next.durationSeconds;
       }
@@ -3313,6 +3412,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     _timerCompletionInFlight = true;
     final workGeneration = _timerWorkGeneration;
+    final sessionId = '${_timerRuntime.runId}:${_timerRuntime.revision}';
     try {
       if (chainModeOn) {
         final sequence = chainPresets[chainPresetKey] ?? const [25];
@@ -3332,6 +3432,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
           );
           await _timerRuntimeStore.save(_timerRuntime);
           if (!mounted || workGeneration != _timerWorkGeneration) return;
+          if (taggingOn && _sessionStartTime != null) {
+            _logCurrentSession(
+              _taggedElapsedSeconds(0),
+              sessionId: sessionId,
+            );
+            _sessionStartTime = DateTime.now();
+            _sessionStartRemainingSeconds = nextSeconds;
+          }
           setState(() {
             seconds = nextSeconds;
             timerValue = _formatTimerDisplayValue(nextSeconds);
@@ -3385,7 +3493,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
       }
 
       if (taggingOn && _sessionStartTime != null) {
-        _logCurrentSession(_lastFinishedTimerDurationSeconds);
+        _logCurrentSession(
+          _taggedElapsedSeconds(0),
+          sessionId: sessionId,
+        );
       }
       if (timerSpeakOn) {
         final preferredVoice = getPreferredVoice();
@@ -3820,6 +3931,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       chainModeOn: chainModeOn,
       chainPresetKey: chainPresetKey,
       chainIndex: chainIndex,
+      segmentStartRemainingSeconds: seconds,
       revision: _timerRuntime.revision + 1,
     );
     setState(() {
@@ -3828,7 +3940,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
       timerDisplayValue = timerValue;
       timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
     });
-    if (taggingOn) _sessionStartTime ??= DateTime.now();
+    if (taggingOn) {
+      if (_sessionStartTime == null) {
+        _sessionStartTime = DateTime.now();
+        _sessionStartRemainingSeconds = seconds;
+      }
+    } else {
+      _sessionStartTime = null;
+      _sessionStartRemainingSeconds = null;
+    }
     unawaited(_timerRuntimeStore.save(_timerRuntime));
     unawaited(_saveLastTimerSeconds(seconds));
     _applyAudioSettings();
@@ -3840,8 +3960,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (timerInterval == null) return;
     seconds = _timerRuntime.remainingAt(DateTime.now());
     if (taggingOn && _sessionStartTime != null) {
-      final elapsed = _activeTimerDurationSeconds - seconds;
-      if (elapsed > 0) _logCurrentSession(elapsed);
+      _logCurrentSession(
+        _taggedElapsedSeconds(seconds),
+        sessionId: '${_timerRuntime.runId}:${_timerRuntime.revision}',
+      );
     }
     timerInterval?.cancel();
     _timerRuntime = _timerRuntime.copyWith(
@@ -3865,6 +3987,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _invalidateTimerWork();
     if (timerInterval != null) stopTimer();
     timerInterval?.cancel();
+    _sessionStartTime = null;
+    _sessionStartRemainingSeconds = null;
     _timerRuntime = TimerRuntime.idle().copyWith(
       revision: _timerRuntime.revision + 1,
     );
@@ -3915,6 +4039,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
       chainPresetKey: chainPresetKey,
       chainIndex: chainIndex,
       runId: _timerRuntime.runId,
+      segmentStartRemainingSeconds:
+          _timerRuntime.segmentStartRemainingSeconds + additionalSeconds,
       revision: _timerRuntime.revision + 1,
     );
     setState(() {
@@ -4173,14 +4299,26 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
   }
 
-  int _lapCount = 0;
-  List<String> _lapTimes = [];
+  int get _lapCount => _stopwatchRuntime.lapTimesMs.length;
+
+  List<String> get _lapTimes => List<String>.generate(
+    _stopwatchRuntime.lapTimesMs.length,
+    (index) =>
+        'Lap ${_stopwatchRuntime.lapTimesMs.length - index}  ${_formatStopwatchElapsed(_stopwatchRuntime.lapTimesMs[index] ~/ 1000, showMilliseconds: stopwatchShowMilliseconds)}',
+    growable: false,
+  );
 
   void _recordLap() {
-    setState(() {
-      _lapCount++;
-      _lapTimes.insert(0, 'Lap $_lapCount  $stopwatchElapsedValue');
-    });
+    final laps = [
+      _stopwatchRuntime.elapsedMsAt(DateTime.now()),
+      ..._stopwatchRuntime.lapTimesMs,
+    ];
+    _stopwatchRuntime = _stopwatchRuntime.copyWith(
+      lapTimesMs: laps,
+      revision: _stopwatchRuntime.revision + 1,
+    );
+    setState(() {});
+    unawaited(_timerRuntimeStore.saveStopwatch(_stopwatchRuntime));
   }
 
   Widget _buildStopwatchTab() {
@@ -4203,13 +4341,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           isRunning: stopwatchInterval != null,
           startStopwatch: startStopwatch,
           stopStopwatch: stopStopwatch,
-          resetStopwatch: () {
-            resetStopwatch();
-            setState(() {
-              _lapCount = 0;
-              _lapTimes = [];
-            });
-          },
+          resetStopwatch: resetStopwatch,
           onLap: _recordLap,
           lapCount: _lapCount,
           lapTimes: _lapTimes,

@@ -10,6 +10,7 @@ class TimerRuntime {
   final String chainPresetKey;
   final int chainIndex;
   final int revision;
+  final int segmentStartRemainingSeconds;
 
   const TimerRuntime({
     required this.runId,
@@ -21,6 +22,7 @@ class TimerRuntime {
     required this.chainPresetKey,
     required this.chainIndex,
     required this.revision,
+    this.segmentStartRemainingSeconds = 0,
   });
 
   factory TimerRuntime.idle() => const TimerRuntime(
@@ -44,6 +46,7 @@ class TimerRuntime {
     required int chainIndex,
     String? runId,
     int revision = 1,
+    int? segmentStartRemainingSeconds,
   }) {
     final safeRemaining = remainingSeconds.clamp(1, 720 * 60);
     return TimerRuntime(
@@ -58,6 +61,8 @@ class TimerRuntime {
       chainPresetKey: chainPresetKey,
       chainIndex: chainIndex,
       revision: revision,
+      segmentStartRemainingSeconds:
+          (segmentStartRemainingSeconds ?? safeRemaining).clamp(1, 720 * 60),
     );
   }
 
@@ -80,6 +85,7 @@ class TimerRuntime {
     String? chainPresetKey,
     int? chainIndex,
     int? revision,
+    int? segmentStartRemainingSeconds,
   }) => TimerRuntime(
     runId: runId ?? this.runId,
     status: status ?? this.status,
@@ -90,6 +96,8 @@ class TimerRuntime {
     chainPresetKey: chainPresetKey ?? this.chainPresetKey,
     chainIndex: chainIndex ?? this.chainIndex,
     revision: revision ?? this.revision,
+    segmentStartRemainingSeconds:
+        segmentStartRemainingSeconds ?? this.segmentStartRemainingSeconds,
   );
 
   Map<String, dynamic> toJson() => {
@@ -102,6 +110,7 @@ class TimerRuntime {
     'chainPresetKey': chainPresetKey,
     'chainIndex': chainIndex,
     'revision': revision,
+    'segmentStartRemainingSeconds': segmentStartRemainingSeconds,
   };
 
   factory TimerRuntime.fromJson(Map<String, dynamic> json) {
@@ -127,6 +136,10 @@ class TimerRuntime {
       chainPresetKey: json['chainPresetKey']?.toString() ?? 'Pomodoro 25-5x4',
       chainIndex: readInt('chainIndex').clamp(0, 1000),
       revision: readInt('revision').clamp(0, 1 << 30),
+      segmentStartRemainingSeconds: readInt(
+        'segmentStartRemainingSeconds',
+        readInt('remainingSeconds'),
+      ).clamp(0, 720 * 60),
     );
   }
 }
@@ -136,12 +149,14 @@ class StopwatchRuntime {
   final int accumulatedMs;
   final int? startedAtEpochMs;
   final int revision;
+  final List<int> lapTimesMs;
 
   const StopwatchRuntime({
     required this.isRunning,
     required this.accumulatedMs,
     required this.startedAtEpochMs,
     required this.revision,
+    this.lapTimesMs = const [],
   });
 
   factory StopwatchRuntime.idle() => const StopwatchRuntime(
@@ -162,6 +177,7 @@ class StopwatchRuntime {
     int? accumulatedMs,
     int? Function()? startedAtEpochMs,
     int? revision,
+    List<int>? lapTimesMs,
   }) => StopwatchRuntime(
     isRunning: isRunning ?? this.isRunning,
     accumulatedMs: accumulatedMs ?? this.accumulatedMs,
@@ -169,6 +185,7 @@ class StopwatchRuntime {
         ? this.startedAtEpochMs
         : startedAtEpochMs(),
     revision: revision ?? this.revision,
+    lapTimesMs: List<int>.unmodifiable(lapTimesMs ?? this.lapTimesMs),
   );
 
   Map<String, dynamic> toJson() => {
@@ -176,6 +193,7 @@ class StopwatchRuntime {
     'accumulatedMs': accumulatedMs,
     'startedAtEpochMs': startedAtEpochMs,
     'revision': revision,
+    'lapTimesMs': lapTimesMs,
   };
 
   factory StopwatchRuntime.fromJson(Map<String, dynamic> json) {
@@ -191,6 +209,13 @@ class StopwatchRuntime {
           ? readInt('startedAtEpochMs')
           : null,
       revision: readInt('revision').clamp(0, 1 << 30),
+      lapTimesMs: json['lapTimesMs'] is List
+          ? List<int>.unmodifiable(
+              (json['lapTimesMs'] as List)
+                  .whereType<num>()
+                  .map((value) => value.toInt().clamp(0, 1 << 52)),
+            )
+          : const [],
     );
   }
 }
