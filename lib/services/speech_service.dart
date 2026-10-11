@@ -1294,7 +1294,14 @@ class SpeechService {
         );
         if (played) {
           final voiceName = MalayalamTtsService.voiceDisplayName(voiceId);
-          _setEngineStatus('neural_asset', '$voiceName · Studio Natural Voice');
+          final sharedQuote = clips.any(
+            (clip) => clip.startsWith('audio/malayalam/shared_quotes/'),
+          );
+          final performer = sharedQuote ? 'Aoede (shared quote)' : voiceName;
+          _setEngineStatus(
+            'neural_asset',
+            '$performer · Studio Natural Voice',
+          );
           return;
         }
       }
