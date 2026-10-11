@@ -27,8 +27,25 @@ class SettingsService {
     await _runLegacyMigrations(prefs);
 
     AppSettings settings;
+    final hasSnapshot = prefs.containsKey(snapshotKey);
+    final schemaVersion = SafePreferenceReads.integer(
+      prefs,
+      PrefKeys.settingsSchemaVersion,
+    );
     final encoded = SafePreferenceReads.string(prefs, snapshotKey);
-    if (encoded != null) {
+    if (hasSnapshot &&
+        schemaVersion != null &&
+        schemaVersion != currentSchemaVersion) {
+      debugPrint(
+        'Ignoring settings snapshot schema $schemaVersion; '
+        'expected $currentSchemaVersion.',
+      );
+      settings = AppSettings.defaults(defaultSound: defaultSound);
+    } else if (encoded == null) {
+      settings = hasSnapshot
+          ? AppSettings.defaults(defaultSound: defaultSound)
+          : _loadLegacy(prefs, defaultSound: defaultSound);
+    } else {
       try {
         final decoded = jsonDecode(encoded);
         settings = decoded is Map<String, dynamic>
@@ -36,10 +53,8 @@ class SettingsService {
             : AppSettings.defaults(defaultSound: defaultSound);
       } catch (error) {
         debugPrint('Ignoring corrupt settings snapshot: $error');
-        settings = _loadLegacy(prefs, defaultSound: defaultSound);
+        settings = AppSettings.defaults(defaultSound: defaultSound);
       }
-    } else {
-      settings = _loadLegacy(prefs, defaultSound: defaultSound);
     }
 
     final taskOverride = SafePreferenceReads.boolean(
