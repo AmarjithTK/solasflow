@@ -20,7 +20,7 @@
 - Quote catalogs are expanded across all categories: English lists contain 12–55 quotes, with 25 quotes in each Malayalam speech category. Quotes play sequentially without repeats until their category-and-language list is exhausted. The 145 expanded Malayalam quotes use one shared Aoede recording per phrase, including when another Malayalam voice is selected.
 
 ### Timer
-- Adjustable duration (`1` to `120` minutes).
+- Adjustable duration (`1` to `720` minutes).
 - Quick preset values include `5, 10, 15, 20, 25, 30, 45, 60, 90, 120`.
 - Start / Stop / Reset controls.
 - Optional background noise playback while timer runs.
@@ -80,7 +80,6 @@
 - `flutter_tts`
 - `audioplayers`
 - `flutter_foreground_task`
-- `flutter_local_notifications`
 - `quick_actions`
 - `wakelock_plus`
 - `screen_brightness`
@@ -240,6 +239,7 @@ flutter test
 ```
 ## Notes
 
-- App display name is `Solas Flow`.
-- Android package namespace and notification metadata still use `com.example.speakertimer` in platform config for compatibility.
+- In-product app name: `Solas Flow`. Current Apple/Windows platform display names still need correction.
+- Android namespace/applicationId and Linux application id: `com.atherpulse.solasflow`.
+- Android notification icon metadata key: `com.atherpulse.solasflow.service.NOTIFICATION_ICON`.
 - Audio assets are local (`assets/audio/`) to support offline/background behavior.
