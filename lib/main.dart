@@ -2048,6 +2048,51 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   Future<void> _bootstrap() async {
+    try {
+      await _bootstrapImpl();
+    } catch (error, stackTrace) {
+      debugPrint('[ERROR] App bootstrap failed: $error\n$stackTrace');
+      if (!mounted) return;
+      _bootstrapReady = true;
+      final pending = List<Future<void> Function()>.from(
+        _pendingExternalActions,
+      );
+      _pendingExternalActions.clear();
+      for (final action in pending) {
+        try {
+          await action();
+        } catch (actionError, actionStackTrace) {
+          debugPrint(
+            '[ERROR] Queued startup action failed: $actionError\n'
+            '$actionStackTrace',
+          );
+        }
+        if (!mounted) return;
+      }
+      try {
+        await _drainWidgetActions();
+      } catch (actionError, actionStackTrace) {
+        debugPrint(
+          '[ERROR] Queued widget action recovery failed: $actionError\n'
+          '$actionStackTrace',
+        );
+      }
+      try {
+        await _writeWidgetState();
+      } catch (stateError, stateStackTrace) {
+        debugPrint(
+          '[ERROR] Widget state recovery failed: $stateError\n$stateStackTrace',
+        );
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Startup is incomplete: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _bootstrapImpl() async {
     final settings = _settings;
     _speechLanguageService.setLanguage(settings.voiceListMode);
     currentTimeDisplay = _formatCurrentTime(DateTime.now());
@@ -2099,7 +2144,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final pending = List<Future<void> Function()>.from(_pendingExternalActions);
     _pendingExternalActions.clear();
     for (final action in pending) {
-      await action();
+      try {
+        await action();
+      } catch (error, stackTrace) {
+        debugPrint('[ERROR] Queued startup action failed: $error\n$stackTrace');
+      }
       if (!mounted) return;
     }
     await _drainWidgetActions();
