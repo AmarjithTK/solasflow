@@ -4425,7 +4425,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
           motivationDelaySeconds: motivationDelaySeconds,
           clockIntervalOptions: clockIntervalOptions,
           clockSpeakRepeatOptions: clockSpeakRepeatOptions,
-          motivationCategories: motivationCategories,
+          motivationCategories: _isMalayalamActive(getPreferredVoice())
+              ? motivationCategories
+              : motivationCategories
+                    .where((category) => category != 'General Malayalam')
+                    .toList(growable: false),
           motivationDelayOptions: motivationDelayOptions,
           clockShowSeconds: clockShowSeconds,
           onClockIntervalChanged: (val) {
