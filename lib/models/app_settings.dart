@@ -1,4 +1,22 @@
 class AppSettings {
+  static const volumeOptions = [0.1, 0.2, 0.6, 0.8, 1.0];
+  static const clockIntervalOptions = [1, 2, 5, 10, 15, 20, 30, 60];
+  static const clockSpeakRepeatOptions = [1, 2, 3];
+  static const timerAnnounceOptions = [1, 2, 5, 10, 15, 20, 30];
+  static const stopwatchSpeakDelayOptions = [
+    15,
+    30,
+    45,
+    60,
+    120,
+    300,
+    600,
+    900,
+    1800,
+  ];
+  static const motivationDelayOptions = [5, 10, 20, 30, 40, 60];
+  static const goalReminderIntervalOptions = [30, 60, 120, 180, 240];
+
   final String soundChosen;
   final double noiseVolume;
   final double speakVolume;
@@ -171,19 +189,37 @@ class AppSettings {
 
     return copyWith(
       soundChosen: soundChosen.trim().isEmpty ? 'audio/rain.mp3' : soundChosen,
-      noiseVolume: noiseVolume.clamp(0, 1).toDouble(),
-      speakVolume: speakVolume.clamp(0, 1).toDouble(),
-      clockIntervalMins: clockIntervalMins.clamp(1, 1440),
-      clockSpeakRepeatCount: clockSpeakRepeatCount.clamp(1, 3),
+      noiseVolume: _nearestDoubleOption(noiseVolume, volumeOptions),
+      speakVolume: _nearestDoubleOption(speakVolume, volumeOptions),
+      clockIntervalMins: _nearestIntOption(
+        clockIntervalMins,
+        clockIntervalOptions,
+      ),
+      clockSpeakRepeatCount: _nearestIntOption(
+        clockSpeakRepeatCount,
+        clockSpeakRepeatOptions,
+      ),
       motivationCategory: motivationCategory.trim().isEmpty
           ? 'General'
           : motivationCategory,
-      motivationDelaySeconds: motivationDelaySeconds.clamp(1, 3600),
-      timerAnnounceEvery: timerAnnounceEvery.clamp(1, 720),
-      goalReminderIntervalMins: goalReminderIntervalMins.clamp(1, 1440),
+      motivationDelaySeconds: _nearestIntOption(
+        motivationDelaySeconds,
+        motivationDelayOptions,
+      ),
+      timerAnnounceEvery: _nearestIntOption(
+        timerAnnounceEvery,
+        timerAnnounceOptions,
+      ),
+      goalReminderIntervalMins: _nearestIntOption(
+        goalReminderIntervalMins,
+        goalReminderIntervalOptions,
+      ),
       goalReminderItems: items,
       goalReminderNextIndex: nextIndex,
-      stopwatchSpeakDelaySeconds: stopwatchSpeakDelaySeconds.clamp(1, 86400),
+      stopwatchSpeakDelaySeconds: _nearestIntOption(
+        stopwatchSpeakDelaySeconds,
+        stopwatchSpeakDelayOptions,
+      ),
       nightMuteMode: normalizedNightMode,
       sleepStartMinutes: sleepStartMinutes.clamp(0, 1439),
       sleepEndMinutes: sleepEndMinutes.clamp(0, 1439),
@@ -198,6 +234,34 @@ class AppSettings {
           .toDouble(),
       sessionTag: normalizedTag,
     );
+  }
+
+  static int _nearestIntOption(int value, List<int> options) {
+    var nearest = options.first;
+    var nearestDistance = (value - nearest).abs();
+    for (var index = 1; index < options.length; index++) {
+      final option = options[index];
+      final distance = (value - option).abs();
+      if (distance < nearestDistance) {
+        nearest = option;
+        nearestDistance = distance;
+      }
+    }
+    return nearest;
+  }
+
+  static double _nearestDoubleOption(double value, List<double> options) {
+    var nearest = options.first;
+    var nearestDistance = (value - nearest).abs();
+    for (var index = 1; index < options.length; index++) {
+      final option = options[index];
+      final distance = (value - option).abs();
+      if (distance < nearestDistance) {
+        nearest = option;
+        nearestDistance = distance;
+      }
+    }
+    return nearest;
   }
 
   static String? _cleanNullable(String? value) {

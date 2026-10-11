@@ -898,7 +898,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   ];
 
   /// Available volume levels (0.0-1.0) for numerical selection
-  final List<double> volumeLists = [0.1, 0.2, 0.6, 0.8, 1.0];
+  final List<double> volumeLists = AppSettings.volumeOptions;
 
   /// Quick preset timer values (in minutes) for rapid timer setup
   final List<int> presetValues = [
@@ -920,32 +920,25 @@ class _MainScreenState extends ConsumerState<MainScreen>
   ];
 
   /// Available clock announcement intervals (in minutes)
-  final List<int> clockIntervalOptions = [1, 2, 5, 10, 15, 20, 30, 60];
+  final List<int> clockIntervalOptions = AppSettings.clockIntervalOptions;
 
   /// Allowed repetitions for each clock speech announcement
-  final List<int> clockSpeakRepeatOptions = [1, 2, 3];
+  final List<int> clockSpeakRepeatOptions =
+      AppSettings.clockSpeakRepeatOptions;
 
   /// Timer announcement frequency options (announce every N minutes)
-  final List<int> timerAnnounceOptions = [1, 2, 5, 10, 15, 20, 30];
+  final List<int> timerAnnounceOptions = AppSettings.timerAnnounceOptions;
 
   /// Stopwatch speech delay options (in seconds)
-  final List<int> stopwatchSpeakDelayOptions = [
-    15,
-    30,
-    45,
-    60,
-    120,
-    300,
-    600,
-    900,
-    1800,
-  ];
+  final List<int> stopwatchSpeakDelayOptions =
+      AppSettings.stopwatchSpeakDelayOptions;
 
   /// Delay options between motivational quote announcements (in seconds)
-  final List<int> motivationDelayOptions = [5, 10, 20, 30, 40, 60];
+  final List<int> motivationDelayOptions = AppSettings.motivationDelayOptions;
 
   /// Goal reminder interval options in minutes
-  final List<int> goalReminderIntervalOptions = [30, 60, 120, 180, 240];
+  final List<int> goalReminderIntervalOptions =
+      AppSettings.goalReminderIntervalOptions;
 
   /// SharedPreferences key for last timer seconds via quick action
   static const String _lastTimerSecondsKey = 'QuickActionLastSeconds';
