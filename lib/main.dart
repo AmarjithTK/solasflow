@@ -469,6 +469,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Manages timer countdown logic: starts, pauses, resumes, calculates display
   /// Handles announcement timings based on user preferences
   final TimerService _timerService = TimerService();
+  MaterialLocalizations? _materialLocalizations;
 
   /// Cycles through motivational quotes by category
   /// Encapsulates quote rotation state and list management
@@ -1006,30 +1007,38 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   String _formatCurrentTime(DateTime now) {
-    final withMs = _timerService.formatCurrentTime(now);
-    final parts = withMs.split(' ');
-    final timePartWithFraction = parts.first; // e.g. 03:45:30.125
+    final localizations = _materialLocalizations;
+    if (localizations == null) {
+      final withMs = _timerService.formatCurrentTime(now);
+      final parts = withMs.split(' ');
+      final timePartWithFraction = parts.first;
+      final suffix = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+      final timeWithoutFraction = timePartWithFraction.split('.').first;
+      final hmParts = timeWithoutFraction.split(':');
+      final hm = hmParts.length >= 2
+          ? '${hmParts[0]}:${hmParts[1]}'
+          : timeWithoutFraction;
+      if (!clockShowSeconds) return suffix.isEmpty ? hm : '$hm $suffix';
+      if (clockShowMilliseconds) return withMs;
+      return suffix.isEmpty ? timeWithoutFraction : '$timeWithoutFraction $suffix';
+    }
+
+    final formattedTime = localizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(now),
+    );
+    final parts = formattedTime.split(' ');
+    final hourMinute = parts.first;
     final suffix = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-
-    final timeWithoutFraction = timePartWithFraction
-        .split('.')
-        .first; // 03:45:30
-    final hmParts = timeWithoutFraction.split(':');
-    final hm = hmParts.length >= 2
-        ? '${hmParts[0]}:${hmParts[1]}'
-        : timeWithoutFraction;
-
     if (!clockShowSeconds) {
-      return suffix.isEmpty ? hm : '$hm $suffix';
+      return suffix.isEmpty ? hourMinute : '$hourMinute $suffix';
     }
 
+    final seconds = now.second.toString().padLeft(2, '0');
+    var time = '$hourMinute:$seconds';
     if (clockShowMilliseconds) {
-      return withMs;
+      time += '.${now.millisecond.toString().padLeft(3, '0')}';
     }
-
-    return suffix.isEmpty
-        ? timeWithoutFraction
-        : '$timeWithoutFraction $suffix';
+    return suffix.isEmpty ? time : '$time $suffix';
   }
 
   ForegroundNotificationState _foregroundState() {
@@ -2080,6 +2089,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
         });
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _materialLocalizations = MaterialLocalizations.of(context);
   }
 
   Future<void> _bootstrap() async {
