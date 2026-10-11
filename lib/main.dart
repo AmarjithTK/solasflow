@@ -4790,12 +4790,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     stopwatchInterval?.cancel();
     stopwatchInterval = null;
     displayTick?.cancel();
-    if (Platform.isLinux || Platform.isWindows) {
-      unawaited(_speechService.disposeDesktopSpeech());
-      if (Platform.isWindows) unawaited(flutterTts.stop());
-    } else {
-      unawaited(_stopTts());
-    }
+    unawaited(_speechService.disposeDesktopSpeech());
+    if (!Platform.isLinux) unawaited(flutterTts.stop());
     unawaited(_settingsService.flush());
     unawaited(_audioService.dispose());
     _desktopService.dispose();
