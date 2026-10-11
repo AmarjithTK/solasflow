@@ -53,3 +53,6 @@ keystore.properties
 key.properties
 
 /dist/
+
+/analyze_out.txt
+/current_analyze.txt
