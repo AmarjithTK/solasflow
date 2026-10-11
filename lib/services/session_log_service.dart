@@ -32,14 +32,8 @@ class SessionLogService {
 
   Future<List<SessionLog>> getSessionsForDate(DateTime date) async {
     final all = await _loadAll();
-    final dayStart = DateTime(date.year, date.month, date.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
     return all
-        .where(
-          (session) =>
-              session.startTime.isBefore(dayEnd) &&
-              session.endTime.isAfter(dayStart),
-        )
+        .where((session) => session.overlapsDay(date))
         .toList(growable: false);
   }
 
