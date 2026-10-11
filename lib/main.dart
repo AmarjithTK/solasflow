@@ -1318,6 +1318,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           ),
           soundList: soundList,
           volumeLists: volumeLists,
+          goalReminderIntervalOptions: goalReminderIntervalOptions,
           speechEngineRuntime: _speechService.engineUsed,
           speechEngineRuntimeDetail: _speechService.engineDetail,
           showEnglishVoiceDownload: Platform.isLinux,
@@ -1361,6 +1362,32 @@ class _MainScreenState extends ConsumerState<MainScreen>
           },
           onSpeechMasterOnChanged: (val) {
             unawaited(_setSpeechMaster(val ?? true));
+          },
+          onGoalReminderOnChanged: (value) {
+            final enabled = value ?? false;
+            if (enabled && goalReminderItems.isEmpty) return;
+            if (enabled == goalReminderOn) return;
+            setState(() {
+              goalReminderOn = enabled;
+              _lsSave();
+            });
+            _restartGoalReminderTimer();
+          },
+          onGoalReminderIntervalChanged: (value) {
+            if (value == null || value == goalReminderIntervalMins) return;
+            setState(() {
+              goalReminderIntervalMins = value;
+              _lsSave();
+            });
+            _restartGoalReminderTimer();
+          },
+          onGoalReminderItemsChanged: (items) {
+            setState(() {
+              goalReminderItems = items;
+              if (items.isEmpty) goalReminderOn = false;
+              _lsSave();
+            });
+            _restartGoalReminderTimer();
           },
           onFullscreenDarkThemeChanged: (val) {
             setState(() {

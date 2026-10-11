@@ -26,6 +26,7 @@ class SettingsPanel extends ConsumerStatefulWidget {
   final Future<void> Function(String language) onClearDesktopModel;
   final String sleepStartLabel;
   final String sleepEndLabel;
+  final List<int> goalReminderIntervalOptions;
   final ValueChanged<String?> onSoundChanged;
   final ValueChanged<double?> onNoiseVolumeChanged;
   final ValueChanged<double?> onSpeakVolumeChanged;
@@ -38,6 +39,9 @@ class SettingsPanel extends ConsumerStatefulWidget {
   final ValueChanged<double?> onFullscreenDimBrightnessLevelChanged;
   final ValueChanged<bool?> onFullscreenStartLandscapeChanged;
   final ValueChanged<bool?> onMuteSpeechAfterMidnightChanged;
+  final ValueChanged<bool?> onGoalReminderOnChanged;
+  final ValueChanged<int?> onGoalReminderIntervalChanged;
+  final ValueChanged<List<String>> onGoalReminderItemsChanged;
   final ValueChanged<double?>? onFullscreenClockScaleChanged;
   final ValueChanged<bool?>? onFullscreenShowClockChanged;
   final ValueChanged<String?> onNightMuteModeChanged;
@@ -68,6 +72,7 @@ class SettingsPanel extends ConsumerStatefulWidget {
     required this.onClearDesktopModel,
     required this.sleepStartLabel,
     required this.sleepEndLabel,
+    required this.goalReminderIntervalOptions,
     required this.onSoundChanged,
     required this.onNoiseVolumeChanged,
     required this.onSpeakVolumeChanged,
@@ -82,6 +87,9 @@ class SettingsPanel extends ConsumerStatefulWidget {
     this.onFullscreenClockScaleChanged,
     this.onFullscreenShowClockChanged,
     required this.onMuteSpeechAfterMidnightChanged,
+    required this.onGoalReminderOnChanged,
+    required this.onGoalReminderIntervalChanged,
+    required this.onGoalReminderItemsChanged,
     required this.onNightMuteModeChanged,
     required this.onPickSleepStart,
     required this.onPickSleepEnd,
@@ -673,6 +681,69 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             },
           ),
           _settingsDivider(context),
+          _settingsSwitch(
+            context,
+            icon: Icons.flag_rounded,
+            title: 'Goal reminders',
+            subtitle: s.goalReminderItems.isEmpty
+                ? 'Add a goal below to enable reminders'
+                : 'Speak a saved goal every ${s.goalReminderIntervalMins} minutes',
+            value: s.goalReminderOn,
+            onChanged: s.goalReminderItems.isEmpty
+                ? null
+                : widget.onGoalReminderOnChanged,
+          ),
+          _settingsDivider(context),
+          _settingsOption(
+            context,
+            icon: Icons.schedule_rounded,
+            title: 'Goal reminder interval',
+            value: '${s.goalReminderIntervalMins} min',
+            onTap: () => _showStringPicker(
+              context,
+              title: 'Goal reminder interval',
+              currentValue: s.goalReminderIntervalMins.toString(),
+              options: widget.goalReminderIntervalOptions
+                  .map((minutes) => (minutes.toString(), '$minutes minutes', null))
+                  .toList(),
+              onChanged: (value) {
+                final minutes = int.tryParse(value ?? '');
+                if (minutes != null) {
+                  widget.onGoalReminderIntervalChanged(minutes);
+                }
+              },
+            ),
+          ),
+          _settingsDivider(context),
+          _settingsOption(
+            context,
+            icon: Icons.playlist_add_rounded,
+            title: 'Add a goal',
+            value: 'Add',
+            onTap: () => _addGoalReminder(context, s.goalReminderItems),
+          ),
+          if (s.goalReminderItems.isEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(72, 0, 16, 12),
+              child: Text(
+                'No goals saved yet.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+          for (final goal in s.goalReminderItems)
+            ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.only(left: 72, right: 8),
+              title: Text(goal),
+              trailing: IconButton(
+                tooltip: 'Remove goal',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => widget.onGoalReminderItemsChanged(
+                  s.goalReminderItems.where((item) => item != goal).toList(),
+                ),
+              ),
+            ),
+          _settingsDivider(context),
           _settingsOption(
             context,
             icon: Icons.music_note_rounded,
@@ -1109,13 +1180,47 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     );
   }
 
+  Future<void> _addGoalReminder(
+    BuildContext context,
+    List<String> currentItems,
+  ) async {
+    final controller = TextEditingController();
+    final goal = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Add a goal'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(labelText: 'Goal'),
+          onSubmitted: (value) => Navigator.of(dialogContext).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    final normalizedGoal = goal?.trim() ?? '';
+    if (!mounted || normalizedGoal.isEmpty) return;
+    widget.onGoalReminderItemsChanged([...currentItems, normalizedGoal]);
+  }
+
   Widget _settingsSwitch(
     BuildContext context, {
     required IconData icon,
     required String title,
     String? subtitle,
     required bool value,
-    required ValueChanged<bool?> onChanged,
+    required ValueChanged<bool?>? onChanged,
   }) {
     final cs = Theme.of(context).colorScheme;
     return SwitchListTile(
