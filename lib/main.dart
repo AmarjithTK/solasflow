@@ -393,11 +393,14 @@ class SolasFlowApp extends ConsumerWidget {
             supportedLocales: AppLocalizations.supportedLocales,
             themeMode: themeMode,
             builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
               return MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: TextScaler.linear(fontSizeMultiplier)),
-                child: child!,
+                data: mediaQuery.copyWith(
+                  textScaler: TextScaler.linear(
+                    mediaQuery.textScaler.scale(1) * fontSizeMultiplier,
+                  ),
+                ),
+                child: child ?? const SizedBox.shrink(),
               );
             },
             theme: AppTheme.light(),
