@@ -19,15 +19,20 @@ class SessionLogService {
         })
         .then((_) async {
           final prefs = await SharedPreferences.getInstance();
-          final sessions = _decode(
+          final stored = _decode(
             SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
           );
+          final sessions = stored.sessions;
           if (session.sessionId.isNotEmpty &&
               sessions.any((saved) => saved.sessionId == session.sessionId)) {
             return;
           }
           sessions.add(session);
-          await _writeSessions(prefs, sessions);
+          await _writeSessions(
+            prefs,
+            sessions,
+            preservedRecords: stored.unparsedRecords,
+          );
           revision.value++;
         });
     return _writeTail;
@@ -66,11 +71,13 @@ class SessionLogService {
         })
         .then((_) async {
           final prefs = await SharedPreferences.getInstance();
+          final stored = _decode(
+            SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
+          );
           await _writeSessions(
             prefs,
-            _decode(
-              SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
-            ),
+            stored.sessions,
+            preservedRecords: stored.unparsedRecords,
           );
         });
     return _writeTail;
@@ -81,33 +88,47 @@ class SessionLogService {
     final prefs = await SharedPreferences.getInstance();
     return _decode(
       SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
-    );
+    ).sessions;
   }
 
-  List<SessionLog> _decode(List<String> raw) => raw
-      .map((line) {
-        try {
-          final decoded = jsonDecode(line);
-          return decoded is Map<String, dynamic>
-              ? SessionLog.fromJson(decoded)
-              : null;
-        } catch (_) {
-          return null;
+  _SessionRecords _decode(List<String> raw) {
+    final sessions = <SessionLog>[];
+    final unparsedRecords = <String>[];
+    for (final line in raw) {
+      try {
+        final decoded = jsonDecode(line);
+        if (decoded is Map<String, dynamic>) {
+          sessions.add(SessionLog.fromJson(decoded));
+        } else {
+          unparsedRecords.add(line);
         }
-      })
-      .whereType<SessionLog>()
-      .toList();
+      } catch (_) {
+        unparsedRecords.add(line);
+      }
+    }
+    return _SessionRecords(sessions, unparsedRecords);
+  }
 
   Future<void> _writeSessions(
     SharedPreferences prefs,
-    List<SessionLog> sessions,
-  ) async {
+    List<SessionLog> sessions, {
+    List<String> preservedRecords = const [],
+  }) async {
     final cutoff = DateTime.now().subtract(const Duration(days: retentionDays));
-    final encoded = sessions
-        .where((session) => session.endTime.isAfter(cutoff))
-        .map((session) => jsonEncode(session.toJson()))
-        .toList(growable: false);
+    final encoded = [
+      ...preservedRecords,
+      ...sessions
+          .where((session) => session.endTime.isAfter(cutoff))
+          .map((session) => jsonEncode(session.toJson())),
+    ];
     final written = await prefs.setStringList(_prefsKey, encoded);
     if (!written) throw StateError('SharedPreferences rejected session log');
   }
+}
+
+class _SessionRecords {
+  final List<SessionLog> sessions;
+  final List<String> unparsedRecords;
+
+  const _SessionRecords(this.sessions, this.unparsedRecords);
 }
