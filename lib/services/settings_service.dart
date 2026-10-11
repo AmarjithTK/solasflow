@@ -63,11 +63,13 @@ class SettingsService {
     );
     if (taskOverride != null) {
       settings = settings.copyWith(speechMasterOn: taskOverride).normalized();
-      await prefs.remove(speechMasterOverrideKey);
     }
 
     try {
       await save(settings);
+      if (taskOverride != null) {
+        await acknowledgeSpeechMasterOverride(taskOverride);
+      }
     } catch (error) {
       debugPrint('Loaded settings could not be persisted: $error');
     }
@@ -98,9 +100,16 @@ class SettingsService {
               'SharedPreferences rejected settings schema write',
             );
           }
-          await prefs.remove(speechMasterOverrideKey);
         });
     return _writeTail;
+  }
+
+  Future<void> acknowledgeSpeechMasterOverride(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (SafePreferenceReads.boolean(prefs, speechMasterOverrideKey) ==
+        enabled) {
+      await prefs.remove(speechMasterOverrideKey);
+    }
   }
 
   Future<void> flush() => _writeTail;

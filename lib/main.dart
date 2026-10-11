@@ -2014,6 +2014,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (!mounted) return;
     if (speechMasterOn == enabled) {
       await _settingsService.save(_settings);
+      await _settingsService.acknowledgeSpeechMasterOverride(enabled);
       return;
     }
     setState(() => speechMasterOn = enabled);
@@ -2027,6 +2028,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _applyAudioSettings();
     }
     await _settingsService.save(_currentSettingsSnapshot());
+    await _settingsService.acknowledgeSpeechMasterOverride(enabled);
     await _writeWidgetState();
     await _reconcileForeground(force: true);
   }
