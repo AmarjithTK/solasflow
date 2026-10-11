@@ -101,6 +101,7 @@ class StopwatchPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+    final visibleLapCount = math.min(lapTimes.length, 20);
     final display = _formatElapsed(elapsedValue);
 
     return SafeArea(
@@ -213,8 +214,8 @@ class StopwatchPanel extends StatelessWidget {
                 label: AppLocalizations.of(context)!.stopwatchPanelLapTimes,
               ),
               const SizedBox(height: 4),
-              ...List.generate(math.min(lapTimes.length, 20), (index) {
-                final i = lapTimes.length - 1 - index;
+              ...List.generate(visibleLapCount, (index) {
+                final i = visibleLapCount - 1 - index;
                 return Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 4,
@@ -239,7 +240,7 @@ class StopwatchPanel extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          '${i + 1}',
+                          '${lapTimes.length - i}',
                           style: GoogleFonts.inter(
                             color: c.textSecondary,
                             fontSize: 12,
