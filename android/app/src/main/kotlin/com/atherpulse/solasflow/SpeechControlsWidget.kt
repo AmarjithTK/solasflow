@@ -61,7 +61,8 @@ class SpeechControlsWidget : AppWidgetProvider() {
             // ── Master Audio Button ──────────────────────────────────────
             views.setTextViewText(
                 R.id.btn_audio_master,
-                if (speechMasterOn) "Audio ON" else "Audio OFF"
+                if (speechMasterOn) context.getString(R.string.widget_audio_on)
+                else context.getString(R.string.widget_audio_off)
             )
             views.setInt(
                 R.id.btn_audio_master, "setBackgroundResource",
@@ -77,7 +78,10 @@ class SpeechControlsWidget : AppWidgetProvider() {
             )
 
             // ── Fullscreen Clock Button ──────────────────────────────────
-            views.setTextViewText(R.id.btn_fs_clock, "Open Clock")
+            views.setTextViewText(
+                R.id.btn_fs_clock,
+                context.getString(R.string.widget_open_clock)
+            )
             views.setInt(
                 R.id.btn_fs_clock, "setBackgroundResource",
                 if (clockArmed) R.drawable.widget_button_armed_bg

@@ -313,6 +313,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get yesterday;
+
+  /// No description provided for @quickActionStart25m.
+  ///
+  /// In en, this message translates to:
+  /// **'Start 25m'**
+  String get quickActionStart25m;
+
+  /// No description provided for @quickActionResumeLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume Last'**
+  String get quickActionResumeLast;
+
+  /// No description provided for @quickActionToggleSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Speech'**
+  String get quickActionToggleSpeech;
+
+  /// No description provided for @timerForegroundChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'SolasFlow Timer'**
+  String get timerForegroundChannelName;
+
+  /// No description provided for @timerForegroundChannelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistent timer & stopwatch service'**
+  String get timerForegroundChannelDescription;
 }
 
 class _AppLocalizationsDelegate

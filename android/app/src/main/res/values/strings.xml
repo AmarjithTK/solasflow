@@ -4,4 +4,13 @@
     <string name="timer_presets_widget_description">Quick-start timer presets widget</string>
     <string name="speech_controls_widget_description">Toggle speech announcements widget</string>
     <string name="live_clock_widget_description">Live realtime clock with seconds display</string>
+    <string name="widget_brand">SOLAS FLOW</string>
+    <string name="widget_live_badge">LIVE</string>
+    <string name="widget_open_clock">Open Clock</string>
+    <string name="widget_focus_mode">Focus Mode</string>
+    <string name="widget_audio_on">Audio ON</string>
+    <string name="widget_audio_off">Audio OFF</string>
+    <string name="timer_presets_widget_name">SolasFlow Timer Presets</string>
+    <string name="speech_controls_widget_name">SolasFlow Speech Controls</string>
+    <string name="live_clock_widget_name">SolasFlow Live Clock</string>
 </resources>

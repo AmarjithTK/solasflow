@@ -58,7 +58,7 @@
         <receiver
             android:name=".TimerPresetsWidget"
             android:exported="true"
-            android:label="SolasFlow Timer Presets">
+            android:label="@string/timer_presets_widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -71,7 +71,7 @@
         <receiver
             android:name=".SpeechControlsWidget"
             android:exported="true"
-            android:label="SolasFlow Speech Controls">
+            android:label="@string/speech_controls_widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -84,7 +84,7 @@
         <receiver
             android:name=".LiveClockWidget"
             android:exported="true"
-            android:label="SolasFlow Live Clock">
+            android:label="@string/live_clock_widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

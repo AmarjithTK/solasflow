@@ -35,5 +35,10 @@
   "sessionCompleted": "Session Completed!",
   "motivationQuote": "Motivation",
   "today": "Today",
-  "yesterday": "Yesterday"
+  "yesterday": "Yesterday",
+  "quickActionStart25m": "Start 25m",
+  "quickActionResumeLast": "Resume Last",
+  "quickActionToggleSpeech": "Toggle Speech",
+  "timerForegroundChannelName": "SolasFlow Timer",
+  "timerForegroundChannelDescription": "Persistent timer & stopwatch service"
 }

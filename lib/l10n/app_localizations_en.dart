@@ -115,4 +115,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yesterday => 'Yesterday';
+
+  @override
+  String get quickActionStart25m => 'Start 25m';
+
+  @override
+  String get quickActionResumeLast => 'Resume Last';
+
+  @override
+  String get quickActionToggleSpeech => 'Toggle Speech';
+
+  @override
+  String get timerForegroundChannelName => 'SolasFlow Timer';
+
+  @override
+  String get timerForegroundChannelDescription =>
+      'Persistent timer & stopwatch service';
 }

@@ -117,4 +117,20 @@ class AppLocalizationsMl extends AppLocalizations {
 
   @override
   String get yesterday => 'ഇന്നലെ';
+
+  @override
+  String get quickActionStart25m => '25 മിനിറ്റ് ആരംഭിക്കുക';
+
+  @override
+  String get quickActionResumeLast => 'അവസാനത്തെ ടൈമർ തുടരുക';
+
+  @override
+  String get quickActionToggleSpeech => 'സംസാരം മാറ്റുക';
+
+  @override
+  String get timerForegroundChannelName => 'സോളസ്ഫ്ലോ ടൈമർ';
+
+  @override
+  String get timerForegroundChannelDescription =>
+      'നിലനിൽക്കുന്ന ടൈമർ, സ്റ്റോപ്പ്‌വാച്ച് സേവനം';
 }

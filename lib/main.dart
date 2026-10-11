@@ -470,6 +470,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Handles announcement timings based on user preferences
   final TimerService _timerService = TimerService();
   late MaterialLocalizations _materialLocalizations;
+  bool _platformResourcesInitialized = false;
 
   /// Cycles through motivational quotes by category
   /// Encapsulates quote rotation state and list management
@@ -961,12 +962,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void _initForegroundTask() {
-    if (!_supportsForegroundTask) return;
+    final localizations = AppLocalizations.of(context)!;
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'com.atherpulse.solasflow.timer_fg',
-        channelName: 'SolasFlow Timer',
-        channelDescription: 'Persistent timer & stopwatch service',
+        channelName: localizations.timerForegroundChannelName,
+        channelDescription: localizations.timerForegroundChannelDescription,
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
       ),
@@ -1161,24 +1162,25 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
 
     try {
+      final localizations = AppLocalizations.of(context)!;
       _quickActions.initialize((type) {
         _dispatchExternal(() => _handleQuickAction(type));
       });
 
       _quickActions.setShortcutItems(<ShortcutItem>[
-        const ShortcutItem(
+        ShortcutItem(
           type: 'start_25m',
-          localizedTitle: 'Start 25m',
+          localizedTitle: localizations.quickActionStart25m,
           icon: 'icon_start',
         ),
-        const ShortcutItem(
+        ShortcutItem(
           type: 'resume_last',
-          localizedTitle: 'Resume Last',
+          localizedTitle: localizations.quickActionResumeLast,
           icon: 'icon_resume',
         ),
-        const ShortcutItem(
+        ShortcutItem(
           type: 'toggle_speech',
-          localizedTitle: 'Toggle Speech',
+          localizedTitle: localizations.quickActionToggleSpeech,
           icon: 'icon_speech',
         ),
       ]);
@@ -2025,9 +2027,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(SystemChrome.setPreferredOrientations([]));
-    _initForegroundTask();
     _initWidgetChannel();
-    _initQuickActions();
     FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
     unawaited(_bootstrap());
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2092,6 +2092,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
     super.didChangeDependencies();
     _materialLocalizations = MaterialLocalizations.of(context);
     currentTimeDisplay = _formatCurrentTime(DateTime.now());
+    if (!_platformResourcesInitialized) {
+      _platformResourcesInitialized = true;
+      _initForegroundTask();
+      _initQuickActions();
+    }
   }
 
   Future<void> _bootstrap() async {

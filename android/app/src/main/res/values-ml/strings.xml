@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timer_presets_widget_description">ടൈമർ പ്രീസെറ്റുകൾ വേഗത്തിൽ ആരംഭിക്കാനുള്ള വിഡ്ജറ്റ്</string>
+    <string name="speech_controls_widget_description">സംസാര അറിയിപ്പുകൾ നിയന്ത്രിക്കാനുള്ള വിഡ്ജറ്റ്</string>
+    <string name="live_clock_widget_description">സെക്കൻഡുകൾ കാണിക്കുന്ന തത്സമയ ഘടികാരം</string>
+    <string name="widget_brand">സോളസ്ഫ്ലോ</string>
+    <string name="widget_live_badge">ലൈവ്</string>
+    <string name="widget_open_clock">ക്ലോക്ക് തുറക്കുക</string>
+    <string name="widget_focus_mode">ഏകാഗ്രതാ മോഡ്</string>
+    <string name="widget_audio_on">ഓഡിയോ ഓൺ</string>
+    <string name="widget_audio_off">ഓഡിയോ ഓഫ്</string>
+    <string name="timer_presets_widget_name">സോളസ്ഫ്ലോ ടൈമർ പ്രീസെറ്റുകൾ</string>
+    <string name="speech_controls_widget_name">സോളസ്ഫ്ലോ സംസാര നിയന്ത്രണങ്ങൾ</string>
+    <string name="live_clock_widget_name">സോളസ്ഫ്ലോ തത്സമയ ക്ലോക്ക്</string>
+</resources>
