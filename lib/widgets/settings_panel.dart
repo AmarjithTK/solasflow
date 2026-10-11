@@ -980,7 +980,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           ListTile(
             leading: Icon(Icons.backup_rounded, color: cs.primary, size: 22),
             title: Text(
-              'Backup settings',
+              'Backup app settings',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -988,7 +988,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               ),
             ),
             subtitle: Text(
-              'Export all settings as JSON',
+              'Export app preferences as JSON. Desktop offline-model selections are not included.',
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             trailing: Icon(
@@ -1002,7 +1002,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           ListTile(
             leading: Icon(Icons.restore_rounded, color: cs.primary, size: 22),
             title: Text(
-              'Restore settings',
+              'Restore app settings',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -1010,7 +1010,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               ),
             ),
             subtitle: Text(
-              'Import settings from a JSON backup',
+              'Import preferences from a JSON backup; desktop offline-model selections stay unchanged.',
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             trailing: Icon(

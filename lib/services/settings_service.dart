@@ -291,7 +291,11 @@ class SettingsService {
     );
     if (result == null || result.files.isEmpty) return null;
     final path = result.files.single.path;
-    if (path == null) return null;
+    if (path == null) {
+      throw const FormatException(
+        'The selected backup file has no readable path.',
+      );
+    }
     try {
       return importFromJson(await File(path).readAsString());
     } catch (error) {

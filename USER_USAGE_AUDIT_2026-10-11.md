@@ -28,8 +28,10 @@ Implementation status is source-reviewed, not device/UI reproduced. Findings not
 | U03, U16, U17, U42–U45 | Fixed in code: restored timer selection, persisted stopwatch laps, interval-based tagging/accounting, dashboard invalidation and daily rollover refresh. |
 | U08, U13, U15, U21–U25, U28, U31 | Fixed in code: notification audio is stopped on timer replacement/master mute; delayed speech is revalidated after waits; clock schedule changes invalidate pending batches; sleep deadlines recheck current mode/window and resume audio at the quiet-window end; disabling timer speech suppresses pending timer items; TTS boost no longer changes shared Android media gain. U12, U14 remain open. |
 | U35–U36 | Fixed in code: backup exports avoid same-minute collisions, write failures remain errors, and invalid/incomplete imports are rejected rather than treated as cancellation/default settings. |
+| U32–U34 | Fixed in code: restore reschedules/stops Clock from imported state, stops current speech and muted audio, and rebinds Android TTS from the imported engine selection. |
+| U37 | Scope clarified in Settings UI and restore confirmation: JSON backups cover app preferences, not local desktop offline-model selections; restore leaves those local selections unchanged. |
 
-Verification after the latest audio/sleep edits: `dart analyze lib/main.dart lib/models/speech_item.dart lib/services/speech_service.dart lib/services/audio_service.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform and timing behavior remains unverified.
+Verification after the latest backup/restore edits: `dart analyze lib/main.dart lib/services/settings_service.dart lib/widgets/settings_panel.dart lib/models/app_settings.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform and timing behavior remains unverified.
 
 ## Most urgent journeys
 

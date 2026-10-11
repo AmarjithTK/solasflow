@@ -1574,8 +1574,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
         builder: (ctx) => AlertDialog(
           title: const Text('Restore Settings'),
           content: const Text(
-            'This will replace all current settings with the imported backup. '
-            'The app will reload to apply the changes. Continue?',
+            'This will replace the app preferences in this backup. '
+            'Local desktop offline-model selections are not included and will stay unchanged. '
+            'The restored preferences will take effect immediately. Continue?',
           ),
           actions: [
             TextButton(
@@ -1591,8 +1592,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       );
       if (confirmed != true || !mounted) return;
 
-      _applyRestoredSettings(imported);
-      setState(() {});
+      await _applyRestoredSettings(imported);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Settings restored successfully!')),
@@ -1605,15 +1605,43 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
   }
 
-  void _applyRestoredSettings(AppSettings settings) {
+  Future<void> _applyRestoredSettings(AppSettings settings) async {
     final normalized = settings.normalized();
+    final shouldMute = !normalized.speechMasterOn;
+    _cancelPendingSpeech();
+    await _stopTts();
     ref.read(settingsProvider.notifier).replace(normalized);
     _speechLanguageService.setLanguage(normalized.voiceListMode);
     _voiceSessionManager.resetSession();
-    _applyAudioSettings();
+
+    if (shouldMute) {
+      await _audioService.stopNotification();
+      _stopMobileRingtone();
+    }
+
+    if (Platform.isAndroid) {
+      final engine = normalized.speechEngineMode;
+      if (engine != 'auto' &&
+          engine != 'sherpa_only' &&
+          engine != 'system_only') {
+        await _speechService.setSpeechEngine(
+          flutterTts: flutterTts,
+          engine: engine,
+        );
+      }
+      await _initTts(forceRebind: true);
+    }
+
+    if (normalized.clockOn) {
+      startClock();
+    } else {
+      stopClock();
+    }
+    _refreshNightMuteSchedule();
     _restartGoalReminderTimer();
-    _lsSave();
-    unawaited(_reconcileForeground(force: true));
+    await _settingsService.save(normalized);
+    await _writeWidgetState();
+    await _reconcileForeground(force: true);
   }
 
   Future<void> _openDriveMode({bool fullscreen = false}) async {
