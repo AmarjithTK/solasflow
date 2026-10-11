@@ -66,11 +66,11 @@ class StopwatchPanel extends StatelessWidget {
   }
 
   String _lapDelta(int index) {
-    if (lapTimes.length < 2 || index >= lapTimes.length) return '';
+    if (index < 0 || index >= lapTimes.length - 1) return '';
     final current = _parseSeconds(lapTimes[index]);
-    final previous = _parseSeconds(lapTimes[index - 1]);
+    final previous = _parseSeconds(lapTimes[index + 1]);
     if (current == null || previous == null) return '';
-    final diff = previous - current;
+    final diff = current - previous;
     if (diff >= 0) return '+${_formatDelta(diff)}';
     return '-${_formatDelta(diff.abs())}';
   }
@@ -259,7 +259,7 @@ class StopwatchPanel extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (i > 0)
+                      if (i < lapTimes.length - 1)
                         Text(
                           _lapDelta(i),
                           style: GoogleFonts.inter(
