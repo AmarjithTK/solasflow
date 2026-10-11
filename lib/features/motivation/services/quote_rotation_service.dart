@@ -25,8 +25,8 @@
 //
 // Benefits:
 // - User perceives variety without random repetition
-// - Respects order: important quotes can be sequenced
-// - Stateful cycling ensures fairness across long sessions
+// - Quote order is retained only for this service instance; indices reset when the app/service restarts.
+// - Stateful cycling ensures variety within a running session.
 //
 // Stateless Alternative:
 // If quotes should be random instead, use Random().nextInt() instead of
