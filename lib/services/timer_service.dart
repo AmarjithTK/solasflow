@@ -15,18 +15,6 @@
 import '../models/timer_tick_result.dart';
 
 class TimerService {
-  /// Format current time with milliseconds for detailed display
-  /// Returns: "HH:MM:SS.mmm AM/PM" (e.g., "03:45:30.125 PM")
-  String formatCurrentTime(DateTime now) {
-    final h = now.hour;
-    final m = now.minute.toString().padLeft(2, '0');
-    final s = now.second.toString().padLeft(2, '0');
-    final ms = now.millisecond.toString().padLeft(3, '0');
-    final ampm = h >= 12 ? 'PM' : 'AM';
-    final h12 = h % 12 == 0 ? 12 : h % 12;
-    final hStr = h12.toString().padLeft(2, '0');
-    return '$hStr:$m:$s.$ms $ampm';
-  }
 
   /// Begin the next interval when the scheduler actually fires.
   ///

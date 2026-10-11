@@ -469,7 +469,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Manages timer countdown logic: starts, pauses, resumes, calculates display
   /// Handles announcement timings based on user preferences
   final TimerService _timerService = TimerService();
-  MaterialLocalizations? _materialLocalizations;
+  late MaterialLocalizations _materialLocalizations;
 
   /// Cycles through motivational quotes by category
   /// Encapsulates quote rotation state and list management
@@ -987,23 +987,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   String _formatCurrentTime(DateTime now) {
-    final localizations = _materialLocalizations;
-    if (localizations == null) {
-      final withMs = _timerService.formatCurrentTime(now);
-      final parts = withMs.split(' ');
-      final timePartWithFraction = parts.first;
-      final suffix = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-      final timeWithoutFraction = timePartWithFraction.split('.').first;
-      final hmParts = timeWithoutFraction.split(':');
-      final hm = hmParts.length >= 2
-          ? '${hmParts[0]}:${hmParts[1]}'
-          : timeWithoutFraction;
-      if (!clockShowSeconds) return suffix.isEmpty ? hm : '$hm $suffix';
-      if (clockShowMilliseconds) return withMs;
-      return suffix.isEmpty ? timeWithoutFraction : '$timeWithoutFraction $suffix';
-    }
-
-    final formattedTime = localizations.formatTimeOfDay(
+    final formattedTime = _materialLocalizations.formatTimeOfDay(
       TimeOfDay.fromDateTime(now),
     );
     final parts = formattedTime.split(' ');
@@ -1022,9 +1006,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   ForegroundNotificationState _foregroundState() {
-    final idleTime = currentTimeDisplay.isNotEmpty
-        ? currentTimeDisplay
-        : _formatCurrentTime(DateTime.now());
+    final idleTime = currentTimeDisplay;
 
     return ForegroundNotificationState(
       isTimerRunning: timerInterval != null,
@@ -2109,6 +2091,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _materialLocalizations = MaterialLocalizations.of(context);
+    currentTimeDisplay = _formatCurrentTime(DateTime.now());
   }
 
   Future<void> _bootstrap() async {
@@ -2159,7 +2142,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Future<void> _bootstrapImpl() async {
     final settings = _settings;
     _speechLanguageService.setLanguage(settings.voiceListMode);
-    currentTimeDisplay = _formatCurrentTime(DateTime.now());
     timerDisplayValue = _formatTimerDisplayValue(seconds);
     stopwatchElapsedValue = _formatStopwatchElapsed(
       stopwatchElapsedSeconds,
