@@ -124,21 +124,34 @@ class TimerRuntime {
       return value is num ? value.toInt() : fallback;
     }
 
+    final durationSeconds = readInt('durationSeconds').clamp(0, 720 * 60);
+    if (durationSeconds == 0) return TimerRuntime.idle();
+    final remainingSeconds = readInt(
+      'remainingSeconds',
+    ).clamp(0, 720 * 60);
+    final endAtEpochMs = json['endAtEpochMs'] is num
+        ? readInt('endAtEpochMs')
+        : null;
+    final normalizedStatus =
+        status == TimerRuntimeStatus.running && endAtEpochMs == null
+        ? remainingSeconds == 0
+              ? TimerRuntimeStatus.finished
+              : TimerRuntimeStatus.paused
+        : status;
+
     return TimerRuntime(
       runId: json['runId']?.toString() ?? '',
-      status: status,
-      durationSeconds: readInt('durationSeconds').clamp(0, 720 * 60),
-      remainingSeconds: readInt('remainingSeconds').clamp(0, 720 * 60),
-      endAtEpochMs: json['endAtEpochMs'] is num
-          ? readInt('endAtEpochMs')
-          : null,
+      status: normalizedStatus,
+      durationSeconds: durationSeconds,
+      remainingSeconds: remainingSeconds,
+      endAtEpochMs: endAtEpochMs,
       chainModeOn: json['chainModeOn'] == true,
       chainPresetKey: json['chainPresetKey']?.toString() ?? 'Pomodoro 25-5x4',
       chainIndex: readInt('chainIndex').clamp(0, 1000),
       revision: readInt('revision').clamp(0, 1 << 30),
       segmentStartRemainingSeconds: readInt(
         'segmentStartRemainingSeconds',
-        readInt('remainingSeconds'),
+        remainingSeconds,
       ).clamp(0, 720 * 60),
     );
   }
