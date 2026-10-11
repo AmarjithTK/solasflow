@@ -308,7 +308,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kokoroDownloadDescription =>
-      'Solas Flow can download a 140 MiB English speech model for more natural English announcements. The download is verified and then available offline. English and Malayalam bundled voices remain available if you skip it. You can download, cancel, or retry later from Settings.';
+      'Solas Flow can download an English speech model of about 98.5 MiB for more natural English announcements. The download is verified and then available offline. English and Malayalam bundled voices remain available if you skip it. You can download, cancel, or retry later from Settings.';
 
   @override
   String get kokoroKeepPiper => 'Keep Piper';
@@ -1175,7 +1175,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPanelDownloadNotDownloaded =>
-      'Not downloaded · 140 MiB. English speech continues with Piper until then.';
+      'Not downloaded · about 98.5 MiB. English speech continues with Piper until then.';
 
   @override
   String settingsPanelDownloadingKokoro(String amount) {

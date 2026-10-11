@@ -530,7 +530,7 @@ class SpeechService {
         );
         _setEngineStatus(
           'kokoro_downloading',
-          'Downloading Kokoro English voices (103 MiB, 4 variations)',
+          'Downloading Kokoro English voices (about 98.5 MiB, 4 variations)',
         );
         await _downloadToFile(
           url:
