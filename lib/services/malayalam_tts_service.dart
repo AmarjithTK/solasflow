@@ -68,12 +68,6 @@ class MalayalamTtsService {
     if (locale.startsWith('ml')) return true;
     return false;
   }
-  // String periodText(DateTime now) {
-  //   if (now.hour < 12) return 'രാവിലെ';
-  //   if (now.hour < 17) return 'ഉച്ചയ്ക്ക്';
-  //   if (now.hour < 20) return 'വൈകുന്നേരം';
-  //   return 'രാത്രി';
-  // }
 
   String clockAnnouncement(DateTime now) {
     final hour12 = now.hour % 12 == 0 ? 12 : now.hour % 12;

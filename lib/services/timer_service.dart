@@ -59,12 +59,6 @@ class TimerService {
     return s;
   }
 
-  int remainingSeconds({required DateTime endAt, required DateTime now}) {
-    final deltaMs = endAt.millisecondsSinceEpoch - now.millisecondsSinceEpoch;
-    if (deltaMs <= 0) return 0;
-    return (deltaMs + 999) ~/ 1000;
-  }
-
   List<int> crossedAnnouncementMinutes({
     required int previousSeconds,
     required int currentSeconds,

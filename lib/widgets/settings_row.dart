@@ -12,7 +12,6 @@ class SettingsRow extends StatelessWidget {
   final String? value;
   final IconData? icon;
   final VoidCallback? onTap;
-  final bool showChevron;
   final Widget? trailing;
   final bool showDivider;
 
@@ -22,7 +21,6 @@ class SettingsRow extends StatelessWidget {
     this.value,
     this.icon,
     this.onTap,
-    this.showChevron = true,
     this.trailing,
     this.showDivider = true,
   });
@@ -67,7 +65,7 @@ class SettingsRow extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (showChevron && onTap != null) ...[
+                if (onTap != null) ...[
                   const SizedBox(width: 8),
                   Icon(
                     Icons.chevron_right_rounded,

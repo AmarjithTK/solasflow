@@ -27,7 +27,6 @@ class AppColors {
     divider: Color(0xFFE8E8E8),
     chipBorder: Color(0xFFDCDCDC),
     navBackground: Color(0xFFFFFFFF),
-    navBorder: Color(0xFFEBEBEB),
     navActive: Color(0xFF5B5BD6),
     navInactive: Color(0xFF9A9A9A),
     toggleTrackOff: Color(0xFFE0E0E0),
@@ -57,7 +56,6 @@ class AppColors {
     divider: Color(0xFF262626),
     chipBorder: Color(0xFF333333),
     navBackground: Color(0xFF141414),
-    navBorder: Color(0xFF222222),
     navActive: Color(0xFF7C7CEF),
     navInactive: Color(0xFF666666),
     toggleTrackOff: Color(0xFF333333),
@@ -88,7 +86,6 @@ class ColorTokens {
     required this.divider,
     required this.chipBorder,
     required this.navBackground,
-    required this.navBorder,
     required this.navActive,
     required this.navInactive,
     required this.toggleTrackOff,
@@ -115,7 +112,6 @@ class ColorTokens {
   final Color divider;
   final Color chipBorder;
   final Color navBackground;
-  final Color navBorder;
   final Color navActive;
   final Color navInactive;
   final Color toggleTrackOff;

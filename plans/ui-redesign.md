@@ -221,7 +221,7 @@ Spacing scale:
 ### Changes to `lib/theme/palette.dart`:
 
 1. **Delete all deprecated classes** (`Palette`, `_lightPalette`, `_darkPalette`, `setPaletteDarkMode`)
-2. **Keep `ThemeColors` and `ThemeTypography` extensions** — rename to shorter helpers
+2. **Remove unused `ThemeColors` wrappers** — use `Theme.of(context)` directly where needed
 3. **Remove `TintedSurfaces` extension** — no more primary-tinted surfaces
 4. **Add new extension** for the custom color tokens:
 
