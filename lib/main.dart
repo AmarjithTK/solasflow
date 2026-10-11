@@ -891,10 +891,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   /// Available ambient background sounds with user-friendly names
   final List<SoundOption> soundList = [
-    SoundOption("audio/rain.mp3", "Rain"),
-    SoundOption("audio/waterfall.mp3", "Waterfall"),
-    SoundOption("audio/fire.mp3", "Fire"),
-    SoundOption("audio/stream.mp3", "Stream"),
+    SoundOption(AppSettings.rainSound, "Rain"),
+    SoundOption(AppSettings.waterfallSound, "Waterfall"),
+    SoundOption(AppSettings.fireSound, "Fire"),
+    SoundOption(AppSettings.streamSound, "Stream"),
   ];
 
   /// Available volume levels (0.0-1.0) for numerical selection

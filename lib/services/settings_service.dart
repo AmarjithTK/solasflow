@@ -90,10 +90,7 @@ class SettingsService {
     SharedPreferences prefs, {
     required String defaultSound,
   }) {
-    String sound = prefs.getString(PrefKeys.soundChosen) ?? defaultSound;
-    if (sound.startsWith('assets/')) {
-      sound = sound.replaceFirst('assets/', '');
-    }
+    final sound = prefs.getString(PrefKeys.soundChosen) ?? defaultSound;
     final defaults = AppSettings.defaults(defaultSound: defaultSound);
     return AppSettings(
       soundChosen: sound,
@@ -207,13 +204,6 @@ class SettingsService {
   }
 
   Future<void> _runLegacyMigrations(SharedPreferences prefs) async {
-    final sound = prefs.getString(PrefKeys.soundChosen);
-    if (sound != null && sound.startsWith('assets/')) {
-      await prefs.setString(
-        PrefKeys.soundChosen,
-        sound.replaceFirst('assets/', ''),
-      );
-    }
     if (!prefs.containsKey(PrefKeys.maximumSpeechVolume)) {
       final oldBoost = prefs.getBool('TtsVolumeBoostEnabled') ?? false;
       final oldLock = prefs.getBool('TtsMaxVolumeLockEnabled') ?? false;

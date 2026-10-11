@@ -17,6 +17,17 @@ class AppSettings {
   static const motivationDelayOptions = [5, 10, 20, 30, 40, 60];
   static const goalReminderIntervalOptions = [30, 60, 120, 180, 240];
 
+  static const rainSound = 'audio/rain.mp3';
+  static const waterfallSound = 'audio/waterfall.mp3';
+  static const fireSound = 'audio/fire.mp3';
+  static const streamSound = 'audio/stream.mp3';
+  static const soundOptions = [
+    rainSound,
+    waterfallSound,
+    fireSound,
+    streamSound,
+  ];
+
   final String soundChosen;
   final double noiseVolume;
   final double speakVolume;
@@ -187,8 +198,16 @@ class AppSettings {
     };
     final normalizedTag = sessionTag == 'non-study' ? 'non-study' : 'study';
 
+    final sound = soundChosen.trim();
+    final soundWithoutAssetsPrefix = sound.startsWith('assets/')
+        ? sound.substring('assets/'.length)
+        : sound;
+    final normalizedSound = soundOptions.contains(soundWithoutAssetsPrefix)
+        ? soundWithoutAssetsPrefix
+        : soundOptions.first;
+
     return copyWith(
-      soundChosen: soundChosen.trim().isEmpty ? 'audio/rain.mp3' : soundChosen,
+      soundChosen: normalizedSound,
       noiseVolume: _nearestDoubleOption(noiseVolume, volumeOptions),
       speakVolume: _nearestDoubleOption(speakVolume, volumeOptions),
       clockIntervalMins: _nearestIntOption(
