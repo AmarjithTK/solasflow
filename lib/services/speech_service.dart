@@ -12,10 +12,6 @@ import '../models/speech_model_download_status.dart';
 import 'desktop_tts_controller.dart';
 import 'malayalam_tts_service.dart';
 class SpeechService {
-  static const MethodChannel _audioChannel = MethodChannel(
-    'com.atherpulse.solasflow/audio',
-  );
-
   Map<String, dynamic>? _sherpaManifestCache;
   String _lastEngineUsed = 'system';
   String _lastEngineDetail = 'System TTS ready';
@@ -76,15 +72,6 @@ class SpeechService {
     return useMalayalamNuance ? 'ml' : 'en';
   }
 
-  Future<void> _setMediaVolumeToMax() async {
-    try {
-      await _audioChannel.invokeMethod<void>('setMediaVolumeToMax');
-    } on PlatformException catch (error) {
-      debugPrint('Unable to maximize media volume: $error');
-    } on MissingPluginException catch (error) {
-      debugPrint('Audio channel unavailable: $error');
-    }
-  }
 
   String _platformKey() {
     if (Platform.isWindows) return 'windows';
@@ -1268,7 +1255,7 @@ class SpeechService {
   }) async {
     final mode = normalizeSpeechEngineMode(speechEngineMode);
     final ttsVolume = maximumSpeechVolume
-        ? (speakVolume + 0.40).clamp(0.0, 1.0).toDouble()
+        ? 1.0
         : speakVolume.clamp(0.0, 1.0).toDouble();
     if (useMalayalamNuance) {
       final voiceId = MalayalamTtsService.resolveVoiceId(preferredVoice);
@@ -1355,9 +1342,6 @@ class SpeechService {
 
     await flutterTts.setVolume(ttsVolume);
 
-    if (maximumSpeechVolume && Platform.isAndroid) {
-      await _setMediaVolumeToMax();
-    }
 
     await flutterTts.speak(item.text).timeout(
       const Duration(seconds: 45),

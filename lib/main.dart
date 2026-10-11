@@ -519,6 +519,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   final Queue<SpeechItem> speechQueue = Queue<SpeechItem>();
   int _speechGeneration = 0;
+  int _clockScheduleGeneration = 0;
   Future<void> _announcementTail = Future<void>.value();
   final Stopwatch _announcementClock = Stopwatch()..start();
   int _lastAnnouncementElapsedMs = -10000;
@@ -819,6 +820,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   bool autoNightMuteActive = false;
   Timer? nightIdleTimer;
+  Timer? nightWindowTimer;
   Timer? nightResumeSpeechTimer;
   Timer? goalReminderTimer;
   DateTime? _nextGoalReminderAt;
@@ -1113,10 +1115,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     setState(() {
       sleepStartMinutes = selected.hour * 60 + selected.minute;
       _lsSave();
-      if (_isAudioMuted()) {
-        speechQueue.clear();
-      }
     });
+    _refreshNightMuteSchedule();
   }
 
   Future<void> _pickSleepEndTime() async {
@@ -1133,10 +1133,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     setState(() {
       sleepEndMinutes = selected.hour * 60 + selected.minute;
       _lsSave();
-      if (_isAudioMuted()) {
-        speechQueue.clear();
-      }
     });
+    _refreshNightMuteSchedule();
   }
 
   Future<int> _readLastTimerSeconds() async {
@@ -1346,9 +1344,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
               } else if (nightMuteMode == 'automatic') {
                 _startNightIdleTimerIfNeeded();
               }
-              if (_isAudioMuted()) speechQueue.clear();
               _lsSave();
             });
+            if (_isAudioMuted()) {
+              _stopAudioForMute();
+            } else {
+              _applyAudioSettings();
+            }
           },
           onNightMuteModeChanged: (val) {
             if (val == null) return;
@@ -1362,9 +1364,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 autoNightMuteActive = false;
                 _startNightIdleTimerIfNeeded();
               }
-              if (_isAudioMuted()) speechQueue.clear();
               _lsSave();
             });
+            if (_isAudioMuted()) {
+              _stopAudioForMute();
+            } else {
+              _applyAudioSettings();
+            }
           },
           onPickSleepStart: () => unawaited(_pickSleepStartTime()),
           onPickSleepEnd: () => unawaited(_pickSleepEndTime()),
@@ -1923,6 +1929,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _cancelPendingSpeech();
       await _stopTts();
       await _audioService.stopBackground();
+      await _audioService.stopNotification();
       _stopMobileRingtone();
     } else {
       _applyAudioSettings();
@@ -2156,6 +2163,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Start a preset timer from widget (extracted for reuse with tag dialog).
   Future<void> _startPresetFromWidget(int mins) async {
     final safeMins = mins.clamp(1, 720);
+    await _audioService.stopNotification();
     _invalidateTimerWork();
     final totalSeconds = safeMins * 60;
     _armedPresetTimer?.cancel();
@@ -2690,6 +2698,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
       ),
     );
   }
+  bool _isSpeechItemEnabled(SpeechItem item) {
+    if (item.isClockAnnouncement &&
+        (!clockOn || (item.isQuote ? !motivationOn : !clockSpeakTime))) {
+      return false;
+    }
+    if (item.isTimerAnnouncement && !timerSpeakOn) return false;
+    if (item.isStopwatchAnnouncement && !stopwatchSpeakOn) return false;
+    return true;
+  }
 
   Future<void> drainQueue() async {
     if (!mounted || _isAudioMuted()) {
@@ -2707,8 +2724,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (item.delayMs > 0) {
       await Future<void>.delayed(Duration(milliseconds: item.delayMs));
     }
-    if (!mounted || generation != _speechGeneration || _isAudioMuted()) {
-      if (mounted) setState(() => isSpeechActive = false);
+    if (!mounted ||
+        generation != _speechGeneration ||
+        _isAudioMuted() ||
+        !_isSpeechItemEnabled(item)) {
+      if (mounted) {
+        setState(() => isSpeechActive = false);
+        if (generation == _speechGeneration) unawaited(drainQueue());
+      }
       return;
     }
 
@@ -2720,9 +2743,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
         desktopPlatform && normalizedEngineMode == 'sherpa_only';
     if (!desktopSherpaOnly && !desktopPlatform) {
       final ready = await _ensureTtsReady();
-      if (!ready || !mounted || generation != _speechGeneration) {
+      if (!ready) {
         if (mounted) setState(() => isSpeechActive = false);
         speechQueue.clear();
+        return;
+      }
+      if (!mounted || generation != _speechGeneration) return;
+      if (!_isSpeechItemEnabled(item)) {
+        setState(() => isSpeechActive = false);
+        unawaited(drainQueue());
         return;
       }
     }
@@ -2731,7 +2760,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
     try {
       if (Platform.isLinux) {
         await _audioService.setSpeechDucking(true);
-        if (!mounted || generation != _speechGeneration || _isAudioMuted()) {
+        if (!mounted ||
+            generation != _speechGeneration ||
+            _isAudioMuted() ||
+            !_isSpeechItemEnabled(item)) {
           return;
         }
         if (_desktopService.hidden.value) {
@@ -2789,7 +2821,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
     unawaited(_stopTts());
   }
 
-  void speak(String text, {Map<dynamic, dynamic>? voice}) {
+  void speak(
+    String text, {
+    Map<dynamic, dynamic>? voice,
+    bool isTimerAnnouncement = false,
+    bool isStopwatchAnnouncement = false,
+  }) {
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;
@@ -2798,7 +2835,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final useMalayalam = _isMalayalamActive(pv);
     final language = useMalayalam ? 'ml' : 'en';
     final activeVoice = voice ?? _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
-    speechQueue.add(SpeechItem(text, language: language, voice: activeVoice));
+    speechQueue.add(
+      SpeechItem(
+        text,
+        language: language,
+        voice: activeVoice,
+        isTimerAnnouncement: isTimerAnnouncement,
+        isStopwatchAnnouncement: isStopwatchAnnouncement,
+      ),
+    );
     drainQueue();
   }
 
@@ -2820,24 +2865,93 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void _cancelNightIdleTimer() {
     nightIdleTimer?.cancel();
     nightIdleTimer = null;
+    nightWindowTimer?.cancel();
+    nightWindowTimer = null;
   }
 
   void _startNightIdleTimerIfNeeded() {
     _cancelNightIdleTimer();
     if (!muteSpeechAfterMidnight ||
         nightMuteMode != 'automatic' ||
-        !_isNightTime()) {
+        sleepStartMinutes == sleepEndMinutes) {
+      return;
+    }
+    if (!_isNightTime()) {
+      final now = DateTime.now();
+      var nextStart = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        sleepStartMinutes ~/ 60,
+        sleepStartMinutes % 60,
+      );
+      if (!nextStart.isAfter(now)) {
+        nextStart = nextStart.add(const Duration(days: 1));
+      }
+      nightWindowTimer = Timer(nextStart.difference(now), () {
+        if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+          _startNightIdleTimerIfNeeded();
+        }
+      });
       return;
     }
 
     nightIdleTimer = Timer(const Duration(minutes: 5), () {
+      if (!mounted ||
+          !muteSpeechAfterMidnight ||
+          nightMuteMode != 'automatic' ||
+          !_isNightTime() ||
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        return;
+      }
       autoNightMuteActive = true;
       _cancelPendingSpeech();
       unawaited(_audioService.stopBackground());
       unawaited(_audioService.stopNotification());
       _stopMobileRingtone();
+      final now = DateTime.now();
+      var sleepEnd = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        sleepEndMinutes ~/ 60,
+        sleepEndMinutes % 60,
+      );
+      if (!sleepEnd.isAfter(now)) {
+        sleepEnd = sleepEnd.add(const Duration(days: 1));
+      }
+      nightWindowTimer = Timer(sleepEnd.difference(now), () {
+        if (!mounted ||
+            !autoNightMuteActive ||
+            !muteSpeechAfterMidnight ||
+            nightMuteMode != 'automatic' ||
+            _isNightTime()) {
+          return;
+        }
+        autoNightMuteActive = false;
+        _applyAudioSettings();
+      });
     });
   }
+
+  void _stopAudioForMute() {
+    _cancelPendingSpeech();
+    unawaited(_audioService.stopBackground());
+    unawaited(_audioService.stopNotification());
+    _stopMobileRingtone();
+  }
+  void _refreshNightMuteSchedule() {
+    _cancelNightIdleTimer();
+    if (muteSpeechAfterMidnight && nightMuteMode == 'automatic') {
+      _startNightIdleTimerIfNeeded();
+    }
+    if (_isAudioMuted()) {
+      _stopAudioForMute();
+    } else {
+      _applyAudioSettings();
+    }
+  }
+
 
   void _scheduleNightResumeAnnouncement() {
     nightResumeSpeechTimer?.cancel();
@@ -2882,6 +2996,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _todaySummaryDate = DateTime(now.year, now.month, now.day);
       unawaited(_refreshTodaySummary());
       if (clockOn) _scheduleNextClockAnnouncement();
+      _applyAudioSettings();
       _dispatchExternal(() async {
         if (timerInterval == null ||
             _timerRuntime.status != TimerRuntimeStatus.running) {
@@ -2897,15 +3012,22 @@ class _MainScreenState extends ConsumerState<MainScreen>
     // Master Audio — when OFF, suppress ALL audio (speech, sounds, ringtones)
     if (!speechMasterOn) return true;
 
-    if (!muteSpeechAfterMidnight) return false;
-    if (!_isNightTime()) {
-      autoNightMuteActive = false;
+    if (!muteSpeechAfterMidnight || !_isNightTime()) {
+      if (autoNightMuteActive) {
+        autoNightMuteActive = false;
+        unawaited(_restoreAudioAfterNightMute());
+      }
       return false;
     }
     if (nightMuteMode == 'manual') {
       return true;
     }
     return autoNightMuteActive;
+  }
+
+  Future<void> _restoreAudioAfterNightMute() async {
+    if (!mounted || _isAudioMuted()) return;
+    _applyAudioSettings();
   }
 
   void _speakAfterGap({
@@ -2989,6 +3111,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void stopClock() {
+    _clockScheduleGeneration++;
+    speechQueue.removeWhere((item) => item.isClockAnnouncement);
     clockTimer?.cancel();
     clockTimer = null;
     _nextClockAt = null;
@@ -3017,12 +3141,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final pv = getPreferredVoice();
     final useMalayalam = _isMalayalamActive(pv);
     final clockVoice = _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
+    final scheduleGeneration = _clockScheduleGeneration;
     _speakAfterGap(
       text: text,
       getLatestOtherSpoke: () =>
           max(max(lastTimerSpoke, lastStopwatchSpoke), lastGoalReminderSpoke),
       markSpoke: () => lastClockSpoke = DateTime.now().millisecondsSinceEpoch,
-      isStillValid: () => clockOn && clockSpeakTime,
+      isStillValid: () =>
+          clockOn &&
+          clockSpeakTime &&
+          scheduleGeneration == _clockScheduleGeneration,
       onFire: () {
         debugPrint('[CLOCK] Queuing announcement at ${DateTime.now()}');
         speechQueue.removeWhere((item) => item.isClockAnnouncement);
@@ -3091,7 +3219,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
       getLatestOtherSpoke: () =>
           max(max(lastClockSpoke, lastStopwatchSpoke), lastGoalReminderSpoke),
       markSpoke: () => lastTimerSpoke = DateTime.now().millisecondsSinceEpoch,
-      onFire: () => speak(text, voice: timerVoice),
+      isStillValid: () => timerSpeakOn,
+      onFire: () => speak(
+        text,
+        voice: timerVoice,
+        isTimerAnnouncement: true,
+      ),
     );
   }
 
@@ -3299,6 +3432,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
         runtime.status != _timerRuntime.status;
     if (replacesCurrentRun) _invalidateTimerWork();
     var next = runtime;
+    if (_timerRuntime.status == TimerRuntimeStatus.finished &&
+        next.status == TimerRuntimeStatus.running) {
+      unawaited(_audioService.stopNotification());
+    }
     if (next.status == TimerRuntimeStatus.running &&
         next.remainingAt(DateTime.now()) == 0) {
       next = _advanceExpiredTimer(next, DateTime.now());
@@ -3543,6 +3680,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       timerDisplayValue = _formatTimerDisplayValue(seconds);
       _activeTimerDurationSeconds = seconds;
     });
+    unawaited(_audioService.stopNotification());
     startTimer();
   }
 
@@ -3906,6 +4044,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void startTimer() {
     if (timerInterval != null) return;
+    unawaited(_audioService.stopNotification());
     _invalidateTimerWork();
     _armedPresetTimer?.cancel();
     _armedPresetValue = null;
@@ -4120,6 +4259,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
               if (needsStart) clockOn = true;
               _lsSave();
             });
+            if (!nowOn) {
+              speechQueue.removeWhere((item) => item.isClockAnnouncement);
+            }
             if (needsStart) {
               startClock();
             } else if (nowOn) {
@@ -4152,6 +4294,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
               if (needsStart) clockOn = true;
               _lsSave();
             });
+            if (!nowOn) speechQueue.removeWhere((item) => item.isQuote);
             if (needsStart) startClock();
           },
           onMotivationCategoryChanged: (val) {
@@ -4239,10 +4382,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
             _applyAudioSettings();
           },
           onTimerSpeakOnChanged: (val) {
+            final nowOn = val ?? true;
             setState(() {
-              timerSpeakOn = val ?? true;
+              timerSpeakOn = nowOn;
               _lsSave();
             });
+            if (!nowOn) {
+              speechQueue.removeWhere((item) => item.isTimerAnnouncement);
+            }
           },
           onTimerShowMillisecondsChanged: (val) {
             setState(() {

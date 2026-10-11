@@ -16,7 +16,20 @@ Twelve concurrent reviewers completed their assignments; their results were join
 - **No app/UI/browser launch, screenshot, device/ADB interaction, runtime diagnostic, test, analyzer, build, formatter, download, import, systemd operation, dependency installation or environment change ran in this pass.** Read-only repository inspection and the documentation checkpoint are not app execution.
 - **Source-traced** means the stated result follows from the inspected branch/state transitions given the preconditions. It does not mean the behavior was reproduced on a device. **[INFERENCE]** identifies timing/platform-dependent triggering conditions or consequences. Three retained findings explicitly require a narrow async/queue interleaving; other entries state their platform/failure prerequisites without claiming those were exercised.
 - High: loss/corruption of an active user run or failure of the advertised multi-stage timer. Medium: supported controls fail, produce contradictory state, lose session data or misrepresent operations. Low: actionable guidance/validation-feedback defects.
-- No app source, dependency manifest, build configuration or existing tests were changed. No fixes were applied. A source-only audit cannot guarantee every possible usage flaw has been found.
+- At initial audit publication, no fixes had been applied. The audit remains the full baseline; subsequent repair progress is recorded below. A source-only audit cannot guarantee every possible usage flaw has been found.
+
+## Repair progress
+
+Implementation status is source-reviewed, not device/UI reproduced. Findings not listed here remain open; partial remediation does not close a finding.
+
+| Findings | Repair status |
+|---|---|
+| U01, U04, U06, U07 | Fixed in code: stale timer completion work/dialog results cannot replace or idle a newer run; foreground/background expired chains share one advancement path. |
+| U03, U16, U17, U42–U45 | Fixed in code: restored timer selection, persisted stopwatch laps, interval-based tagging/accounting, dashboard invalidation and daily rollover refresh. |
+| U08, U13, U15, U21–U25, U28, U31 | Fixed in code: notification audio is stopped on timer replacement/master mute; delayed speech is revalidated after waits; clock schedule changes invalidate pending batches; sleep deadlines recheck current mode/window and resume audio at the quiet-window end; disabling timer speech suppresses pending timer items; TTS boost no longer changes shared Android media gain. U12, U14 remain open. |
+| U35–U36 | Fixed in code: backup exports avoid same-minute collisions, write failures remain errors, and invalid/incomplete imports are rejected rather than treated as cancellation/default settings. |
+
+Verification after the latest audio/sleep edits: `dart analyze lib/main.dart lib/models/speech_item.dart lib/services/speech_service.dart lib/services/audio_service.dart` reported no issues. No app runtime, Android/Kotlin build, UI/device interaction or tests were run; platform and timing behavior remains unverified.
 
 ## Most urgent journeys
 

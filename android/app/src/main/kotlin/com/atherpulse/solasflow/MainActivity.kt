@@ -73,10 +73,6 @@ class MainActivity : FlutterActivity() {
                                 result.success(true)
                             }
                         }
-                        "setMediaVolumeToMax" -> {
-                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, max, 0)
-                            result.success(true)
-                        }
                         else -> result.notImplemented()
                     }
                 } catch (error: SecurityException) {
