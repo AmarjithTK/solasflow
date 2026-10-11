@@ -1704,20 +1704,26 @@ class _MainScreenState extends ConsumerState<MainScreen>
             onTimerStart: () {
               final paused = _timerRuntime.status == TimerRuntimeStatus.paused;
               startTimer();
-              speak(paused ? 'Timer resumed' : 'Timer started');
+              speak(
+                paused ? 'Timer resumed' : 'Timer started',
+                languageOverride: 'en',
+              );
             },
             onTimerPause: () {
               stopTimer();
-              speak('Timer paused');
+              speak('Timer paused', languageOverride: 'en');
             },
             onStopwatchStart: () {
               final paused = _stopwatchRuntime.accumulatedMs > 0;
               startStopwatch();
-              speak(paused ? 'Stopwatch resumed' : 'Stopwatch started');
+              speak(
+                paused ? 'Stopwatch resumed' : 'Stopwatch started',
+                languageOverride: 'en',
+              );
             },
             onStopwatchPause: () {
               stopStopwatch();
-              speak('Stopwatch paused');
+              speak('Stopwatch paused', languageOverride: 'en');
             },
             onAudioEnabledChanged: (enabled) =>
                 unawaited(_setSpeechMaster(enabled)),
@@ -1725,14 +1731,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 setState(() => currentTabIndex = mode.index),
             onTimerPresetSelected: (minutes) {
               _startTimerFromMinutes(minutes);
-              speak('$minutes minute timer started');
+              speak('$minutes minute timer started', languageOverride: 'en');
             },
             onSpeakNow: (mode) {
               switch (mode) {
                 case DriveMode.clock:
-                  speak(timeToWords());
+                  speak(timeToWords(), languageOverride: 'en');
                 case DriveMode.timer:
-                  speak('$seconds seconds remaining');
+                  speak('$seconds seconds remaining', languageOverride: 'en');
                 case DriveMode.stopwatch:
                   speakStopwatchElapsedNow();
               }
@@ -2834,6 +2840,24 @@ class _MainScreenState extends ConsumerState<MainScreen>
       ),
     );
   }
+
+  Map<dynamic, dynamic>? _preferredEnglishAnnouncementVoice() {
+    final englishVoices = voices
+        .where(
+          (voice) =>
+              voice['locale']?.toString().toLowerCase().startsWith('en') ??
+              false,
+        )
+        .toList();
+    if (englishVoices.isEmpty) return null;
+    return _speechService.preferredVoice(
+      voices: englishVoices,
+      voiceListMode: 'english',
+      favoriteVoiceName: favoriteVoiceName,
+      favoriteVoiceLocale: favoriteVoiceLocale,
+    );
+  }
+
   bool _isSpeechItemEnabled(SpeechItem item) {
     if (item.isClockAnnouncement &&
         (!clockOn || (item.isQuote ? !motivationOn : !clockSpeakTime))) {
@@ -2977,6 +3001,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void speak(
     String text, {
     Map<dynamic, dynamic>? voice,
+    String? languageOverride,
     bool isTimerAnnouncement = false,
     bool isStopwatchAnnouncement = false,
     bool isTimerCompletion = false,
@@ -2988,10 +3013,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
       return;
     }
     final pv = getPreferredVoice();
-    final useMalayalam = _isMalayalamActive(pv);
-    final language = useMalayalam ? 'ml' : 'en';
+    final useMalayalam = languageOverride == 'en'
+        ? false
+        : _isMalayalamActive(pv);
+    final language = languageOverride ?? (useMalayalam ? 'ml' : 'en');
     final activeVoice =
-        voice ?? _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
+        voice ??
+        (languageOverride == 'en'
+            ? _preferredEnglishAnnouncementVoice()
+            : _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam));
     speechQueue.add(
       SpeechItem(
         text,
@@ -3466,7 +3496,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
       isStillValid: () =>
           speechGeneration == _stopwatchSpeechGeneration &&
           (explicit || (stopwatchInterval != null && stopwatchSpeakOn)),
-      onFire: () => speak(text, isStopwatchAnnouncement: !explicit),
+      onFire: () => speak(
+        text,
+        isStopwatchAnnouncement: !explicit,
+        languageOverride: 'en',
+      ),
     );
   }
 
