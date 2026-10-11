@@ -414,6 +414,7 @@ void _worker(SendPort parent) {
 }
 
 class DesktopTtsEngine {
+  static const _workerShutdownTimeout = Duration(seconds: 30);
   SendPort? _commands;
   Future<void>? _starting;
   Future<void> _queue = Future<void>.value();
@@ -424,6 +425,7 @@ class DesktopTtsEngine {
   final ReceivePort _workerExit = ReceivePort();
   final ReceivePort _workerErrors = ReceivePort();
   final Completer<String> _workerFailure = Completer<String>();
+  Isolate? _isolate;
 
   DesktopTtsEngine() {
     _workerExit.listen((_) => _reportWorkerFailure('Worker exited unexpectedly'));
@@ -449,7 +451,7 @@ class DesktopTtsEngine {
   Future<void> _start() async {
     final ready = ReceivePort();
     try {
-      await Isolate.spawn(
+      _isolate = await Isolate.spawn(
         _worker,
         ready.sendPort,
         onError: _workerErrors.sendPort,
@@ -533,9 +535,18 @@ class DesktopTtsEngine {
     final task = _request('close', '', null);
     _closed = true;
     try {
-      await task;
+      await task.timeout(
+        _workerShutdownTimeout,
+        onTimeout: () {
+          const message = 'Worker did not stop within 30 seconds';
+          _reportWorkerFailure(message);
+          _isolate?.kill(priority: Isolate.immediate);
+          throw TimeoutException(message);
+        },
+      );
     } finally {
       _commands = null;
+      _isolate = null;
       _workerExit.close();
       _workerErrors.close();
     }
