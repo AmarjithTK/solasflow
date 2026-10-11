@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/safe_preference_reads.dart';
+
 import '../models/app_settings.dart';
 import '../models/timer_runtime.dart';
 import 'settings_service.dart';
@@ -20,7 +22,7 @@ class TimerRuntimeStore {
     try {
       await prefs.reload();
     } catch (_) {}
-    final encoded = prefs.getString(runtimeKey);
+    final encoded = SafePreferenceReads.string(prefs, runtimeKey);
     if (encoded == null) return TimerRuntime.idle();
     try {
       final decoded = jsonDecode(encoded);
@@ -55,7 +57,7 @@ class TimerRuntimeStore {
     try {
       await prefs.reload();
     } catch (_) {}
-    final encoded = prefs.getString(stopwatchKey);
+    final encoded = SafePreferenceReads.string(prefs, stopwatchKey);
     if (encoded == null) return StopwatchRuntime.idle();
     try {
       final decoded = jsonDecode(encoded);
@@ -92,7 +94,7 @@ class TimerRuntimeStore {
     try {
       await prefs.reload();
     } catch (_) {}
-    final epochMs = prefs.getInt(clockNextAtKey);
+    final epochMs = SafePreferenceReads.integer(prefs, clockNextAtKey);
     return epochMs == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(epochMs);
@@ -122,7 +124,10 @@ class TimerRuntimeStore {
       await prefs.reload();
     } catch (_) {}
     AppSettings settings = AppSettings.defaults();
-    final encoded = prefs.getString(SettingsService.snapshotKey);
+    final encoded = SafePreferenceReads.string(
+      prefs,
+      SettingsService.snapshotKey,
+    );
     if (encoded != null) {
       try {
         final decoded = jsonDecode(encoded);
@@ -133,7 +138,10 @@ class TimerRuntimeStore {
         debugPrint('Ignoring corrupt task settings: $error');
       }
     }
-    final override = prefs.getBool(SettingsService.speechMasterOverrideKey);
+    final override = SafePreferenceReads.boolean(
+      prefs,
+      SettingsService.speechMasterOverrideKey,
+    );
     return override == null
         ? settings
         : settings.copyWith(speechMasterOn: override);

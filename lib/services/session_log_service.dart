@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/safe_preference_reads.dart';
 import '../models/session_log.dart';
 
 class SessionLogService {
@@ -18,7 +19,9 @@ class SessionLogService {
         })
         .then((_) async {
           final prefs = await SharedPreferences.getInstance();
-          final sessions = _decode(prefs.getStringList(_prefsKey) ?? const []);
+          final sessions = _decode(
+            SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
+          );
           if (session.sessionId.isNotEmpty &&
               sessions.any((saved) => saved.sessionId == session.sessionId)) {
             return;
@@ -65,7 +68,9 @@ class SessionLogService {
           final prefs = await SharedPreferences.getInstance();
           await _writeSessions(
             prefs,
-            _decode(prefs.getStringList(_prefsKey) ?? const []),
+            _decode(
+              SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
+            ),
           );
         });
     return _writeTail;
@@ -74,7 +79,9 @@ class SessionLogService {
   Future<List<SessionLog>> _loadAll() async {
     await _writeTail;
     final prefs = await SharedPreferences.getInstance();
-    return _decode(prefs.getStringList(_prefsKey) ?? const []);
+    return _decode(
+      SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
+    );
   }
 
   List<SessionLog> _decode(List<String> raw) => raw

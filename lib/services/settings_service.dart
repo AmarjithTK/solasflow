@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/pref_keys.dart';
+import '../core/safe_preference_reads.dart';
 import '../models/app_settings.dart';
 
 /// Stores one validated, versioned settings document.
@@ -26,7 +27,7 @@ class SettingsService {
     await _runLegacyMigrations(prefs);
 
     AppSettings settings;
-    final encoded = prefs.getString(snapshotKey);
+    final encoded = SafePreferenceReads.string(prefs, snapshotKey);
     if (encoded != null) {
       try {
         final decoded = jsonDecode(encoded);
@@ -41,7 +42,10 @@ class SettingsService {
       settings = _loadLegacy(prefs, defaultSound: defaultSound);
     }
 
-    final taskOverride = prefs.getBool(speechMasterOverrideKey);
+    final taskOverride = SafePreferenceReads.boolean(
+      prefs,
+      speechMasterOverrideKey,
+    );
     if (taskOverride != null) {
       settings = settings.copyWith(speechMasterOn: taskOverride).normalized();
       await prefs.remove(speechMasterOverrideKey);
@@ -90,123 +94,172 @@ class SettingsService {
     SharedPreferences prefs, {
     required String defaultSound,
   }) {
-    final sound = prefs.getString(PrefKeys.soundChosen) ?? defaultSound;
+    final sound =
+        SafePreferenceReads.string(prefs, PrefKeys.soundChosen) ?? defaultSound;
     final defaults = AppSettings.defaults(defaultSound: defaultSound);
     return AppSettings(
       soundChosen: sound,
       noiseVolume:
-          prefs.getDouble(PrefKeys.noiseVolume) ?? defaults.noiseVolume,
+          SafePreferenceReads.decimal(prefs, PrefKeys.noiseVolume) ??
+          defaults.noiseVolume,
       speakVolume:
-          prefs.getDouble(PrefKeys.speakVolume) ?? defaults.speakVolume,
+          SafePreferenceReads.decimal(prefs, PrefKeys.speakVolume) ??
+          defaults.speakVolume,
       maximumSpeechVolume:
-          prefs.getBool(PrefKeys.maximumSpeechVolume) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.maximumSpeechVolume) ??
           defaults.maximumSpeechVolume,
-      clockOn: prefs.getBool(PrefKeys.clockOn) ?? defaults.clockOn,
+      clockOn:
+          SafePreferenceReads.boolean(prefs, PrefKeys.clockOn) ??
+          defaults.clockOn,
       clockIntervalMins:
-          prefs.getInt(PrefKeys.clockIntervalMins) ??
+          SafePreferenceReads.integer(prefs, PrefKeys.clockIntervalMins) ??
           defaults.clockIntervalMins,
       clockShowMilliseconds:
-          prefs.getBool(PrefKeys.clockShowMilliseconds) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.clockShowMilliseconds) ??
           defaults.clockShowMilliseconds,
       clockShowSeconds:
-          prefs.getBool(PrefKeys.clockShowSeconds) ?? defaults.clockShowSeconds,
+          SafePreferenceReads.boolean(prefs, PrefKeys.clockShowSeconds) ??
+          defaults.clockShowSeconds,
       clockSpeakTime:
-          prefs.getBool(PrefKeys.clockSpeakTime) ?? defaults.clockSpeakTime,
+          SafePreferenceReads.boolean(prefs, PrefKeys.clockSpeakTime) ??
+          defaults.clockSpeakTime,
       clockSpeakRepeatCount:
-          prefs.getInt(PrefKeys.clockSpeakRepeatCount) ??
+          SafePreferenceReads.integer(prefs, PrefKeys.clockSpeakRepeatCount) ??
           defaults.clockSpeakRepeatCount,
       clockNoiseOn:
-          prefs.getBool(PrefKeys.clockNoiseOn) ?? defaults.clockNoiseOn,
+          SafePreferenceReads.boolean(prefs, PrefKeys.clockNoiseOn) ??
+          defaults.clockNoiseOn,
       motivationOn:
-          prefs.getBool(PrefKeys.motivationOn) ?? defaults.motivationOn,
+          SafePreferenceReads.boolean(prefs, PrefKeys.motivationOn) ??
+          defaults.motivationOn,
       motivationCategory:
-          prefs.getString(PrefKeys.motivationCategory) ??
+          SafePreferenceReads.string(prefs, PrefKeys.motivationCategory) ??
           defaults.motivationCategory,
       motivationDelaySeconds:
-          prefs.getInt(PrefKeys.motivationDelaySeconds) ??
+          SafePreferenceReads.integer(prefs, PrefKeys.motivationDelaySeconds) ??
           defaults.motivationDelaySeconds,
       timerSpeakOn:
-          prefs.getBool(PrefKeys.timerSpeakOn) ?? defaults.timerSpeakOn,
+          SafePreferenceReads.boolean(prefs, PrefKeys.timerSpeakOn) ??
+          defaults.timerSpeakOn,
       timerAnnounceEvery:
-          prefs.getInt(PrefKeys.timerAnnounceEvery) ??
+          SafePreferenceReads.integer(prefs, PrefKeys.timerAnnounceEvery) ??
           defaults.timerAnnounceEvery,
       timerShowMilliseconds:
-          prefs.getBool(PrefKeys.timerShowMilliseconds) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.timerShowMilliseconds) ??
           defaults.timerShowMilliseconds,
       timerNoiseOn:
-          prefs.getBool(PrefKeys.timerNoiseOn) ?? defaults.timerNoiseOn,
+          SafePreferenceReads.boolean(prefs, PrefKeys.timerNoiseOn) ??
+          defaults.timerNoiseOn,
       goalReminderOn:
-          prefs.getBool(PrefKeys.goalReminderOn) ?? defaults.goalReminderOn,
+          SafePreferenceReads.boolean(prefs, PrefKeys.goalReminderOn) ??
+          defaults.goalReminderOn,
       goalReminderIntervalMins:
-          prefs.getInt(PrefKeys.goalReminderIntervalMins) ??
+          SafePreferenceReads.integer(
+            prefs,
+            PrefKeys.goalReminderIntervalMins,
+          ) ??
           defaults.goalReminderIntervalMins,
       goalReminderItems:
-          prefs.getStringList(PrefKeys.goalReminderItems) ?? const [],
+          SafePreferenceReads.stringList(
+            prefs,
+            PrefKeys.goalReminderItems,
+          ) ??
+          const [],
       goalReminderNextIndex:
-          prefs.getInt(PrefKeys.goalReminderNextIndex) ??
+          SafePreferenceReads.integer(
+            prefs,
+            PrefKeys.goalReminderNextIndex,
+          ) ??
           defaults.goalReminderNextIndex,
       stopwatchSpeakOn:
-          prefs.getBool(PrefKeys.stopwatchSpeakOn) ?? defaults.stopwatchSpeakOn,
+          SafePreferenceReads.boolean(prefs, PrefKeys.stopwatchSpeakOn) ??
+          defaults.stopwatchSpeakOn,
       stopwatchShowMilliseconds:
-          prefs.getBool(PrefKeys.stopwatchShowMilliseconds) ??
+          SafePreferenceReads.boolean(
+            prefs,
+            PrefKeys.stopwatchShowMilliseconds,
+          ) ??
           defaults.stopwatchShowMilliseconds,
       stopwatchSpeakDelaySeconds:
-          prefs.getInt(PrefKeys.stopwatchSpeakDelaySeconds) ??
+          SafePreferenceReads.integer(
+            prefs,
+            PrefKeys.stopwatchSpeakDelaySeconds,
+          ) ??
           defaults.stopwatchSpeakDelaySeconds,
       muteSpeechAfterMidnight:
-          prefs.getBool(PrefKeys.muteSpeechAfterMidnight) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.muteSpeechAfterMidnight) ??
           defaults.muteSpeechAfterMidnight,
       nightMuteMode:
-          prefs.getString(PrefKeys.nightMuteMode) ?? defaults.nightMuteMode,
+          SafePreferenceReads.string(prefs, PrefKeys.nightMuteMode) ??
+          defaults.nightMuteMode,
       sleepStartMinutes:
-          prefs.getInt(PrefKeys.sleepStartMinutes) ??
+          SafePreferenceReads.integer(prefs, PrefKeys.sleepStartMinutes) ??
           defaults.sleepStartMinutes,
       sleepEndMinutes:
-          prefs.getInt(PrefKeys.sleepEndMinutes) ?? defaults.sleepEndMinutes,
+          SafePreferenceReads.integer(prefs, PrefKeys.sleepEndMinutes) ??
+          defaults.sleepEndMinutes,
       appDarkTheme:
-          prefs.getBool(PrefKeys.appDarkTheme) ?? defaults.appDarkTheme,
+          SafePreferenceReads.boolean(prefs, PrefKeys.appDarkTheme) ??
+          defaults.appDarkTheme,
       fullscreenDarkTheme:
-          prefs.getBool(PrefKeys.fullscreenDarkTheme) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.fullscreenDarkTheme) ??
           defaults.fullscreenDarkTheme,
       fullscreenDimBrightness:
-          prefs.getBool(PrefKeys.fullscreenDimBrightness) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.fullscreenDimBrightness) ??
           defaults.fullscreenDimBrightness,
       fullscreenStartLandscape:
-          prefs.getBool(PrefKeys.fullscreenStartLandscape) ??
+          SafePreferenceReads.boolean(
+            prefs,
+            PrefKeys.fullscreenStartLandscape,
+          ) ??
           defaults.fullscreenStartLandscape,
       fullscreenShowClock:
-          prefs.getBool(PrefKeys.fullscreenShowClock) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.fullscreenShowClock) ??
           defaults.fullscreenShowClock,
       fullscreenClockScale:
-          prefs.getDouble(PrefKeys.fullscreenClockScale) ??
+          SafePreferenceReads.decimal(prefs, PrefKeys.fullscreenClockScale) ??
           defaults.fullscreenClockScale,
       voiceListMode:
-          prefs.getString(PrefKeys.voiceListMode) ?? defaults.voiceListMode,
+          SafePreferenceReads.string(prefs, PrefKeys.voiceListMode) ??
+          defaults.voiceListMode,
       speechEngineMode:
-          prefs.getString(PrefKeys.speechEngineMode) ??
+          SafePreferenceReads.string(prefs, PrefKeys.speechEngineMode) ??
           defaults.speechEngineMode,
-      favoriteVoiceName: prefs.getString(PrefKeys.favoriteVoiceName),
-      favoriteVoiceLocale: prefs.getString(PrefKeys.favoriteVoiceLocale),
+      favoriteVoiceName:
+          SafePreferenceReads.string(prefs, PrefKeys.favoriteVoiceName),
+      favoriteVoiceLocale:
+          SafePreferenceReads.string(prefs, PrefKeys.favoriteVoiceLocale),
       speechMasterOn:
-          prefs.getBool(PrefKeys.speechMasterOn) ?? defaults.speechMasterOn,
+          SafePreferenceReads.boolean(prefs, PrefKeys.speechMasterOn) ??
+          defaults.speechMasterOn,
       appFontSizeMultiplier:
-          prefs.getDouble(PrefKeys.appFontSizeMultiplier) ??
+          SafePreferenceReads.decimal(prefs, PrefKeys.appFontSizeMultiplier) ??
           defaults.appFontSizeMultiplier,
       backgroundPersistenceOn:
-          prefs.getBool(PrefKeys.backgroundPersistenceOn) ??
+          SafePreferenceReads.boolean(prefs, PrefKeys.backgroundPersistenceOn) ??
           defaults.backgroundPersistenceOn,
       fullscreenDimBrightnessLevel:
-          prefs.getDouble(PrefKeys.fullscreenDimBrightnessLevel) ??
+          SafePreferenceReads.decimal(
+            prefs,
+            PrefKeys.fullscreenDimBrightnessLevel,
+          ) ??
           defaults.fullscreenDimBrightnessLevel,
-      taggingOn: prefs.getBool(PrefKeys.taggingOn) ?? defaults.taggingOn,
-      sessionTag: prefs.getString(PrefKeys.sessionTag) ?? defaults.sessionTag,
+      taggingOn:
+          SafePreferenceReads.boolean(prefs, PrefKeys.taggingOn) ??
+          defaults.taggingOn,
+      sessionTag:
+          SafePreferenceReads.string(prefs, PrefKeys.sessionTag) ??
+          defaults.sessionTag,
     ).normalized();
   }
 
   Future<void> _runLegacyMigrations(SharedPreferences prefs) async {
     if (!prefs.containsKey(PrefKeys.maximumSpeechVolume)) {
-      final oldBoost = prefs.getBool('TtsVolumeBoostEnabled') ?? false;
-      final oldLock = prefs.getBool('TtsMaxVolumeLockEnabled') ?? false;
+      final oldBoost =
+          SafePreferenceReads.boolean(prefs, 'TtsVolumeBoostEnabled') ?? false;
+      final oldLock =
+          SafePreferenceReads.boolean(prefs, 'TtsMaxVolumeLockEnabled') ??
+          false;
       await prefs.setBool(PrefKeys.maximumSpeechVolume, oldBoost || oldLock);
     }
   }
