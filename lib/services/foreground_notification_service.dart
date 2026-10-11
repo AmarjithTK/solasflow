@@ -23,7 +23,7 @@ class ForegroundNotificationService {
 
   Future<bool> reconcile({
     required bool shouldRun,
-    required ForegroundNotificationState state,
+    required ForegroundNotificationPresentation presentation,
     required Function callback,
     bool force = false,
   }) {
@@ -37,7 +37,7 @@ class ForegroundNotificationService {
             completer.complete(
               await _reconcileNow(
                 shouldRun: shouldRun,
-                state: state,
+                presentation: presentation,
                 callback: callback,
                 force: force,
               ),
@@ -53,7 +53,7 @@ class ForegroundNotificationService {
 
   Future<bool> _reconcileNow({
     required bool shouldRun,
-    required ForegroundNotificationState state,
+    required ForegroundNotificationPresentation presentation,
     required Function callback,
     required bool force,
   }) async {
@@ -70,15 +70,15 @@ class ForegroundNotificationService {
       return _acceptResult(result, onSuccess: () => _lastSignature = null);
     }
 
-    final signature = _signature(state);
+    final signature = _signature(presentation);
     if (!running) {
       final result = await FlutterForegroundTask.startService(
-        notificationTitle: state.title,
-        notificationText: state.text,
+        notificationTitle: presentation.title,
+        notificationText: presentation.text,
         notificationIcon: NotificationIcon(
           metaDataName: notificationIconMetaDataName,
         ),
-        notificationButtons: state.buttons,
+        notificationButtons: presentation.buttons,
         callback: callback,
       );
       return _acceptResult(result, onSuccess: () => _lastSignature = signature);
@@ -86,9 +86,9 @@ class ForegroundNotificationService {
 
     if (!force && signature == _lastSignature) return true;
     final result = await FlutterForegroundTask.updateService(
-      notificationTitle: state.title,
-      notificationText: state.text,
-      notificationButtons: state.buttons,
+      notificationTitle: presentation.title,
+      notificationText: presentation.text,
+      notificationButtons: presentation.buttons,
     );
     return _acceptResult(result, onSuccess: () => _lastSignature = signature);
   }
@@ -118,10 +118,10 @@ class ForegroundNotificationService {
     return false;
   }
 
-  String _signature(ForegroundNotificationState state) {
-    final buttons = state.buttons
+  String _signature(ForegroundNotificationPresentation presentation) {
+    final buttons = presentation.buttons
         .map((button) => '${button.id}:${button.text}')
         .join('|');
-    return '${state.title}\u0000${state.text}\u0000$buttons';
+    return '${presentation.title}\u0000${presentation.text}\u0000$buttons';
   }
 }

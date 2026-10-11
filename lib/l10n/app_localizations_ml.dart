@@ -133,4 +133,43 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String get timerForegroundChannelDescription =>
       'നിലനിൽക്കുന്ന ടൈമർ, സ്റ്റോപ്പ്‌വാച്ച് സേവനം';
+
+  @override
+  String get timerFinishedNotificationTitle => 'ടൈമർ പൂർത്തിയായി';
+
+  @override
+  String get stopwatchNotificationTitle =>
+      'സ്റ്റോപ്പ്‌വാച്ച് പ്രവർത്തിക്കുന്നു';
+
+  @override
+  String get audioOnLabel => 'ഓഡിയോ ഓൺ';
+
+  @override
+  String get audioOffLabel => 'ഓഡിയോ ഓഫ്';
+
+  @override
+  String get timerFinishedNotificationText =>
+      'ടൈമർ പൂർത്തിയായി! അടുത്ത ടൈമർ സജ്ജമാക്കാൻ ടാപ്പ് ചെയ്യുക.';
+
+  @override
+  String notificationTimeRemaining(String value) {
+    return 'ശേഷിക്കുന്ന സമയം: $value';
+  }
+
+  @override
+  String notificationElapsed(String value) {
+    return 'കഴിഞ്ഞ സമയം: $value';
+  }
+
+  @override
+  String get repeatButton => 'ആവർത്തിക്കുക';
+
+  @override
+  String get dismissButton => 'അടയ്ക്കുക';
+
+  @override
+  String get openButton => 'തുറക്കുക';
+
+  @override
+  String get exitButton => 'പുറത്തുകടക്കുക';
 }

@@ -63,6 +63,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -257,19 +258,26 @@ class SolasFlowTaskHandler extends TaskHandler {
     final stopwatchSeconds = (stopwatchTotal % 60).toString().padLeft(2, '0');
     final currentTime =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    final state = ForegroundNotificationState(
-      isTimerRunning: runtime.status == TimerRuntimeStatus.running,
-      isStopwatchRunning: stopwatch.isRunning,
-      timerValue: '$minutes:$seconds',
-      stopwatchValue: '$stopwatchMinutes:$stopwatchSeconds',
-      currentTimeDisplay: currentTime,
-      speechMasterOn: settings.speechMasterOn,
-      isTimerFinished: runtime.status == TimerRuntimeStatus.finished,
+    final localizations = await AppLocalizations.delegate.load(
+      ui.PlatformDispatcher.instance.locale,
+    );
+    final presentation = ForegroundNotificationPresentation.fromState(
+      ForegroundNotificationState(
+        isTimerRunning: runtime.status == TimerRuntimeStatus.running,
+        isStopwatchRunning: stopwatch.isRunning,
+        isClockRunning: settings.clockOn,
+        timerValue: '$minutes:$seconds',
+        stopwatchValue: '$stopwatchMinutes:$stopwatchSeconds',
+        currentTimeDisplay: currentTime,
+        speechMasterOn: settings.speechMasterOn,
+        isTimerFinished: runtime.status == TimerRuntimeStatus.finished,
+      ),
+      localizations,
     );
     final result = await FlutterForegroundTask.updateService(
-      notificationTitle: state.title,
-      notificationText: state.text,
-      notificationButtons: state.buttons,
+      notificationTitle: presentation.title,
+      notificationText: presentation.text,
+      notificationButtons: presentation.buttons,
     );
     if (result is ServiceRequestFailure) {
       debugPrint('Background notification update failed: ${result.error}');
@@ -470,6 +478,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Handles announcement timings based on user preferences
   final TimerService _timerService = TimerService();
   late MaterialLocalizations _materialLocalizations;
+  late AppLocalizations _appLocalizations;
   bool _platformResourcesInitialized = false;
 
   /// Cycles through motivational quotes by category
@@ -1012,6 +1021,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     return ForegroundNotificationState(
       isTimerRunning: timerInterval != null,
       isStopwatchRunning: stopwatchInterval != null,
+      isClockRunning: clockOn,
       timerValue: timerDisplayValue,
       stopwatchValue: stopwatchElapsedValue,
       currentTimeDisplay: idleTime,
@@ -1031,7 +1041,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
     if (Platform.isLinux) return;
     final ok = await _foregroundNotificationService.reconcile(
       shouldRun: _isAnythingActive,
-      state: _foregroundState(),
+      presentation: ForegroundNotificationPresentation.fromState(
+        _foregroundState(),
+        _appLocalizations,
+      ),
       callback: startCallback,
       force: force,
     );
@@ -1054,7 +1067,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Future<void> _stopForegroundService() async {
     await _foregroundNotificationService.reconcile(
       shouldRun: false,
-      state: _foregroundState(),
+      presentation: ForegroundNotificationPresentation.fromState(
+        _foregroundState(),
+        _appLocalizations,
+      ),
       callback: startCallback,
       force: true,
     );
@@ -2091,6 +2107,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _materialLocalizations = MaterialLocalizations.of(context);
+    _appLocalizations = AppLocalizations.of(context)!;
     currentTimeDisplay = _formatCurrentTime(DateTime.now());
     if (!_platformResourcesInitialized) {
       _platformResourcesInitialized = true;

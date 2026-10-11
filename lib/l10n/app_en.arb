@@ -40,5 +40,30 @@
   "quickActionResumeLast": "Resume Last",
   "quickActionToggleSpeech": "Toggle Speech",
   "timerForegroundChannelName": "SolasFlow Timer",
-  "timerForegroundChannelDescription": "Persistent timer & stopwatch service"
+  "timerForegroundChannelDescription": "Persistent timer & stopwatch service",
+  "timerFinishedNotificationTitle": "Timer Finished",
+  "stopwatchNotificationTitle": "Stopwatch Running",
+  "audioOnLabel": "Audio ON",
+  "audioOffLabel": "Audio OFF",
+  "timerFinishedNotificationText": "Timer finished! Tap to set next timer.",
+  "notificationTimeRemaining": "Time remaining: {value}",
+  "@notificationTimeRemaining": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationElapsed": "Elapsed: {value}",
+  "@notificationElapsed": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatButton": "Repeat",
+  "dismissButton": "Dismiss",
+  "openButton": "Open",
+  "exitButton": "Exit"
 }

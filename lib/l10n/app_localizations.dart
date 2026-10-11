@@ -343,6 +343,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Persistent timer & stopwatch service'**
   String get timerForegroundChannelDescription;
+
+  /// No description provided for @timerFinishedNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer Finished'**
+  String get timerFinishedNotificationTitle;
+
+  /// No description provided for @stopwatchNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopwatch Running'**
+  String get stopwatchNotificationTitle;
+
+  /// No description provided for @audioOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio ON'**
+  String get audioOnLabel;
+
+  /// No description provided for @audioOffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio OFF'**
+  String get audioOffLabel;
+
+  /// No description provided for @timerFinishedNotificationText.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer finished! Tap to set next timer.'**
+  String get timerFinishedNotificationText;
+
+  /// No description provided for @notificationTimeRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Time remaining: {value}'**
+  String notificationTimeRemaining(String value);
+
+  /// No description provided for @notificationElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed: {value}'**
+  String notificationElapsed(String value);
+
+  /// No description provided for @repeatButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get repeatButton;
+
+  /// No description provided for @dismissButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismissButton;
+
+  /// No description provided for @openButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openButton;
+
+  /// No description provided for @exitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get exitButton;
 }
 
 class _AppLocalizationsDelegate

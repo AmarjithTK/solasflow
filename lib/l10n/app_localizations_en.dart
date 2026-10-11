@@ -131,4 +131,42 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get timerForegroundChannelDescription =>
       'Persistent timer & stopwatch service';
+
+  @override
+  String get timerFinishedNotificationTitle => 'Timer Finished';
+
+  @override
+  String get stopwatchNotificationTitle => 'Stopwatch Running';
+
+  @override
+  String get audioOnLabel => 'Audio ON';
+
+  @override
+  String get audioOffLabel => 'Audio OFF';
+
+  @override
+  String get timerFinishedNotificationText =>
+      'Timer finished! Tap to set next timer.';
+
+  @override
+  String notificationTimeRemaining(String value) {
+    return 'Time remaining: $value';
+  }
+
+  @override
+  String notificationElapsed(String value) {
+    return 'Elapsed: $value';
+  }
+
+  @override
+  String get repeatButton => 'Repeat';
+
+  @override
+  String get dismissButton => 'Dismiss';
+
+  @override
+  String get openButton => 'Open';
+
+  @override
+  String get exitButton => 'Exit';
 }
