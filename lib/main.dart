@@ -2896,6 +2896,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
 
     final activeVoice = item.voice ?? getPreferredVoice();
+    final itemUsesMalayalam = item.language == null
+        ? _isMalayalamActive(activeVoice)
+        : item.language!.toLowerCase().startsWith('ml');
     try {
       if (Platform.isLinux) {
         await _audioService.setSpeechDucking(true);
@@ -2916,7 +2919,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         speakVolume: speakVolume,
         maximumSpeechVolume: maximumSpeechVolume,
         preferredVoice: activeVoice,
-        useMalayalamNuance: _isMalayalamActive(activeVoice),
+        useMalayalamNuance: itemUsesMalayalam,
         speechEngineMode: speechEngineMode,
       );
     } catch (error) {
@@ -2932,7 +2935,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
               speakVolume: speakVolume,
               maximumSpeechVolume: maximumSpeechVolume,
               preferredVoice: retryVoice,
-              useMalayalamNuance: _isMalayalamActive(retryVoice),
+              useMalayalamNuance: itemUsesMalayalam,
               speechEngineMode: speechEngineMode,
             );
           }
@@ -3292,9 +3295,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       speechQueue.clear();
       return;
     }
-    final pv = getPreferredVoice();
-    final useMalayalam = _isMalayalamActive(pv);
-    final clockVoice = _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam);
     final scheduleGeneration = _clockScheduleGeneration;
     _speakAfterGap(
       text: text,
@@ -3306,6 +3306,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
           (clockSpeakTime || motivationOn) &&
           scheduleGeneration == _clockScheduleGeneration,
       onFire: () {
+        final preferredVoice = getPreferredVoice();
+        final useMalayalam = _isMalayalamActive(preferredVoice);
+        final clockVoice = _resolveVoiceForNewAnnouncement(
+          useMalayalam: useMalayalam,
+        );
         debugPrint('[CLOCK] Queuing announcement at ${DateTime.now()}');
         speechQueue.removeWhere((item) => item.isClockAnnouncement);
         if (clockSpeakTime) {
