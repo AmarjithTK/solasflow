@@ -1101,14 +1101,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
     await prefs.setInt(_lastTimerSecondsKey, value);
   }
 
-  String _formatMinutesAs12Hour(int totalMinutes) {
+  String _formatMinutesAsTime(BuildContext context, int totalMinutes) {
     final normalized = totalMinutes % (24 * 60);
-    final hour = normalized ~/ 60;
-    final minute = normalized % 60;
-    final ampm = hour >= 12 ? 'PM' : 'AM';
-    final hour12 = hour % 12 == 0 ? 12 : hour % 12;
-    final minuteStr = minute.toString().padLeft(2, '0');
-    return '$hour12:$minuteStr $ampm';
+    final time = TimeOfDay(
+      hour: normalized ~/ 60,
+      minute: normalized % 60,
+    );
+    return MaterialLocalizations.of(context).formatTimeOfDay(time);
   }
 
   Future<void> _pickSleepStartTime() async {
@@ -1300,10 +1299,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
               _lsSave();
             });
           },
-          sleepStartLabel: _formatMinutesAs12Hour(
+          sleepStartLabel: _formatMinutesAsTime(
+            context,
             ref.read(settingsProvider).sleepStartMinutes,
           ),
-          sleepEndLabel: _formatMinutesAs12Hour(
+          sleepEndLabel: _formatMinutesAsTime(
+            context,
             ref.read(settingsProvider).sleepEndMinutes,
           ),
           soundList: soundList,
@@ -4806,8 +4807,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
               HelpPanel(
                 muteSpeechAfterMidnight: muteSpeechAfterMidnight,
                 nightMuteMode: nightMuteMode,
-                sleepStartLabel: _formatMinutesAs12Hour(sleepStartMinutes),
-                sleepEndLabel: _formatMinutesAs12Hour(sleepEndMinutes),
+                sleepStartLabel: _formatMinutesAsTime(
+                  context,
+                  sleepStartMinutes,
+                ),
+                sleepEndLabel: _formatMinutesAsTime(context, sleepEndMinutes),
               ),
             ],
           ),
