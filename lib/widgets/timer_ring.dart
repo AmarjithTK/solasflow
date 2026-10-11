@@ -11,14 +11,14 @@ class TimerRing extends StatelessWidget {
   final double progress;
   final Color primary;
   final Color trackColor;
-  final double? size;
+  final double size;
 
   const TimerRing({
     super.key,
     required this.progress,
     required this.primary,
     required this.trackColor,
-    this.size,
+    required this.size,
   });
 
   @override
