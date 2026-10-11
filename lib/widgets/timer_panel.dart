@@ -113,13 +113,13 @@ class TimerPanel extends StatelessWidget {
     return ('00', '00', null);
   }
 
-  String _endLabel() {
+  String _endLabel(BuildContext context) {
     if (remainingSeconds <= 0) return '';
     final end = DateTime.now().add(Duration(seconds: remainingSeconds));
-    final hour = end.hour % 12 == 0 ? 12 : end.hour % 12;
-    final minute = end.minute.toString().padLeft(2, '0');
-    final suffix = end.hour >= 12 ? 'PM' : 'AM';
-    return 'Ends at $hour:$minute $suffix';
+    final time = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(end));
+    return 'Ends at $time';
   }
 
   double get _progress {
@@ -285,7 +285,7 @@ class TimerPanel extends StatelessWidget {
                         ),
 
                         // End time badge (when running)
-                        if (isRunning && _endLabel().isNotEmpty) ...[
+                        if (isRunning && _endLabel(context).isNotEmpty) ...[
                           const SizedBox(height: 14),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -306,7 +306,7 @@ class TimerPanel extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _endLabel(),
+                                  _endLabel(context),
                                   style: GoogleFonts.inter(
                                     color: c.accent,
                                     fontSize: 11,
