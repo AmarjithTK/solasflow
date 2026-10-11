@@ -1152,11 +1152,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         startTimer();
         break;
       case 'toggle_speech':
-        setState(() {
-          timerSpeakOn = !timerSpeakOn;
-          _lsSave();
-        });
-        _syncForegroundNotification(force: true);
+        await _setSpeechMaster(!speechMasterOn);
         break;
       case 'toggle_speech_master':
         await _setSpeechMaster(!speechMasterOn);
