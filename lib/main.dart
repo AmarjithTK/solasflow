@@ -635,7 +635,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   AppSettings get _settings => ref.read(settingsProvider);
 
   void _updateSettings(AppSettings Function(AppSettings current) transform) {
-    ref.read(settingsProvider.notifier).update(transform);
+    unawaited(ref.read(settingsProvider.notifier).update(transform));
   }
 
   bool get stopwatchSpeakOn => _settings.stopwatchSpeakOn;
@@ -839,11 +839,17 @@ class _MainScreenState extends ConsumerState<MainScreen>
   int _lastStopwatchAutoAnnouncedSecond = -1;
   int _stopwatchSpeechGeneration = 0;
 
-  /// Enable/disable chain mode (consecutive presets)
-  bool chainModeOn = false;
+  bool get chainModeOn => _settings.chainModeOn;
+  set chainModeOn(bool value) {
+    if (value == _settings.chainModeOn) return;
+    _updateSettings((settings) => settings.copyWith(chainModeOn: value));
+  }
 
-  /// Name of current preset being used in chain mode
-  String chainPresetKey = 'Pomodoro 25-5x4';
+  String get chainPresetKey => _settings.chainPresetKey;
+  set chainPresetKey(String value) {
+    if (value == _settings.chainPresetKey) return;
+    _updateSettings((settings) => settings.copyWith(chainPresetKey: value));
+  }
 
   /// Index of current preset in chain sequence
   int chainIndex = 0;
@@ -1658,7 +1664,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final shouldMute = !normalized.speechMasterOn;
     _cancelPendingSpeech();
     await _stopTts();
-    ref.read(settingsProvider.notifier).replace(normalized);
+    final settingsWrite = ref.read(settingsProvider.notifier).replace(
+      normalized,
+    );
     _speechLanguageService.setLanguage(normalized.voiceListMode);
     _voiceSessionManager.resetSession();
 
@@ -1687,7 +1695,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     _refreshNightMuteSchedule();
     _restartGoalReminderTimer();
-    await _settingsService.save(normalized);
+    await settingsWrite;
     await _writeWidgetState();
     await _reconcileForeground(force: true);
   }
@@ -2028,12 +2036,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Future<void> _setSpeechMaster(bool enabled) async {
     if (!mounted) return;
-    if (speechMasterOn == enabled) {
-      await _settingsService.save(_settings);
-      await _settingsService.acknowledgeSpeechMasterOverride(enabled);
-      return;
-    }
-    setState(() => speechMasterOn = enabled);
+    final settingsWrite = ref.read(settingsProvider.notifier).update(
+      (settings) => settings.copyWith(speechMasterOn: enabled),
+    );
     if (!enabled) {
       _cancelPendingSpeech();
       await _stopTts();
@@ -2043,7 +2048,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     } else {
       _applyAudioSettings();
     }
-    await _settingsService.save(_currentSettingsSnapshot());
+    await settingsWrite;
     await _settingsService.acknowledgeSpeechMasterOverride(enabled);
     await _writeWidgetState();
     await _reconcileForeground(force: true);
@@ -2273,10 +2278,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     await _speechService.downloadKokoroVoice();
   }
 
-  AppSettings _currentSettingsSnapshot() => _settings;
-
   void _lsSave() {
-    unawaited(_settingsService.save(_currentSettingsSnapshot()));
     unawaited(_writeWidgetState());
   }
 

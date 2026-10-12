@@ -26,6 +26,12 @@ class AppSettings {
     2.0,
   ];
 
+  static const chainPresetOptions = [
+    'Pomodoro 25-5x4',
+    'Sprint 50-10x2',
+    'Quick 15-3x3',
+  ];
+
   static const rainSound = 'audio/rain.mp3';
   static const waterfallSound = 'audio/waterfall.mp3';
   static const fireSound = 'audio/fire.mp3';
@@ -82,6 +88,8 @@ class AppSettings {
   final double fullscreenDimBrightnessLevel;
   final bool taggingOn;
   final String sessionTag;
+  final bool chainModeOn;
+  final String chainPresetKey;
 
   const AppSettings({
     required this.soundChosen,
@@ -129,6 +137,8 @@ class AppSettings {
     required this.fullscreenDimBrightnessLevel,
     required this.taggingOn,
     required this.sessionTag,
+    this.chainModeOn = false,
+    this.chainPresetKey = 'Pomodoro 25-5x4',
   });
 
   factory AppSettings.defaults({String defaultSound = 'audio/rain.mp3'}) =>
@@ -261,6 +271,9 @@ class AppSettings {
           .clamp(0.01, 0.5)
           .toDouble(),
       sessionTag: normalizedTag,
+      chainPresetKey: chainPresetOptions.contains(chainPresetKey)
+          ? chainPresetKey
+          : chainPresetOptions.first,
     );
   }
 
@@ -343,6 +356,8 @@ class AppSettings {
     double? fullscreenDimBrightnessLevel,
     bool? taggingOn,
     String? sessionTag,
+    bool? chainModeOn,
+    String? chainPresetKey,
   }) => AppSettings(
     soundChosen: soundChosen ?? this.soundChosen,
     noiseVolume: noiseVolume ?? this.noiseVolume,
@@ -404,6 +419,8 @@ class AppSettings {
         fullscreenDimBrightnessLevel ?? this.fullscreenDimBrightnessLevel,
     taggingOn: taggingOn ?? this.taggingOn,
     sessionTag: sessionTag ?? this.sessionTag,
+    chainModeOn: chainModeOn ?? this.chainModeOn,
+    chainPresetKey: chainPresetKey ?? this.chainPresetKey,
   );
 
   Map<String, dynamic> toJson() => {
@@ -452,6 +469,8 @@ class AppSettings {
     'fullscreenDimBrightnessLevel': fullscreenDimBrightnessLevel,
     'taggingOn': taggingOn,
     'sessionTag': sessionTag,
+    'chainModeOn': chainModeOn,
+    'chainPresetKey': chainPresetKey,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -606,6 +625,12 @@ class AppSettings {
       ),
       taggingOn: _bool(json, 'taggingOn', defaults.taggingOn),
       sessionTag: _string(json, 'sessionTag', defaults.sessionTag),
+      chainModeOn: _bool(json, 'chainModeOn', defaults.chainModeOn),
+      chainPresetKey: _string(
+        json,
+        'chainPresetKey',
+        defaults.chainPresetKey,
+      ),
     ).normalized();
   }
 

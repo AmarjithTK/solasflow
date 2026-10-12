@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/app_settings.dart';
+import '../services/settings_service.dart';
 
 /// The immutable, complete settings snapshot used by every UI surface.
 typedef SettingsState = AppSettings;
@@ -19,12 +22,24 @@ class SettingsNotifier extends Notifier<AppSettings> {
   @override
   AppSettings build() => _bootSettings;
 
-  void replace(AppSettings settings) {
-    state = settings.normalized();
+  final SettingsService _settingsService = SettingsService();
+
+  Future<void> replace(AppSettings settings) {
+    final snapshot = settings.normalized();
+    state = snapshot;
+    return _persist(snapshot);
   }
 
-  void update(AppSettings Function(AppSettings current) transform) {
-    state = transform(state).normalized();
+  Future<void> update(AppSettings Function(AppSettings current) transform) {
+    final snapshot = transform(state).normalized();
+    state = snapshot;
+    return _persist(snapshot);
+  }
+
+  Future<void> _persist(AppSettings settings) {
+    final write = _settingsService.save(settings);
+    unawaited(write.catchError((Object error, StackTrace stackTrace) {}));
+    return write;
   }
 }
 
