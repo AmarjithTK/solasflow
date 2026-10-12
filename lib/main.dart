@@ -1877,13 +1877,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
                   _lsSave();
                 });
               },
-              onForceLandscapeChanged: (isLandscape) {
-                if (!mounted) return;
-                setState(() {
-                  fullscreenStartLandscape = isLandscape;
-                  _lsSave();
-                });
-              },
               clockTextBuilder: () => currentTimeDisplay,
               timerTextBuilder: () => timerDisplayValue,
               isTimerRunningBuilder: () => timerInterval != null,

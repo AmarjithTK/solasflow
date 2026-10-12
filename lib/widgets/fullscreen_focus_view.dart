@@ -29,7 +29,6 @@ class FullscreenFocusView extends StatefulWidget {
   final bool startImmersive;
   final ValueChanged<bool>? onThemeChanged;
   final ValueChanged<bool>? onDimBrightnessChanged;
-  final ValueChanged<bool>? onForceLandscapeChanged;
   final ValueChanged<bool>? onShowClockChanged;
   final ValueChanged<double>? onClockScaleChanged;
   // Timer controls
@@ -60,7 +59,6 @@ class FullscreenFocusView extends StatefulWidget {
     this.startImmersive = false,
     this.onThemeChanged,
     this.onDimBrightnessChanged,
-    this.onForceLandscapeChanged,
     this.onShowClockChanged,
     this.onClockScaleChanged,
     this.onTimerStart,
@@ -756,9 +754,6 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                                         setState(
                                           () => _forceLandscape =
                                               !_forceLandscape,
-                                        );
-                                        widget.onForceLandscapeChanged?.call(
-                                          _forceLandscape,
                                         );
                                         _applyOrientation();
                                       },
