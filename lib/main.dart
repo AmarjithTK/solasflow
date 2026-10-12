@@ -557,8 +557,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Slider input value (0-120 minutes) from timer UI
   int sliderValue = 25;
 
-  /// Current countdown seconds remaining
-  int seconds = 0;
+  int get seconds => _timerRuntime.status == TimerRuntimeStatus.idle
+      ? 0
+      : _timerRuntime.remainingAt(DateTime.now());
 
   /// Active countdown interval timer (null when stopped)
   Timer? timerInterval;
@@ -579,11 +580,17 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Timer? _widgetArmedTimer;
   static const Duration _widgetActionConfirmationWindow = Duration(seconds: 3);
 
-  /// Formatted display string (MM:SS)
-  String timerValue = "00:00";
-
-  /// Timer text used by UI (supports optional centiseconds)
-  String timerDisplayValue = "00:00";
+  String get timerDisplayValue {
+    final now = DateTime.now();
+    final remainingMilliseconds =
+        _timerRuntime.status == TimerRuntimeStatus.running
+        ? _timerRuntime.remainingMillisecondsAt(now)
+        : seconds * 1000;
+    return _formatTimerDisplayValue(
+      seconds,
+      remainingMilliseconds: remainingMilliseconds,
+    );
+  }
 
   /// ============================================================================
   /// CLOCK STATE - Clock display & periodic announcements
@@ -617,11 +624,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   StopwatchRuntime _stopwatchRuntime = StopwatchRuntime.idle();
 
-  /// Elapsed stopwatch seconds
-  int stopwatchElapsedSeconds = 0;
+  int get stopwatchElapsedSeconds =>
+      _stopwatchRuntime.elapsedMsAt(DateTime.now()) ~/ 1000;
 
-  /// Formatted elapsed stopwatch display (MM:SS or HH:MM:SS)
-  String stopwatchElapsedValue = '00:00';
+  String get stopwatchElapsedValue => _formatStopwatchElapsed(
+    stopwatchElapsedSeconds,
+    showMilliseconds: stopwatchShowMilliseconds,
+  );
 
   AppSettings get _settings => ref.read(settingsProvider);
 
@@ -839,8 +848,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Index of current preset in chain sequence
   int chainIndex = 0;
 
-  /// Currently running timer duration in seconds (used by "Repeat same timer")
-  int _activeTimerDurationSeconds = 0;
+  int get _activeTimerDurationSeconds => _timerRuntime.durationSeconds;
 
   /// Last completed timer duration in seconds
   int _lastFinishedTimerDurationSeconds = 25 * 60;
@@ -1142,14 +1150,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
       case 'resume_last':
         final last = await _readLastTimerSeconds();
         if (!mounted) return;
-        setState(() {
-          currentTabIndex = 1;
-          seconds = last;
-          final mins = (last ~/ 60).toString().padLeft(2, '0');
-          final secs = (last % 60).toString().padLeft(2, '0');
-          timerValue = '$mins:$secs';
-        });
-        startTimer();
+        setState(() => currentTabIndex = 1);
+        startTimer(initialDurationSeconds: last);
         break;
       case 'toggle_speech':
         await _setSpeechMaster(!speechMasterOn);
@@ -2098,32 +2100,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
         _todaySummaryDate = summaryDate;
         unawaited(_refreshTodaySummary());
       }
-      final remainingMilliseconds = _timerRuntime.endAtEpochMs == null
-          ? null
-          : (_timerRuntime.endAtEpochMs! - now.millisecondsSinceEpoch).clamp(
-              0,
-              720 * 60 * 1000,
-            );
-      final timerDisplay = _formatTimerDisplayValue(
-        seconds,
-        remainingMilliseconds: remainingMilliseconds,
-      );
-      final stopwatchDisplay = _formatStopwatchElapsed(
-        stopwatchElapsedSeconds,
-        showMilliseconds: stopwatchShowMilliseconds,
-      );
-      if (display != currentTimeDisplay) {
-        setState(() {
-          currentTimeDisplay = display;
-          timerDisplayValue = timerDisplay;
-          stopwatchElapsedValue = stopwatchDisplay;
-        });
-      } else if (timerDisplay != timerDisplayValue ||
-          stopwatchDisplay != stopwatchElapsedValue) {
-        setState(() {
-          timerDisplayValue = timerDisplay;
-          stopwatchElapsedValue = stopwatchDisplay;
-        });
+      if (display != currentTimeDisplay ||
+          (timerInterval != null && timerShowMilliseconds)) {
+        setState(() => currentTimeDisplay = display);
       }
     });
   }
@@ -2195,11 +2174,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     await _malayalamTtsService.loadQuoteCatalog();
     final settings = _settings;
     _speechLanguageService.setLanguage(settings.voiceListMode);
-    timerDisplayValue = _formatTimerDisplayValue(seconds);
-    stopwatchElapsedValue = _formatStopwatchElapsed(
-      stopwatchElapsedSeconds,
-      showMilliseconds: stopwatchShowMilliseconds,
-    );
 
     await _audioService.init();
     if (!mounted) return;
@@ -2370,10 +2344,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       chainModeOn = false;
       chainIndex = 0;
       sliderValue = safeMins;
-      seconds = totalSeconds;
-      _activeTimerDurationSeconds = totalSeconds;
-      timerValue = _formatTimerDisplayValue(totalSeconds);
-      timerDisplayValue = timerValue;
       _isTimerFinished = false;
       fullscreenShowClock = true;
     });
@@ -3550,13 +3520,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void _tickStopwatch(Timer timer) {
     final nextSeconds = _stopwatchRuntime.elapsedMsAt(DateTime.now()) ~/ 1000;
-    setState(() {
-      stopwatchElapsedSeconds = nextSeconds;
-      stopwatchElapsedValue = _formatStopwatchElapsed(
-        nextSeconds,
-        showMilliseconds: stopwatchShowMilliseconds,
-      );
-    });
+    setState(() {});
     if (nextSeconds != _lastStopwatchNotificationSecond &&
         (nextSeconds % 30 == 0 || nextSeconds <= 3)) {
       _lastStopwatchNotificationSecond = nextSeconds;
@@ -3580,13 +3544,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _stopwatchSpeechGeneration++;
     stopwatchInterval?.cancel();
     _stopwatchRuntime = runtime;
-    final elapsedSeconds = runtime.elapsedMsAt(DateTime.now()) ~/ 1000;
     setState(() {
-      stopwatchElapsedSeconds = elapsedSeconds;
-      stopwatchElapsedValue = _formatStopwatchElapsed(
-        elapsedSeconds,
-        showMilliseconds: stopwatchShowMilliseconds,
-      );
       stopwatchInterval = runtime.isRunning
           ? Timer.periodic(
               Duration(milliseconds: stopwatchShowMilliseconds ? 50 : 250),
@@ -3638,12 +3596,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
     setState(() {
       stopwatchInterval = null;
-      stopwatchElapsedSeconds = 0;
-      _lastStopwatchAutoAnnouncedSecond = -1;
-      stopwatchElapsedValue = _formatStopwatchElapsed(
-        0,
-        showMilliseconds: stopwatchShowMilliseconds,
-      );
     });
     unawaited(_timerRuntimeStore.saveStopwatch(_stopwatchRuntime));
     unawaited(_reconcileForeground(force: true));
@@ -3730,8 +3682,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
     setState(() {
       _timerRuntime = next;
-      seconds = remaining;
-      _activeTimerDurationSeconds = next.durationSeconds;
       if (next.durationSeconds > 0) {
         sliderValue = ((next.durationSeconds + 59) ~/ 60).clamp(1, 720).toInt();
       }
@@ -3742,8 +3692,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       chainPresetKey = next.chainPresetKey;
       chainIndex = next.chainIndex;
       _isTimerFinished = next.status == TimerRuntimeStatus.finished;
-      timerValue = _formatTimerDisplayValue(remaining);
-      timerDisplayValue = timerValue;
       if (next.status == TimerRuntimeStatus.running) {
         timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
       }
@@ -3780,9 +3728,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       announceEveryMinutes: timerAnnounceEvery,
     );
     setState(() {
-      seconds = remaining;
-      timerValue = _formatTimerDisplayValue(remaining);
-      timerDisplayValue = timerValue;
       _timerRuntime = _timerRuntime.copyWith(remainingSeconds: remaining);
     });
     if (timerSpeakOn && crossed.isNotEmpty) {
@@ -3814,7 +3759,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
         if (chainIndex < sequence.length - 1) {
           chainIndex++;
           final nextSeconds = sequence[chainIndex] * 60;
-          _activeTimerDurationSeconds = nextSeconds;
           _timerRuntime = TimerRuntime.running(
             durationSeconds: nextSeconds,
             remainingSeconds: nextSeconds,
@@ -3832,11 +3776,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
             _sessionStartTime = DateTime.now();
             _sessionStartRemainingSeconds = nextSeconds;
           }
-          setState(() {
-            seconds = nextSeconds;
-            timerValue = _formatTimerDisplayValue(nextSeconds);
-            timerDisplayValue = timerValue;
-          });
+          setState(() {});
           if (timerSpeakOn) {
             final preferredVoice = getPreferredVoice();
             final useMalayalam = _isMalayalamActive(preferredVoice);
@@ -3867,9 +3807,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       if (!mounted || workGeneration != _timerWorkGeneration) return;
       setState(() {
         timerInterval = null;
-        seconds = 0;
-        timerValue = '00:00';
-        timerDisplayValue = '00:00';
         _isTimerFinished = true;
       });
       _applyAudioSettings();
@@ -3937,13 +3874,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
       chainModeOn = false;
       chainIndex = 0;
       sliderValue = displayMinutes;
-      seconds = safeSeconds;
-      timerValue = _formatTimerDisplayValue(safeSeconds);
-      timerDisplayValue = timerValue;
-      _activeTimerDurationSeconds = safeSeconds;
     });
     unawaited(_audioService.stopNotification());
-    startTimer();
+    startTimer(initialDurationSeconds: safeSeconds);
   }
 
   Future<void> _showTimerFinishedDialog() async {
@@ -4323,7 +4256,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
   }
 
-  void startTimer() {
+  void startTimer({int? initialDurationSeconds}) {
     if (timerInterval != null) return;
     if (_timerRuntime.status == TimerRuntimeStatus.finished) {
       _cancelTimerCompletionSpeech();
@@ -4332,71 +4265,70 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _invalidateTimerWork();
     _armedPresetTimer?.cancel();
     _armedPresetValue = null;
-    if (seconds <= 0) {
+    var remaining = initialDurationSeconds ?? seconds;
+    if (remaining <= 0) {
       if (chainModeOn) {
         final sequence = chainPresets[chainPresetKey] ?? const [25];
         if (chainIndex >= sequence.length) chainIndex = 0;
-        seconds = sequence[chainIndex] * 60;
+        remaining = sequence[chainIndex] * 60;
       } else {
-        seconds = sliderValue * 60;
+        remaining = sliderValue * 60;
       }
     }
-    seconds = seconds.clamp(1, 720 * 60);
-    if (_timerRuntime.status != TimerRuntimeStatus.paused ||
-        _activeTimerDurationSeconds <= 0 ||
-        seconds > _activeTimerDurationSeconds) {
-      _activeTimerDurationSeconds = seconds;
-    }
+    remaining = remaining.clamp(1, 720 * 60);
+    final resumedDuration =
+        initialDurationSeconds == null &&
+            _timerRuntime.status == TimerRuntimeStatus.paused
+        ? _timerRuntime.durationSeconds
+        : 0;
+    final duration = resumedDuration >= remaining ? resumedDuration : remaining;
     _timerRuntime = TimerRuntime.running(
-      durationSeconds: _activeTimerDurationSeconds,
-      remainingSeconds: seconds,
+      durationSeconds: duration,
+      remainingSeconds: remaining,
       now: DateTime.now(),
       chainModeOn: chainModeOn,
       chainPresetKey: chainPresetKey,
       chainIndex: chainIndex,
-      segmentStartRemainingSeconds: seconds,
+      segmentStartRemainingSeconds: remaining,
       revision: _timerRuntime.revision + 1,
     );
     setState(() {
       _isTimerFinished = false;
-      timerValue = _formatTimerDisplayValue(seconds);
-      timerDisplayValue = timerValue;
       timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
     });
     if (taggingOn) {
       if (_sessionStartTime == null) {
         _sessionStartTime = DateTime.now();
-        _sessionStartRemainingSeconds = seconds;
+        _sessionStartRemainingSeconds = remaining;
       }
     } else {
       _sessionStartTime = null;
       _sessionStartRemainingSeconds = null;
     }
     unawaited(_timerRuntimeStore.save(_timerRuntime));
-    unawaited(_saveLastTimerSeconds(seconds));
+    unawaited(_saveLastTimerSeconds(remaining));
     _applyAudioSettings();
     unawaited(_reconcileForeground(force: true));
   }
-
   void stopTimer() {
     _invalidateTimerWork();
     if (timerInterval == null) return;
-    seconds = _timerRuntime.remainingAt(DateTime.now());
+    final remaining = _timerRuntime.remainingAt(DateTime.now());
     if (taggingOn && _sessionStartTime != null) {
       _logCurrentSession(
-        _taggedElapsedSeconds(seconds),
+        _taggedElapsedSeconds(remaining),
         sessionId: '${_timerRuntime.runId}:${_timerRuntime.revision}',
       );
     }
     timerInterval?.cancel();
     _timerRuntime = _timerRuntime.copyWith(
       status: TimerRuntimeStatus.paused,
-      remainingSeconds: seconds,
+      remainingSeconds: remaining,
       endAtEpochMs: () => null,
       revision: _timerRuntime.revision + 1,
     );
     unawaited(_timerRuntimeStore.save(_timerRuntime));
-    if (seconds > 0) unawaited(_saveLastTimerSeconds(seconds));
+    if (remaining > 0) unawaited(_saveLastTimerSeconds(remaining));
     if (mounted) {
       setState(() => timerInterval = null);
     } else {
@@ -4405,6 +4337,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _applyAudioSettings();
     unawaited(_reconcileForeground(force: true));
   }
+
 
   void resetTimer() {
     _invalidateTimerWork();
@@ -4418,12 +4351,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     unawaited(_timerRuntimeStore.save(_timerRuntime));
     setState(() {
       timerInterval = null;
-      seconds = 0;
-      timerValue = '00:00';
-      timerDisplayValue = '00:00';
       chainIndex = 0;
       _isTimerFinished = false;
-      _activeTimerDurationSeconds = 0;
     });
     unawaited(_reconcileForeground(force: true));
   }
@@ -4432,10 +4361,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     resetTimer();
     setState(() {
       sliderValue = value.clamp(1, 720);
-      seconds = sliderValue * 60;
-      _activeTimerDurationSeconds = seconds;
     });
-    startTimer();
+    startTimer(initialDurationSeconds: sliderValue * 60);
   }
 
   void addTimeToRunningTimer(int additionalSeconds) {
@@ -4449,11 +4376,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
           1,
           720 * 60,
         );
-    final duration = (_activeTimerDurationSeconds + additionalSeconds).clamp(
+    final duration = (_timerRuntime.durationSeconds + additionalSeconds).clamp(
       1,
       720 * 60,
     );
-    _activeTimerDurationSeconds = duration;
     _timerRuntime = TimerRuntime.running(
       durationSeconds: duration,
       remainingSeconds: remaining,
@@ -4467,10 +4393,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       revision: _timerRuntime.revision + 1,
     );
     setState(() {
-      seconds = remaining;
       sliderValue = (remaining / 60).ceil().clamp(1, 720);
-      timerValue = _formatTimerDisplayValue(remaining);
-      timerDisplayValue = timerValue;
     });
     unawaited(_timerRuntimeStore.save(_timerRuntime));
     unawaited(_reconcileForeground(force: true));
@@ -4678,7 +4601,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
           onTimerShowMillisecondsChanged: (val) {
             setState(() {
               timerShowMilliseconds = val ?? false;
-              timerDisplayValue = _formatTimerDisplayValue(seconds);
               _lsSave();
             });
           },
@@ -4796,10 +4718,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
           onStopwatchShowMillisecondsChanged: (val) {
             setState(() {
               stopwatchShowMilliseconds = val ?? false;
-              stopwatchElapsedValue = _formatStopwatchElapsed(
-                stopwatchElapsedSeconds,
-                showMilliseconds: stopwatchShowMilliseconds,
-              );
               _lsSave();
             });
           },

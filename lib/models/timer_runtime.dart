@@ -109,6 +109,8 @@ class TimerRuntime {
     );
   }
 
+  int remainingMillisecondsAt(DateTime now) => _remainingMsAt(now);
+
   int remainingAt(DateTime now) {
     final remainingMs = _remainingMsAt(now);
     return ((remainingMs + 999) ~/ 1000).clamp(0, 720 * 60);
