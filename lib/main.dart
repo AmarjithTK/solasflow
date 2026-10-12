@@ -32,14 +32,14 @@
 //
 // ## Service Initialization Pattern
 //
-// Services are initialized as class members in _MainScreenState:
-// - SettingsService: Persists user preferences via SharedPreferences
-// - TimerService: Manages countdown logic and announcements
-// - SpeechService: Queues TTS/ringtone playback with concurrency control
-// - AudioService: Plays ambient background sounds
-// - ForegroundNotificationService: Android foreground service & notification
-// - QuoteRotationService: Cycling logic for motivational quotes
-// - MalayalamTtsService: Language-specific TTS selection
+// Controllers are initialized lazily by `_MainScreenState` and own independent
+// runtime/platform responsibilities:
+// - TimerRuntimeController: countdown, stopwatch, persistence and sessions
+// - SpeechAnnouncementController: speech queue, TTS and announcement timing
+// - ForegroundNotificationController: Android service lifecycle and state
+// - PlatformIntentController: quick actions, widget channel and task callbacks
+//
+// Shared services remain injected into their owning controllers and UI.
 //
 // ## Performance Optimizations
 //
@@ -60,10 +60,7 @@
 // - [ ] Export session data to Google Fit
 
 import 'dart:async';
-import 'dart:collection';
-import 'dart:math';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -72,7 +69,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:quick_actions/quick_actions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/persistence_error_reporter.dart';
 import 'core/pref_keys.dart';
@@ -82,18 +78,20 @@ import 'theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 import 'models/app_settings.dart';
 import 'models/speech_model_download_status.dart';
-import 'models/foreground_notification_state.dart';
 import 'models/timer_runtime.dart';
-import 'models/speech_item.dart';
 import 'models/sound_option.dart';
 import 'services/audio_service.dart';
-import 'services/foreground_notification_service.dart';
 import 'services/desktop_service.dart';
 import 'services/malayalam_tts_service.dart';
 import 'services/settings_service.dart';
 import 'services/speech_service.dart';
 import 'services/timer_service.dart';
 import 'services/timer_runtime_store.dart';
+import 'services/timer_runtime_transitions.dart';
+import 'controllers/timer_runtime_controller.dart';
+import 'controllers/platform_intent_controller.dart';
+import 'controllers/foreground_notification_controller.dart';
+import 'controllers/speech_announcement_controller.dart';
 import 'features/motivation/motivation_content.dart';
 import 'features/motivation/services/quote_rotation_service.dart';
 import 'widgets/clock_panel.dart';
@@ -107,265 +105,9 @@ import 'widgets/bottom_nav_bar.dart';
 import 'services/voice_session_manager.dart';
 import 'services/speech_language_service.dart';
 import 'services/session_log_service.dart';
-import 'models/session_log.dart';
 import 'widgets/dashboard_screen.dart';
 import 'widgets/kokoro_download_consent_dialog.dart';
 
-const Map<String, List<int>> _timerChainSequences = {
-  'Pomodoro 25-5x4': [25, 5, 25, 5, 25, 5, 25, 15],
-  'Sprint 50-10x2': [50, 10, 50, 10],
-  'Quick 15-3x3': [15, 3, 15, 3, 15, 3],
-};
-
-TimerRuntime _advanceExpiredTimer(TimerRuntime runtime, DateTime now) {
-  if (runtime.status != TimerRuntimeStatus.running ||
-      runtime.remainingAt(now) > 0) {
-    return runtime;
-  }
-  if (runtime.chainModeOn) {
-    final sequence = _timerChainSequences[runtime.chainPresetKey] ?? const [25];
-    final nextIndex = runtime.chainIndex + 1;
-    if (nextIndex < sequence.length) {
-      final nextSeconds = sequence[nextIndex] * 60;
-      return TimerRuntime.running(
-        durationSeconds: nextSeconds,
-        remainingSeconds: nextSeconds,
-        now: now,
-        chainModeOn: true,
-        chainPresetKey: runtime.chainPresetKey,
-        chainIndex: nextIndex,
-        runId: runtime.runId,
-        revision: runtime.revision + 1,
-      );
-    }
-    return runtime.copyWith(
-      status: TimerRuntimeStatus.finished,
-      remainingSeconds: 0,
-      endAtEpochMs: () => null,
-      chainIndex: 0,
-      revision: runtime.revision + 1,
-    );
-  }
-  return runtime.copyWith(
-    status: TimerRuntimeStatus.finished,
-    remainingSeconds: 0,
-    endAtEpochMs: () => null,
-    revision: runtime.revision + 1,
-  );
-}
-
-@pragma('vm:entry-point')
-void startCallback() {
-  FlutterForegroundTask.setTaskHandler(SolasFlowTaskHandler());
-}
-
-class SolasFlowTaskHandler extends TaskHandler {
-  final TimerRuntimeStore _store = TimerRuntimeStore();
-  final SessionLogService _sessionLogService = SessionLogService();
-  int _lastPublishedRemaining = -1;
-  int _lastStopwatchPublishedSeconds = -1;
-  int _lastClockMinute = -1;
-  Future<void> _operationTail = Future<void>.value();
-
-  void _enqueue(Future<void> Function() operation) {
-    _operationTail = _operationTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Background task operation failed: $error');
-        })
-        .then((_) => operation());
-  }
-
-  @override
-  Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    await _reconcile(timestamp, force: true);
-  }
-
-  @override
-  void onRepeatEvent(DateTime timestamp) {
-    _enqueue(() => _reconcile(timestamp));
-  }
-
-  Future<void> _reconcile(DateTime now, {bool force = false}) async {
-    var runtime = await _store.load();
-    final stopwatch = await _store.loadStopwatch();
-    final settings = await _store.loadTaskSettings();
-    if (runtime.status == TimerRuntimeStatus.running) {
-      final remaining = runtime.remainingAt(now);
-      if (remaining == 0) {
-        if (settings.taggingOn) {
-          final segmentSeconds = runtime.segmentStartRemainingSeconds > 0
-              ? runtime.segmentStartRemainingSeconds
-              : runtime.remainingSeconds;
-          final sessionEnd = DateTime.fromMillisecondsSinceEpoch(
-            runtime.endAtEpochMs ?? now.millisecondsSinceEpoch,
-          );
-          await _sessionLogService.logSession(
-            SessionLog(
-              startTime: sessionEnd.subtract(Duration(seconds: segmentSeconds)),
-              endTime: sessionEnd,
-              durationSeconds: segmentSeconds,
-              tag: settings.sessionTag,
-              sessionId: '${runtime.runId}:${runtime.revision}',
-            ),
-          );
-        }
-        final advanced = _advanceExpiredTimer(runtime, now);
-        if (advanced.revision != runtime.revision) {
-          runtime = advanced;
-          await _store.save(runtime);
-          force = true;
-        }
-      } else if (remaining != runtime.remainingSeconds) {
-        runtime = runtime.copyWith(remainingSeconds: remaining);
-      }
-    }
-
-    final remaining = runtime.remainingAt(now);
-    final stopwatchSeconds = stopwatch.elapsedMsAt(now) ~/ 1000;
-    final clockMinute = now.millisecondsSinceEpoch ~/ 60000;
-    final timerNeedsPublish =
-        runtime.status == TimerRuntimeStatus.running &&
-        remaining != _lastPublishedRemaining &&
-        (remaining <= 10 || remaining % 60 == 0);
-    final stopwatchNeedsPublish =
-        stopwatch.isRunning &&
-        stopwatchSeconds != _lastStopwatchPublishedSeconds &&
-        stopwatchSeconds % 30 == 0;
-    final clockNeedsPublish =
-        settings.clockOn && clockMinute != _lastClockMinute;
-    if (!force &&
-        !timerNeedsPublish &&
-        !stopwatchNeedsPublish &&
-        !clockNeedsPublish) {
-      return;
-    }
-    _lastPublishedRemaining = remaining;
-    _lastStopwatchPublishedSeconds = stopwatchSeconds;
-    _lastClockMinute = clockMinute;
-    await _updateNotification(runtime, stopwatch, settings);
-  }
-
-  Future<void> _updateNotification(
-    TimerRuntime runtime,
-    StopwatchRuntime stopwatch,
-    AppSettings settings,
-  ) async {
-    final now = DateTime.now();
-    final remaining = runtime.remainingAt(now);
-    final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
-    final seconds = (remaining % 60).toString().padLeft(2, '0');
-    final stopwatchTotal = stopwatch.elapsedMsAt(now) ~/ 1000;
-    final stopwatchMinutes = (stopwatchTotal ~/ 60).toString().padLeft(2, '0');
-    final stopwatchSeconds = (stopwatchTotal % 60).toString().padLeft(2, '0');
-    final currentTime =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    final localizations = await AppLocalizations.delegate.load(
-      ui.PlatformDispatcher.instance.locale,
-    );
-    final presentation = ForegroundNotificationPresentation.fromState(
-      ForegroundNotificationState(
-        isTimerRunning: runtime.status == TimerRuntimeStatus.running,
-        isStopwatchRunning: stopwatch.isRunning,
-        isClockRunning: settings.clockOn,
-        timerValue: '$minutes:$seconds',
-        stopwatchValue: '$stopwatchMinutes:$stopwatchSeconds',
-        currentTimeDisplay: currentTime,
-        speechMasterOn: settings.speechMasterOn,
-        isTimerFinished: runtime.status == TimerRuntimeStatus.finished,
-      ),
-      localizations,
-    );
-    final result = await FlutterForegroundTask.updateService(
-      notificationTitle: presentation.title,
-      notificationText: presentation.text,
-      notificationButtons: presentation.buttons,
-    );
-    if (result is ServiceRequestFailure) {
-      debugPrint('Background notification update failed: ${result.error}');
-    }
-  }
-
-  @override
-  void onNotificationButtonPressed(String id) {
-    if (id == 'open_app') {
-      FlutterForegroundTask.launchApp();
-      return;
-    }
-    _enqueue(() => _handleNotificationButton(id));
-  }
-
-  @override
-  void onNotificationPressed() {
-    FlutterForegroundTask.launchApp();
-  }
-
-  Future<void> _handleNotificationButton(String id) async {
-    var runtime = await _store.load();
-    var settings = await _store.loadTaskSettings();
-    var stopwatch = await _store.loadStopwatch();
-    if (id == 'audio:set:on' || id == 'audio:set:off') {
-      final enabled = id == 'audio:set:on';
-      await _store.saveSpeechMasterOverride(enabled);
-      settings = settings.copyWith(speechMasterOn: enabled);
-      await _updateNotification(runtime, stopwatch, settings);
-      FlutterForegroundTask.sendDataToMain({
-        'type': 'speechMaster',
-        'value': enabled,
-      });
-      return;
-    }
-
-    if (id == 'btn_timer_repeat' && runtime.durationSeconds > 0) {
-      runtime = TimerRuntime.running(
-        durationSeconds: runtime.durationSeconds,
-        remainingSeconds: runtime.durationSeconds,
-        now: DateTime.now(),
-        chainModeOn: runtime.chainModeOn,
-        chainPresetKey: runtime.chainPresetKey,
-        chainIndex: runtime.chainIndex,
-        runId: runtime.runId,
-        revision: runtime.revision + 1,
-      );
-      await _store.save(runtime);
-      await _updateNotification(runtime, stopwatch, settings);
-      FlutterForegroundTask.sendDataToMain({
-        'type': 'runtime',
-        'snapshot': runtime.toJson(),
-      });
-      return;
-    }
-
-    if (id == 'btn_timer_dismiss' || id == 'btn_exit') {
-      runtime = TimerRuntime.idle().copyWith(revision: runtime.revision + 1);
-      await _store.save(runtime);
-      if (id == 'btn_exit') {
-        stopwatch = StopwatchRuntime.idle().copyWith(
-          revision: stopwatch.revision + 1,
-        );
-        await _store.saveStopwatch(stopwatch);
-      }
-      FlutterForegroundTask.sendDataToMain({
-        'type': id == 'btn_exit' ? 'exit' : 'runtime',
-        'snapshot': runtime.toJson(),
-        'stopwatch': stopwatch.toJson(),
-      });
-      if (id == 'btn_exit' ||
-          (!settings.backgroundPersistenceOn &&
-              !stopwatch.isRunning &&
-              !settings.clockOn)) {
-        final result = await FlutterForegroundTask.stopService();
-        if (result is ServiceRequestFailure) {
-          debugPrint('Background service stop failed: ${result.error}');
-        }
-      } else {
-        await _updateNotification(runtime, stopwatch, settings);
-      }
-    }
-  }
-
-  @override
-  Future<void> onDestroy(DateTime timestamp, bool isForceRequest) async {}
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -430,29 +172,95 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen>
-    with WidgetsBindingObserver {
-  bool get _supportsForegroundTask =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    with WidgetsBindingObserver
+    implements PlatformIntentHost, TimerRuntimeControllerHost, ForegroundNotificationHost, SpeechAnnouncementHost {
 
-  bool get _supportsQuickActions {
-    if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
+  @override
+  AppSettings get settings => _settings;
+
+  @override
+  TimerRuntime get timerRuntime => _timerRuntime;
+
+  @override
+  AppLifecycleState? get lifecycleState =>
+      WidgetsBinding.instance.lifecycleState;
+
+  @override
+  bool get stopwatchRunning => stopwatchInterval != null;
+
+
+  @override
+  bool get desktopHidden => Platform.isLinux && _desktopService.hidden.value;
+
+  @override
+  void setSpeechActive(bool active) {
+    if (mounted && isSpeechActive != active) setState(() => isSpeechActive = active);
   }
 
-  /// ============================================================================
-  /// SERVICE LAYER - Dependency injection for business logic
-  /// ============================================================================
-  /// Each service is a singleton responsible for specific domain logic.
-  /// Services handle persistence, calculations, and external system integration.
+  @override
+  void setVoices(List<Map<dynamic, dynamic>> value) {
+    if (mounted) setState(() => voices = value);
+  }
 
-  /// Manages quick actions (home screen shortcuts) for rapid timer start
-  final QuickActions _quickActions = const QuickActions();
+  @override
+  void setGoalReminderNextIndex(int index) {
+    goalReminderNextIndex = index;
+  }
 
-  /// MethodChannel for receiving widget button actions from native Android
-  static const MethodChannel _widgetChannel = MethodChannel(
-    'com.atherpulse.solasflow/widget',
-  );
+  @override
+  void saveSettings() => _lsSave();
+
+  @override
+  void stopMobileRingtone() => _stopMobileRingtone();
+
+
+  @override
+  Future<void> updateSpeechMaster(bool enabled) async {
+    await ref.read(settingsProvider.notifier).update(
+      (settings) => settings.copyWith(speechMasterOn: enabled),
+    );
+  }
+
+  @override
+  void notifyDesktop(String title, String message) {
+    unawaited(_desktopService.notify(title, message));
+  }
+
+  @override
+  void persistClockDeadline(DateTime? dueAt) => _persistClockDeadline(dueAt);
+
+  @override
+  void reconcileSpeechForeground() {
+    unawaited(_reconcileForeground(force: true));
+  }
+
+  @override
+  String nextQuoteForCategory(String category) => _nextQuoteForCategory(category);
+
+  @override
+  bool get isMounted => mounted;
+
+  @override
+  Map<String, Object?> widgetState(String? armedAction) => {
+    'clockOn': clockOn,
+    'timerSpeakOn': timerSpeakOn,
+    'stopwatchSpeakOn': stopwatchSpeakOn,
+    'goalReminderOn': goalReminderOn,
+    'speechMasterOn': speechMasterOn,
+    'timerDisplay': timerDisplayValue,
+    'armedAction': armedAction ?? '',
+  };
+
+  @override
+  Future<void> handleQuickAction(String type) => _handleQuickAction(type);
+
+  @override
+  Future<void> handleWidgetAction(String type) => _performWidgetAction(type);
+
+  @override
+  Future<void> handleTaskData(Object data) => _handleTaskData(data);
+  bool get _supportsForegroundTask =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   /// Plays ambient background sounds (rain, waterfall, fire, stream)
   /// Handles volume and audio session management
@@ -490,64 +298,56 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Session log service for study/non-study tagging
   final SessionLogService _sessionLogService = SessionLogService();
   final TimerRuntimeStore _timerRuntimeStore = TimerRuntimeStore();
-  TimerRuntime _timerRuntime = TimerRuntime.idle();
-  bool _timerCompletionInFlight = false;
-  int _timerWorkGeneration = 0;
+  late final TimerRuntimeController _timerRuntimeController =
+      TimerRuntimeController(
+        host: this,
+        runtimeStore: _timerRuntimeStore,
+        sessionLogService: _sessionLogService,
+        timerService: _timerService,
+      );
+  late final PlatformIntentController _platformIntentController =
+      PlatformIntentController(this);
+  late final SpeechAnnouncementController _speechAnnouncementController =
+      SpeechAnnouncementController(
+        host: this,
+        speechService: _speechService,
+        audioService: _audioService,
+        voiceSessionManager: _voiceSessionManager,
+        speechLanguageService: _speechLanguageService,
+        malayalamTtsService: _malayalamTtsService,
+        timerService: _timerService,
+      );
   bool _exiting = false;
   bool _driveModeOpen = false;
-  int _alarmGeneration = 0;
-  bool _bootstrapReady = false;
-  final List<Future<void> Function()> _pendingExternalActions = [];
-  Future<void> _widgetDrainTail = Future<void>.value();
-
-  /// Session recording state — captured when timer starts
-  DateTime? _sessionStartTime;
-  int? _sessionStartRemainingSeconds;
+  bool _dismissFocusAfterFinishedDialog = false;
 
   /// Today's summary display string for the timer panel
   String _todaySummary = '';
   DateTime _todaySummaryDate = DateTime.now();
+  
 
-  /// Manages Android foreground service & persistent notifications
-  /// Keeps app alive during long timer sessions
-  final ForegroundNotificationService _foregroundNotificationService =
-      ForegroundNotificationService(
-        notificationIconMetaDataName:
-            'com.atherpulse.solasflow.service.NOTIFICATION_ICON',
-      );
+  late final ForegroundNotificationController _foregroundNotificationController =
+      ForegroundNotificationController(host: this);
 
   /// ============================================================================
   /// TTS & SPEECH STATE - Text-to-speech management
   /// ============================================================================
   /// Manages voice synthesis, queue management, and concurrent speech exclusion
 
-  /// Flutter TTS instance for speech synthesis
-  FlutterTts flutterTts = FlutterTts();
-
-  /// True when TTS engine is initialized and callable.
-  bool _ttsReady = false;
-
-  /// Single-flight guard to prevent concurrent init races.
-  Future<void>? _ttsInitInFlight;
-
-  /// Backoff gate for repeated initialization failures.
-  DateTime _nextTtsInitAllowedAt = DateTime.fromMillisecondsSinceEpoch(0);
-
-  final Queue<SpeechItem> speechQueue = Queue<SpeechItem>();
-  SpeechItem? _activeSpeechItem;
-  int _speechGeneration = 0;
-  int _clockScheduleGeneration = 0;
-  Future<void> _announcementTail = Future<void>.value();
-  final Stopwatch _announcementClock = Stopwatch()..start();
-  int _lastAnnouncementElapsedMs = -10000;
-
-  /// Flag to prevent concurrent speech playback (TTS can't overlap)
   bool isSpeechActive = false;
 
-  /// List of available TTS voices fetched from system
-  List<Map<dynamic, dynamic>> voices = [];
-  final ValueNotifier<List<Map<dynamic, dynamic>>> _settingsVoices =
-      ValueNotifier(const []);
+  FlutterTts get flutterTts => _speechAnnouncementController.flutterTts;
+  List<Map<dynamic, dynamic>> get voices => _speechAnnouncementController.voices;
+  set voices(List<Map<dynamic, dynamic>> value) =>
+      _speechAnnouncementController.voices = value;
+  ValueNotifier<List<Map<dynamic, dynamic>>> get _settingsVoices =>
+      _speechAnnouncementController.settingsVoices;
+  bool get autoNightMuteActive =>
+      _speechAnnouncementController.autoNightMuteActive;
+  set autoNightMuteActive(bool value) =>
+      _speechAnnouncementController.autoNightMuteActive = value;
+  Timer? get nightResumeSpeechTimer =>
+      _speechAnnouncementController.nightResumeSpeechTimer;
 
   /// ============================================================================
   /// TIMER STATE - Timer display & countdown management
@@ -557,13 +357,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Slider input value (0-120 minutes) from timer UI
   int sliderValue = 25;
 
-  int get seconds => _timerRuntime.status == TimerRuntimeStatus.idle
-      ? 0
-      : _timerRuntime.remainingAt(DateTime.now());
-
-  /// Active countdown interval timer (null when stopped)
-  Timer? timerInterval;
-
+  int get seconds => _timerRuntimeController.seconds;
+  TimerRuntime get _timerRuntime => _timerRuntimeController.timerRuntime;
+  Timer? get timerInterval => _timerRuntimeController.timerTicker;
   /// Two-tap confirmation state: the preset value currently awaiting
   /// a second tap before the timer starts.  Null = no button armed.
   int? _armedPresetValue;
@@ -571,14 +367,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// 3-second auto-clear timer for the armed preset state.
   Timer? _armedPresetTimer;
 
-  /// Two-tap confirmation for widget home-screen actions.
-  /// Stores which widget action is awaiting confirmation ("toggle_speech_master"
-  /// or "open_fullscreen_clock").  Null = no action armed.
-  String? _widgetArmedAction;
-
-  /// 3-second auto-clear timer for widget armed state.
-  Timer? _widgetArmedTimer;
-  static const Duration _widgetActionConfirmationWindow = Duration(seconds: 3);
 
   String get timerDisplayValue {
     final now = DateTime.now();
@@ -597,9 +385,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// ============================================================================
   /// Manages clock time display and interval-based time announcements
 
-  /// Periodic timer for clock time updates
-  Timer? clockTimer;
-  DateTime? _nextClockAt;
 
   /// Display ticker: updates UI at 250ms intervals (reduced from 30ms for performance)
   Timer? displayTick;
@@ -607,9 +392,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Current time formatted for display (HH:MM or HH:MM:SS)
   String currentTimeDisplay = "";
 
-  /// 30-second health check timer for foreground service recovery
-  /// Detects if OS killed the service and restarts it
-  Timer? foregroundHealthTimer;
 
   /// Currently active tab index (0=SpeakClock, 1=Timer Setup, 2=Stopwatch, 3=Goals, 4=Settings)
   int currentTabIndex = 1;
@@ -620,12 +402,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Prevents rapid repeated announcements from overlapping
 
   /// Stopwatch ticker interval
-  Timer? stopwatchInterval;
-
-  StopwatchRuntime _stopwatchRuntime = StopwatchRuntime.idle();
+  Timer? get stopwatchInterval => _timerRuntimeController.stopwatchTicker;
+  StopwatchRuntime get _stopwatchRuntime =>
+      _timerRuntimeController.stopwatchRuntime;
 
   int get stopwatchElapsedSeconds =>
-      _stopwatchRuntime.elapsedMsAt(DateTime.now()) ~/ 1000;
+      _timerRuntimeController.stopwatchElapsedSeconds;
 
   String get stopwatchElapsedValue => _formatStopwatchElapsed(
     stopwatchElapsedSeconds,
@@ -638,6 +420,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     unawaited(ref.read(settingsProvider.notifier).update(transform));
   }
 
+  @override
   bool get stopwatchSpeakOn => _settings.stopwatchSpeakOn;
   set stopwatchSpeakOn(bool value) =>
       _updateSettings((settings) => settings.copyWith(stopwatchSpeakOn: value));
@@ -645,10 +428,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
   set timerShowMilliseconds(bool value) => _updateSettings(
     (settings) => settings.copyWith(timerShowMilliseconds: value),
   );
+  @override
   bool get stopwatchShowMilliseconds => _settings.stopwatchShowMilliseconds;
   set stopwatchShowMilliseconds(bool value) => _updateSettings(
     (settings) => settings.copyWith(stopwatchShowMilliseconds: value),
   );
+  @override
   int get stopwatchSpeakDelaySeconds => _settings.stopwatchSpeakDelaySeconds;
   set stopwatchSpeakDelaySeconds(int value) => _updateSettings(
     (settings) => settings.copyWith(stopwatchSpeakDelaySeconds: value),
@@ -718,6 +503,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   set goalReminderItems(List<String> value) => _updateSettings(
     (settings) => settings.copyWith(goalReminderItems: value),
   );
+  @override
   int get goalReminderNextIndex => _settings.goalReminderNextIndex;
   set goalReminderNextIndex(int value) => _updateSettings(
     (settings) => settings.copyWith(goalReminderNextIndex: value),
@@ -759,40 +545,22 @@ class _MainScreenState extends ConsumerState<MainScreen>
   set fullscreenClockScale(double value) => _updateSettings(
     (settings) => settings.copyWith(fullscreenClockScale: value),
   );
+  @override
   bool get backgroundPersistenceOn => _settings.backgroundPersistenceOn;
   set backgroundPersistenceOn(bool value) => _updateSettings(
     (settings) => settings.copyWith(backgroundPersistenceOn: value),
   );
+  @override
   bool get taggingOn => _settings.taggingOn;
   set taggingOn(bool value) {
-    if (value && !taggingOn && timerInterval != null) {
-      _sessionStartTime = DateTime.now();
-      _sessionStartRemainingSeconds = _timerRuntime.remainingAt(
-        _sessionStartTime!,
-      );
-      _timerRuntime = _timerRuntime.copyWith(
-        segmentStartRemainingSeconds: _sessionStartRemainingSeconds,
-        revision: _timerRuntime.revision + 1,
-      );
-      unawaited(_timerRuntimeStore.save(_timerRuntime));
-    } else if (!value) {
-      if (taggingOn && timerInterval != null && _sessionStartTime != null) {
-        final remaining = _timerRuntime.remainingAt(DateTime.now());
-        final elapsed =
-            (_sessionStartRemainingSeconds ?? remaining) - remaining;
-        if (elapsed > 0) {
-          _logCurrentSession(
-            elapsed,
-            sessionId: '${_timerRuntime.runId}:${_timerRuntime.revision}',
-          );
-        }
-      }
-      _sessionStartTime = null;
-      _sessionStartRemainingSeconds = null;
-    }
+    _timerRuntimeController.taggingChanged(
+      enabled: value,
+      wasEnabled: taggingOn,
+    );
     _updateSettings((settings) => settings.copyWith(taggingOn: value));
   }
 
+  @override
   String get sessionTag => _settings.sessionTag;
   set sessionTag(String value) =>
       _updateSettings((settings) => settings.copyWith(sessionTag: value));
@@ -801,9 +569,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
   set fullscreenDimBrightnessLevel(double value) => _updateSettings(
     (settings) => settings.copyWith(fullscreenDimBrightnessLevel: value),
   );
+  @override
   bool get timerSpeakOn => _settings.timerSpeakOn;
   set timerSpeakOn(bool value) =>
       _updateSettings((settings) => settings.copyWith(timerSpeakOn: value));
+  @override
   int get timerAnnounceEvery => _settings.timerAnnounceEvery;
   set timerAnnounceEvery(int value) => _updateSettings(
     (settings) => settings.copyWith(timerAnnounceEvery: value),
@@ -827,40 +597,30 @@ class _MainScreenState extends ConsumerState<MainScreen>
     (settings) => settings.copyWith(appFontSizeMultiplier: value),
   );
 
-  bool autoNightMuteActive = false;
-  Timer? nightIdleTimer;
-  Timer? nightWindowTimer;
-  Timer? nightResumeSpeechTimer;
-  Timer? goalReminderTimer;
-  DateTime? _nextGoalReminderAt;
   List<String> _installedEngines = [];
-  int _lastStopwatchNotificationSecond = -1;
 
-  int _lastStopwatchAutoAnnouncedSecond = -1;
-  int _stopwatchSpeechGeneration = 0;
-
+  @override
   bool get chainModeOn => _settings.chainModeOn;
   set chainModeOn(bool value) {
     if (value == _settings.chainModeOn) return;
     _updateSettings((settings) => settings.copyWith(chainModeOn: value));
   }
 
+  @override
   String get chainPresetKey => _settings.chainPresetKey;
   set chainPresetKey(String value) {
     if (value == _settings.chainPresetKey) return;
     _updateSettings((settings) => settings.copyWith(chainPresetKey: value));
   }
 
-  /// Index of current preset in chain sequence
-  int chainIndex = 0;
+  int get chainIndex => _timerRuntimeController.chainIndex;
+  set chainIndex(int value) => _timerRuntimeController.chainIndex = value;
 
-  int get _activeTimerDurationSeconds => _timerRuntime.durationSeconds;
+  int get _activeTimerDurationSeconds =>
+      _timerRuntimeController.activeTimerDurationSeconds;
 
-  /// Last completed timer duration in seconds
-  int _lastFinishedTimerDurationSeconds = 25 * 60;
-
-  /// Guards against stacking multiple completion dialogs.
-  bool _timerFinishedDialogOpen = false;
+  int get _lastFinishedTimerDurationSeconds =>
+      _timerRuntimeController.lastFinishedTimerDurationSeconds;
 
   /// True while the focus fullscreen route is on top.
   bool _fullscreenFocusOpen = false;
@@ -900,7 +660,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// These define user-selectable options for different timer modes
 
   /// Named chains of timer durations (in minutes) to run consecutively.
-  final Map<String, List<int>> chainPresets = _timerChainSequences;
+  final Map<String, List<int>> chainPresets = timerChainSequences;
 
   /// Sound file path for timer completion notification
   final String notifySound = "audio/notify.mp3";
@@ -1025,74 +785,50 @@ class _MainScreenState extends ConsumerState<MainScreen>
     return suffix.isEmpty ? time : '$time $suffix';
   }
 
-  ForegroundNotificationState _foregroundState() {
-    final idleTime = currentTimeDisplay;
+  @override
+  bool get foregroundTimerRunning => timerInterval != null;
+  @override
+  bool get foregroundStopwatchRunning => stopwatchInterval != null;
+  @override
+  bool get foregroundClockRunning => clockOn;
+  @override
+  bool get foregroundBackgroundPersistence => backgroundPersistenceOn;
+  @override
+  bool get foregroundTimerFinished => _isTimerFinished;
+  @override
+  String get foregroundTimerValue => timerDisplayValue;
+  @override
+  String get foregroundStopwatchValue => stopwatchElapsedValue;
+  @override
+  String get foregroundCurrentTime => currentTimeDisplay;
+  @override
+  bool get foregroundSpeechMasterOn => speechMasterOn;
 
-    return ForegroundNotificationState(
-      isTimerRunning: timerInterval != null,
-      isStopwatchRunning: stopwatchInterval != null,
-      isClockRunning: clockOn,
-      timerValue: timerDisplayValue,
-      stopwatchValue: stopwatchElapsedValue,
-      currentTimeDisplay: idleTime,
-      speechMasterOn: speechMasterOn,
-      isTimerFinished: _isTimerFinished,
-    );
+  @override
+  AppLocalizations get appLocalizations => _appLocalizations;
+
+  @override
+  Future<void> requestForegroundPermissions() => _requestPermissions();
+
+  @override
+  void onForegroundNotificationError(Object error) {
+    debugPrint('Foreground state not applied: $error');
   }
 
-  bool get _isAnythingActive =>
-      backgroundPersistenceOn ||
-      timerInterval != null ||
-      stopwatchInterval != null ||
-      clockOn ||
-      _isTimerFinished;
-
-  Future<void> _reconcileForeground({bool force = false}) async {
-    if (Platform.isLinux) return;
-    final ok = await _foregroundNotificationService.reconcile(
-      shouldRun: _isAnythingActive,
-      presentation: ForegroundNotificationPresentation.fromState(
-        _foregroundState(),
-        _appLocalizations,
-      ),
-      callback: startCallback,
-      force: force,
-    );
-    if (!ok && _foregroundNotificationService.lastError != null) {
-      debugPrint(
-        'Foreground state not applied: ${_foregroundNotificationService.lastError}',
-      );
-    }
-  }
+  Future<void> _reconcileForeground({bool force = false}) =>
+      _foregroundNotificationController.reconcile(force: force);
 
   Future<void> _syncForegroundNotification({bool force = false}) =>
       _reconcileForeground(force: force);
 
-  Future<void> _initializeForegroundNotification() async {
-    if (!_supportsForegroundTask) return;
-    await _requestPermissions();
-    await _reconcileForeground(force: true);
-  }
+  Future<void> _initializeForegroundNotification() =>
+      _foregroundNotificationController.initialize();
 
-  Future<void> _stopForegroundService() async {
-    await _foregroundNotificationService.reconcile(
-      shouldRun: false,
-      presentation: ForegroundNotificationPresentation.fromState(
-        _foregroundState(),
-        _appLocalizations,
-      ),
-      callback: startCallback,
-      force: true,
-    );
-  }
+  Future<void> _stopForegroundService() =>
+      _foregroundNotificationController.stop();
 
-  void _startForegroundHealthCheck() {
-    foregroundHealthTimer?.cancel();
-    foregroundHealthTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (!mounted || !_isAnythingActive) return;
-      unawaited(_reconcileForeground(force: true));
-    });
-  }
+  void _startForegroundHealthCheck() =>
+      _foregroundNotificationController.startHealthCheck();
 
   Future<void> _saveLastTimerSeconds(int value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -1169,40 +905,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void _initQuickActions() {
-    if (!_supportsQuickActions) {
-      _startForegroundHealthCheck();
-      return;
-    }
-
-    try {
-      final localizations = AppLocalizations.of(context)!;
-      _quickActions.initialize((type) {
-        _dispatchExternal(() => _handleQuickAction(type));
-      });
-
-      _quickActions.setShortcutItems(<ShortcutItem>[
-        ShortcutItem(
-          type: 'start_25m',
-          localizedTitle: localizations.quickActionStart25m,
-          icon: 'icon_start',
-        ),
-        ShortcutItem(
-          type: 'resume_last',
-          localizedTitle: localizations.quickActionResumeLast,
-          icon: 'icon_resume',
-        ),
-        ShortcutItem(
-          type: 'toggle_speech',
-          localizedTitle: localizations.quickActionToggleSpeech,
-          icon: 'icon_speech',
-        ),
-      ]);
-    } on MissingPluginException {
-      debugPrint('QuickActions plugin unavailable on this platform/runtime.');
-    } on PlatformException catch (e) {
-      debugPrint('QuickActions failed: $e');
-    }
-
+    _platformIntentController.initializeQuickActions(_appLocalizations);
     _startForegroundHealthCheck();
   }
 
@@ -1903,13 +1606,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _exiting = true;
     try {
       stopClock();
-      timerInterval?.cancel();
-      timerInterval = null;
-      stopwatchInterval?.cancel();
-      stopwatchInterval = null;
-      _cancelPendingSpeech();
-      await _timerRuntimeStore.save(TimerRuntime.idle());
-      await _timerRuntimeStore.saveStopwatch(StopwatchRuntime.idle());
+      _timerRuntimeController.dispose();
+      await _timerRuntimeController.clearPersistedRuntimes();
       await _stopTts();
       await _audioService.stopBackground();
       await _audioService.stopNotification();
@@ -1951,16 +1649,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     });
   }
 
-  void _onReceiveTaskData(Object data) {
-    _dispatchExternal(() => _handleTaskData(data));
-  }
 
   void _dispatchExternal(Future<void> Function() action) {
-    if (!_bootstrapReady) {
-      _pendingExternalActions.add(action);
-      return;
-    }
-    unawaited(action());
+    _platformIntentController.dispatch(action);
   }
 
   Future<void> _handleTaskData(Object data) async {
@@ -1979,7 +1670,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         final snapshot = Map<String, dynamic>.from(data['snapshot'] as Map);
         await _applyTimerRuntime(TimerRuntime.fromJson(snapshot));
         if (data['stopwatch'] is Map) {
-          await _applyStopwatchRuntime(
+          await _timerRuntimeController.applyStopwatchRuntime(
             StopwatchRuntime.fromJson(
               Map<String, dynamic>.from(data['stopwatch'] as Map),
             ),
@@ -2029,19 +1720,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Future<void> _setSpeechMaster(bool enabled) async {
     if (!mounted) return;
-    final settingsWrite = ref.read(settingsProvider.notifier).update(
-      (settings) => settings.copyWith(speechMasterOn: enabled),
-    );
-    if (!enabled) {
-      _cancelPendingSpeech();
-      await _stopTts();
-      await _audioService.stopBackground();
-      await _audioService.stopNotification();
-      _stopMobileRingtone();
-    } else {
-      _applyAudioSettings();
-    }
-    await settingsWrite;
+    await _speechAnnouncementController.setSpeechMaster(enabled);
     await _settingsService.acknowledgeSpeechMasterOverride(enabled);
     await _writeWidgetState();
     await _reconcileForeground(force: true);
@@ -2052,10 +1731,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _stopMobileRingtone();
     _cancelTimerCompletionSpeech();
     await _audioService.stopNotification();
-    _timerRuntime = TimerRuntime.idle().copyWith(
-      revision: _timerRuntime.revision + 1,
-    );
-    await _timerRuntimeStore.save(_timerRuntime);
+    _timerRuntimeController.resetTimer();
+    await _timerRuntimeStore.save(_timerRuntimeController.timerRuntime);
     if (!mounted) return;
     setState(() => _isTimerFinished = false);
     await _reconcileForeground(force: true);
@@ -2068,8 +1745,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     PersistenceErrorReporter.latest.addListener(_onPersistenceFailure);
     _onPersistenceFailure();
     unawaited(SystemChrome.setPreferredOrientations([]));
-    _initWidgetChannel();
-    FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
+    _platformIntentController.initializeChannel();
     unawaited(_bootstrap());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_maybePromptForKokoroDownload());
@@ -2124,22 +1800,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     } catch (error, stackTrace) {
       debugPrint('[ERROR] App bootstrap failed: $error\n$stackTrace');
       if (!mounted) return;
-      _bootstrapReady = true;
-      final pending = List<Future<void> Function()>.from(
-        _pendingExternalActions,
-      );
-      _pendingExternalActions.clear();
-      for (final action in pending) {
-        try {
-          await action();
-        } catch (actionError, actionStackTrace) {
-          debugPrint(
-            '[ERROR] Queued startup action failed: $actionError\n'
-            '$actionStackTrace',
-          );
-        }
-        if (!mounted) return;
-      }
+      await _platformIntentController.releaseBootstrapQueue();
       try {
         await _drainWidgetActions();
       } catch (actionError, actionStackTrace) {
@@ -2205,27 +1866,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
       if (savedClockDeadline == null) {
         startClock();
       } else {
-        _nextClockAt = savedClockDeadline;
-        _scheduleNextClockAnnouncement();
+        _speechAnnouncementController.restoreClockDeadline(savedClockDeadline);
       }
     } else {
       _persistClockDeadline(null);
     }
     await _initializeForegroundNotification();
     if (!mounted) return;
-    _bootstrapReady = true;
-    final pending = List<Future<void> Function()>.from(_pendingExternalActions);
-    _pendingExternalActions.clear();
-    for (final action in pending) {
-      try {
-        await action();
-      } catch (error, stackTrace) {
-        debugPrint('[ERROR] Queued startup action failed: $error\n$stackTrace');
-      }
-      if (!mounted) return;
-    }
-    await _drainWidgetActions();
-    await _writeWidgetState();
+    await _platformIntentController.markBootstrapReady();
   }
 
   Future<void> _maybePromptForKokoroDownload() async {
@@ -2275,29 +1923,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     unawaited(_writeWidgetState());
   }
 
-  /// Log the current timer session to persistent storage (tagging only).
-  int _taggedElapsedSeconds(int remainingSeconds) =>
-      ((_sessionStartRemainingSeconds ?? remainingSeconds) - remainingSeconds)
-          .clamp(0, 720 * 60);
-
-  /// Log one uninterrupted, tagged timer run segment.
-  void _logCurrentSession(int elapsedSeconds, {required String sessionId}) {
-    final startedAt = _sessionStartTime;
-    _sessionStartTime = null;
-    _sessionStartRemainingSeconds = null;
-    if (startedAt == null || elapsedSeconds <= 0) return;
-    final session = SessionLog(
-      startTime: startedAt,
-      endTime: DateTime.now(),
-      durationSeconds: elapsedSeconds,
-      tag: sessionTag,
-      sessionId: sessionId,
-    );
-    unawaited(_sessionLogService.logSession(session));
-    _refreshTodaySummary();
-  }
-
-  /// Refresh the today summary string shown in the timer panel.
   Future<void> _refreshTodaySummary() async {
     if (!taggingOn) {
       if (_todaySummary.isNotEmpty) setState(() => _todaySummary = '');
@@ -2319,21 +1944,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Future<void> _startPresetFromWidget(int mins) async {
     final safeMins = mins.clamp(1, 720);
     await _audioService.stopNotification();
-    _invalidateTimerWork();
-    final totalSeconds = safeMins * 60;
     _armedPresetTimer?.cancel();
     _armedPresetValue = null;
-
-    if (timerInterval != null && taggingOn && _sessionStartTime != null) {
-      final remaining = _timerRuntime.remainingAt(DateTime.now());
-      _logCurrentSession(
-        _taggedElapsedSeconds(remaining),
-        sessionId: '${_timerRuntime.runId}:${_timerRuntime.revision}',
-      );
-    }
-    timerInterval?.cancel();
-    timerInterval = null;
-
     setState(() {
       currentTabIndex = 1;
       chainModeOn = false;
@@ -2342,28 +1954,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
       _isTimerFinished = false;
       fullscreenShowClock = true;
     });
-    _timerRuntime = TimerRuntime.running(
-      durationSeconds: totalSeconds,
-      remainingSeconds: totalSeconds,
-      now: DateTime.now(),
-      chainModeOn: false,
-      chainPresetKey: chainPresetKey,
-      chainIndex: 0,
-      revision: _timerRuntime.revision + 1,
-    );
-
-    setState(() {
-      timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
-    });
-
-    _sessionStartTime = taggingOn ? DateTime.now() : null;
-    _sessionStartRemainingSeconds = taggingOn ? totalSeconds : null;
-
-    await _timerRuntimeStore.save(_timerRuntime);
-    await _saveLastTimerSeconds(totalSeconds);
+    _timerRuntimeController.replaceWithWidgetPreset(safeMins * 60);
+    await _saveLastTimerSeconds(safeMins * 60);
     _applyAudioSettings();
     await _reconcileForeground(force: true);
-
     unawaited(
       _openFullscreenFocus(
         specificMode: FullscreenFocusMode.timer,
@@ -2373,123 +1967,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
   }
 
-  Future<void> _writeWidgetState() async {
-    if (!Platform.isAndroid) return;
-    try {
-      await _widgetChannel.invokeMethod<bool>('updateWidgetState', {
-        'clockOn': clockOn,
-        'timerSpeakOn': timerSpeakOn,
-        'stopwatchSpeakOn': stopwatchSpeakOn,
-        'goalReminderOn': goalReminderOn,
-        'speechMasterOn': speechMasterOn,
-        'timerDisplay': timerDisplayValue,
-        'armedAction': _widgetArmedAction ?? '',
-      });
-    } on PlatformException catch (error) {
-      debugPrint('Widget state update failed: $error');
-    } on MissingPluginException catch (error) {
-      debugPrint('Widget channel unavailable: $error');
-    }
-  }
+  Future<void> _writeWidgetState() =>
+      _platformIntentController.writeWidgetState();
 
-  Future<void> _writeWidgetArmedState(String action) async {
-    _widgetArmedAction = action.isEmpty ? null : action;
-    await _writeWidgetState();
-  }
+  Future<void> _drainWidgetActions() =>
+      _platformIntentController.drainWidgetActions();
 
-  void _initWidgetChannel() {
-    _widgetChannel.setMethodCallHandler((call) async {
-      if (call.method == 'widgetActionsAvailable') {
-        _dispatchExternal(_drainWidgetActions);
-      }
-    });
-  }
-
-  Future<void> _drainWidgetActions() {
-    _widgetDrainTail = _widgetDrainTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Previous widget drain failed: $error');
-        })
-        .then((_) => _drainWidgetActionsNow());
-    return _widgetDrainTail;
-  }
-
-  Future<void> _drainWidgetActionsNow() async {
-    if (!Platform.isAndroid || !mounted) return;
-    try {
-      final queued = await _widgetChannel.invokeListMethod<dynamic>(
-        'drainWidgetActions',
-      );
-      for (final raw in queued ?? const <dynamic>[]) {
-        if (raw is! Map) continue;
-        final id = raw['id']?.toString();
-        final action = raw['action']?.toString();
-        if (id == null || action == null) continue;
-        if (action == 'toggle_speech_master' ||
-            action == 'open_fullscreen_clock') {
-          final receivedAtEpochMs =
-              int.tryParse(raw['receivedAtEpochMs']?.toString() ?? '') ?? 0;
-          final ageMs =
-              DateTime.now().millisecondsSinceEpoch - receivedAtEpochMs;
-          if (ageMs < 0 ||
-              ageMs >= _widgetActionConfirmationWindow.inMilliseconds) {
-            await _widgetChannel.invokeMethod<bool>('ackWidgetAction', {
-              'id': id,
-            });
-            continue;
-          }
-        }
-        await _handleWidgetAction(action);
-        await _widgetChannel.invokeMethod<bool>('ackWidgetAction', {'id': id});
-        if (!mounted) return;
-      }
-    } on PlatformException catch (error) {
-      debugPrint('Widget action drain failed: $error');
-    } on MissingPluginException catch (error) {
-      debugPrint('Widget channel unavailable: $error');
-    }
-  }
-
-  /// Handles actions arriving from home screen widget button taps.
-  ///
-  /// Two-tap confirmation is applied to ["toggle_speech_master"] and
-  /// ["open_fullscreen_clock"]. Other actions execute immediately.
-  Future<void> _handleWidgetAction(String type) async {
+  /// Executes actions after the platform controller applies confirmation.
+  Future<void> _performWidgetAction(String type) async {
     if (!mounted) return;
-
-    // ── Two-tap confirmation path: speech master & fullscreen clock ─────
-    if (type == 'toggle_speech_master' || type == 'open_fullscreen_clock') {
-      if (_widgetArmedAction == type) {
-        // Second tap: confirm and execute
-        _widgetArmedTimer?.cancel();
-        _widgetArmedAction = null;
-        unawaited(_writeWidgetArmedState(''));
-
-        if (type == 'toggle_speech_master') {
-          await _setSpeechMaster(!speechMasterOn);
-        } else {
-          // open_fullscreen_clock
-          setState(() => currentTabIndex = 0);
-          _openFullscreenFocus(
-            specificMode: FullscreenFocusMode.clock,
-            forceHorizontal: true,
-            startImmersive: true,
-          );
-        }
-        return;
-      }
-
-      // First tap: arm the action, show visual on widget
-      _widgetArmedTimer?.cancel();
-      _widgetArmedAction = type;
-      unawaited(_writeWidgetArmedState(type));
-      _widgetArmedTimer = Timer(_widgetActionConfirmationWindow, () {
-        if (!mounted) return;
-        _widgetArmedAction = null;
-        unawaited(_writeWidgetArmedState(''));
-      });
-      return;
-    }
 
     // ── Immediate actions (no confirmation needed) ──────────────────────
     const presetMap = {
@@ -2521,6 +2007,17 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
 
     switch (type) {
+      case 'toggle_speech_master':
+        await _setSpeechMaster(!speechMasterOn);
+        break;
+      case 'open_fullscreen_clock':
+        setState(() => currentTabIndex = 0);
+        _openFullscreenFocus(
+          specificMode: FullscreenFocusMode.clock,
+          forceHorizontal: true,
+          startImmersive: true,
+        );
+        break;
       case 'open_app':
       case 'open_clock':
         setState(() {
@@ -2587,7 +2084,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           _lsSave();
         });
         if (!stopwatchSpeakOn) {
-          speechQueue.removeWhere((item) => item.isStopwatchAnnouncement);
+          _speechAnnouncementController.removeStopwatchAnnouncements();
         }
         break;
       case 'toggle_goals_speech':
@@ -2623,393 +2120,94 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
   }
 
-  void _restartGoalReminderTimer() {
-    goalReminderTimer?.cancel();
-    goalReminderTimer = null;
-    _nextGoalReminderAt = null;
-    if (!goalReminderOn || goalReminderItems.isEmpty) return;
-    _nextGoalReminderAt = DateTime.now().add(
-      Duration(minutes: goalReminderIntervalMins),
-    );
-    _scheduleNextGoalReminder();
-  }
+  void _restartGoalReminderTimer() =>
+      _speechAnnouncementController.restartGoalReminderTimer();
 
-  void _scheduleNextGoalReminder() {
-    final due = _nextGoalReminderAt;
-    if (due == null || !goalReminderOn || goalReminderItems.isEmpty) return;
-    final now = DateTime.now();
-    final delay = due.isAfter(now) ? due.difference(now) : Duration.zero;
-    goalReminderTimer = Timer(delay, () {
-      if (!mounted || !goalReminderOn || goalReminderItems.isEmpty) return;
-      _announceNextGoalReminder();
-      final interval = Duration(minutes: goalReminderIntervalMins);
-      var next = due.add(interval);
-      final current = DateTime.now();
-      while (!next.isAfter(current)) {
-        next = next.add(interval);
-      }
-      _nextGoalReminderAt = next;
-      _scheduleNextGoalReminder();
-    });
-  }
 
-  void _speakGoalReminderMessage(String text) {
-    if (_isAudioMuted()) {
-      speechQueue.clear();
-      return;
-    }
-    _speakAfterGap(
-      text: text,
-      isStillValid: () => goalReminderOn && goalReminderItems.isNotEmpty,
-      onFire: () => speak(text),
-    );
-  }
 
-  void _announceNextGoalReminder({bool force = false}) {
-    if ((!goalReminderOn && !force) || goalReminderItems.isEmpty) return;
+  void _testSpeech() => _speechAnnouncementController.testSpeech();
 
-    final index = goalReminderNextIndex % goalReminderItems.length;
-    final goal = goalReminderItems[index];
 
-    setState(() {
-      goalReminderNextIndex = (index + 1) % goalReminderItems.length;
-      _lsSave();
-    });
 
-    _speakGoalReminderMessage('Goal reminder: $goal');
-  }
+  void _handleNightUsageStateChange(AppLifecycleState state) =>
+      _speechAnnouncementController.handleNightUsageStateChange(state);
 
-  void _testSpeech() {
-    final preferredVoice = getPreferredVoice();
-    final isMl = _isMalayalamActive(preferredVoice);
-    final testVoice = _resolveVoiceForNewAnnouncement(useMalayalam: isMl);
-    if (isMl) {
-      speak(
-        'ഇത് ശബ്ദ പരിശോധനയാണ്. നിങ്ങളുടെ ടൈമർ ആരംഭിക്കാൻ തയ്യാറാണ്.',
-        voice: testVoice,
-      );
-    } else {
-      speak(
-        'This is a voice test. Your focus timer is ready.',
-        voice: testVoice,
-      );
-    }
-  }
+  void _refreshNightMuteSchedule() =>
+      _speechAnnouncementController.refreshNightMuteSchedule();
 
-  Future<void> _stopTts() async {
-    try {
-      await _speechService.stopDesktopSpeech();
-      if (!Platform.isLinux) await flutterTts.stop();
-    } finally {
-      if (Platform.isLinux) await _audioService.setSpeechDucking(false);
-    }
-  }
+  void _cancelNightIdleTimer() =>
+      _speechAnnouncementController.cancelNightIdleTimer();
 
-  Future<bool> _initTts({bool forceRebind = false}) async {
-    if (Platform.isLinux) {
-      _ttsReady = true;
-      return true;
-    }
+  void _startNightIdleTimerIfNeeded() =>
+      _speechAnnouncementController.startNightIdleTimerIfNeeded();
 
-    final existing = _ttsInitInFlight;
-    if (existing != null) {
-      await existing;
-      if (!forceRebind) return _ttsReady;
-    }
-    if (!forceRebind &&
-        !_ttsReady &&
-        DateTime.now().isBefore(_nextTtsInitAllowedAt)) {
-      return false;
-    }
+  void _stopAudioForMute() =>
+      _speechAnnouncementController.stopAudioForMute();
 
-    if (forceRebind) {
-      final previous = flutterTts;
-      await previous.stop().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {},
-      );
-      flutterTts = FlutterTts();
-      _voiceSessionManager.resetSession();
-      _ttsReady = false;
-      _nextTtsInitAllowedAt = DateTime.fromMillisecondsSinceEpoch(0);
-    }
-
-    final tts = flutterTts;
-    final completer = Completer<void>();
-    _ttsInitInFlight = completer.future;
-    try {
-      tts.setErrorHandler((message) {
-        if (identical(tts, flutterTts)) _ttsReady = false;
-        debugPrint('TTS error: $message');
-      });
-      try {
-        await tts.awaitSpeakCompletion(true);
-        final engine = _speechService.normalizeSpeechEngineMode(
-          speechEngineMode,
-        );
-        if (Platform.isAndroid &&
-            engine != 'auto' &&
-            engine != 'system_only' &&
-            engine != 'sherpa_only') {
-          await _speechService.setSpeechEngine(flutterTts: tts, engine: engine);
-        }
-      } on MissingPluginException {
-        _nextTtsInitAllowedAt = DateTime.now().add(const Duration(seconds: 20));
-        return false;
-      } on PlatformException catch (error) {
-        _nextTtsInitAllowedAt = DateTime.now().add(const Duration(seconds: 20));
-        debugPrint('TTS init failed: $error');
-        return false;
-      }
-
-      _ttsReady = true;
-      for (var attempt = 1; attempt <= 4; attempt++) {
-        try {
-          final loadedVoices = _speechService.parseSupportedVoices(
-            await tts.getVoices,
-          );
-          final mlStudio = _speechService.malayalamVoices();
-          final merged = [
-            ...mlStudio,
-            ...loadedVoices.where((v) {
-              final loc = (v['locale']?.toString() ?? '').toLowerCase();
-              return !loc.startsWith('ml');
-            }),
-          ];
-          if (mounted && identical(tts, flutterTts)) {
-            setState(() {
-              voices = merged;
-              _settingsVoices.value = merged;
-              _speechLanguageService.allVoices = merged;
-            });
-          }
-          break;
-        } catch (error) {
-          debugPrint('TTS getVoices attempt $attempt failed: $error');
-        }
-        await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
-      }
-    } finally {
-      completer.complete();
-      if (identical(_ttsInitInFlight, completer.future)) {
-        _ttsInitInFlight = null;
-      }
-    }
-    return _ttsReady;
-  }
-
-  Future<bool> _ensureTtsReady({bool forceRebind = false}) async {
-    if (_ttsReady && !forceRebind) return true;
-    return _initTts(forceRebind: forceRebind);
-  }
-
-  List<Map<dynamic, dynamic>> _availableVoicesForSettings() {
-    _speechLanguageService.allVoices = voices;
-    return _speechLanguageService.voicesForLanguage();
-  }
-
-  Map<dynamic, dynamic>? getPreferredVoice() {
-    return _voiceSessionManager.getPreferredVoice(
-      voiceResolver: () => _speechService.preferredVoice(
-        voices: voices,
-        voiceListMode: _speechLanguageService.language,
-        favoriteVoiceName: favoriteVoiceName,
-        favoriteVoiceLocale: favoriteVoiceLocale,
-      ),
-      voiceListMode: _speechLanguageService.language,
-      favoriteVoiceName: favoriteVoiceName,
-      favoriteVoiceLocale: favoriteVoiceLocale,
-    );
-  }
-
-  bool _isMalayalamActive(Map<dynamic, dynamic>? preferredVoice) {
-    return _voiceSessionManager.isMalayalamActive(
-      isMalayalamResolver: (voice) => _malayalamTtsService.isMalayalamMode(
-        voiceListMode: _speechLanguageService.language,
-        preferredVoice: voice,
-      ),
-      preferredVoice: preferredVoice,
-    );
-  }
-
-  Map<dynamic, dynamic>? _resolveVoiceForNewAnnouncement({
-    required bool useMalayalam,
-  }) {
-    return _voiceSessionManager.resolveVoiceForAnnouncement(
-      voices: voices,
-      voiceListMode: _speechLanguageService.language,
-      favoriteVoiceName: favoriteVoiceName,
-      favoriteVoiceLocale: favoriteVoiceLocale,
-      isMalayalam: useMalayalam,
-      fallbackResolver: () => _speechService.preferredVoice(
-        voices: voices,
-        voiceListMode: _speechLanguageService.language,
-        favoriteVoiceName: favoriteVoiceName,
-        favoriteVoiceLocale: favoriteVoiceLocale,
-      ),
-    );
-  }
-
-  Map<dynamic, dynamic>? _preferredEnglishAnnouncementVoice() {
-    final englishVoices = voices
-        .where(
-          (voice) =>
-              voice['locale']?.toString().toLowerCase().startsWith('en') ??
-              false,
-        )
-        .toList();
-    if (englishVoices.isEmpty) return null;
-    return _speechService.preferredVoice(
-      voices: englishVoices,
-      voiceListMode: 'english',
-      favoriteVoiceName: favoriteVoiceName,
-      favoriteVoiceLocale: favoriteVoiceLocale,
-    );
-  }
-
-  bool _isSpeechItemEnabled(SpeechItem item) {
-    if (item.isClockAnnouncement &&
-        (!clockOn || (item.isQuote ? !motivationOn : !clockSpeakTime))) {
-      return false;
-    }
-    if (item.isTimerAnnouncement && !timerSpeakOn) return false;
-    if (item.isTimerCompletion &&
-        (_timerRuntime.status != TimerRuntimeStatus.finished ||
-            _timerRuntime.runId != item.timerRunId ||
-            _timerRuntime.revision != item.timerRevision)) {
-      return false;
-    }
-    if (item.isStopwatchAnnouncement && !stopwatchSpeakOn) return false;
-    return true;
-  }
-
-  Future<void> drainQueue() async {
-    if (!mounted || _isAudioMuted()) {
-      speechQueue.clear();
-      if (isSpeechActive && mounted) {
-        setState(() => isSpeechActive = false);
-      }
-      return;
-    }
-    if (isSpeechActive || speechQueue.isEmpty) return;
-
-    final generation = _speechGeneration;
-    setState(() => isSpeechActive = true);
-    final item = speechQueue.removeFirst();
-    if (item.delayMs > 0) {
-      await Future<void>.delayed(Duration(milliseconds: item.delayMs));
-    }
-    if (!mounted ||
-        generation != _speechGeneration ||
-        _isAudioMuted() ||
-        !_isSpeechItemEnabled(item)) {
-      if (mounted) {
-        setState(() => isSpeechActive = false);
-        if (generation == _speechGeneration) unawaited(drainQueue());
-      }
-      return;
-    }
-
-    final normalizedEngineMode = _speechService.normalizeSpeechEngineMode(
-      speechEngineMode,
-    );
-    final desktopPlatform = Platform.isLinux || Platform.isWindows;
-    final desktopSherpaOnly =
-        desktopPlatform && normalizedEngineMode == 'sherpa_only';
-    if (!desktopSherpaOnly && !desktopPlatform) {
-      final ready = await _ensureTtsReady();
-      if (!ready) {
-        if (mounted) setState(() => isSpeechActive = false);
-        speechQueue.clear();
-        return;
-      }
-      if (!mounted || generation != _speechGeneration) return;
-      if (!_isSpeechItemEnabled(item)) {
-        setState(() => isSpeechActive = false);
-        unawaited(drainQueue());
-        return;
-      }
-    }
-
-    final activeVoice = item.voice ?? getPreferredVoice();
-    final itemUsesMalayalam = item.language == null
-        ? _isMalayalamActive(activeVoice)
-        : item.language!.toLowerCase().startsWith('ml');
-    try {
-      if (Platform.isLinux) {
-        await _audioService.setSpeechDucking(true);
-        if (!mounted ||
-            generation != _speechGeneration ||
-            _isAudioMuted() ||
-            !_isSpeechItemEnabled(item)) {
-          return;
-        }
-        if (_desktopService.hidden.value) {
-          unawaited(_desktopService.notify('Solas Flow', item.text));
-        }
-      }
-      _activeSpeechItem = item;
-      await _speechService.speakItem(
-        flutterTts: flutterTts,
-        item: item,
-        speakVolume: speakVolume,
-        maximumSpeechVolume: maximumSpeechVolume,
-        preferredVoice: activeVoice,
-        useMalayalamNuance: itemUsesMalayalam,
-        speechEngineMode: speechEngineMode,
-      );
-    } catch (error) {
-      debugPrint('TTS speak failed, retrying after rebind: $error');
-      if (generation == _speechGeneration) {
-        try {
-          final rebound = await _ensureTtsReady(forceRebind: true);
-          if (rebound && generation == _speechGeneration) {
-            final retryVoice = item.voice ?? getPreferredVoice();
-            await _speechService.speakItem(
-              flutterTts: flutterTts,
-              item: item,
-              speakVolume: speakVolume,
-              maximumSpeechVolume: maximumSpeechVolume,
-              preferredVoice: retryVoice,
-              useMalayalamNuance: itemUsesMalayalam,
-              speechEngineMode: speechEngineMode,
-            );
-          }
-        } catch (retryError) {
-          debugPrint('TTS retry failed: $retryError');
-        }
-      }
-    } finally {
-      if (Platform.isLinux &&
-          generation == _speechGeneration &&
-          (speechQueue.isEmpty || speechQueue.first.delayMs > 0)) {
-        await _audioService.setSpeechDucking(false);
-      }
-      if (identical(_activeSpeechItem, item)) _activeSpeechItem = null;
-    }
-    if (!mounted) return;
-    setState(() => isSpeechActive = false);
-    if (generation == _speechGeneration) unawaited(drainQueue());
-  }
-
-  void _cancelPendingSpeech() {
-    _speechGeneration++;
-    speechQueue.clear();
-    if (isSpeechActive && mounted) {
-      setState(() => isSpeechActive = false);
-    }
-    unawaited(_stopTts());
-  }
-
-  void _cancelTimerCompletionSpeech() {
-    speechQueue.removeWhere((item) => item.isTimerCompletion);
-    if (_activeSpeechItem?.isTimerCompletion == true) {
-      unawaited(_stopTts());
-    }
-  }
-
-  void speak(
+  void _speakStopwatchMessage(
     String text, {
+    bool explicit = false,
+    int? generation,
+  }) => _speechAnnouncementController.speakStopwatchMessage(
+    text,
+    explicit: explicit,
+    stopwatchSpeakOn: stopwatchSpeakOn,
+  );
+
+  bool _isAudioMuted() => _speechAnnouncementController.isAudioMuted;
+
+  Future<void> _stopTts() => _speechAnnouncementController.stopTts();
+  void _cancelPendingSpeech() =>
+      _speechAnnouncementController.cancelPendingSpeech();
+  void _cancelTimerCompletionSpeech() =>
+      _speechAnnouncementController.cancelTimerCompletionSpeech();
+  Future<bool> _initTts({bool forceRebind = false}) =>
+      _speechAnnouncementController.initTts(forceRebind: forceRebind);
+  List<Map<dynamic, dynamic>> _availableVoicesForSettings() =>
+      _speechAnnouncementController.availableVoicesForSettings();
+  Map<dynamic, dynamic>? getPreferredVoice() =>
+      _speechAnnouncementController.getPreferredVoice();
+  bool _isMalayalamActive(Map<dynamic, dynamic>? voice) =>
+      _voiceSessionManager.isMalayalamActive(
+        isMalayalamResolver: (value) => _malayalamTtsService.isMalayalamMode(
+          voiceListMode: _speechLanguageService.language,
+          preferredVoice: value,
+        ),
+        preferredVoice: voice,
+      );
+  String _nextQuoteForCategory(String category) {
+    if (_isMalayalamActive(getPreferredVoice())) {
+      return _quoteRotationService.nextQuoteForList(
+        key: 'malayalam:$category',
+        quotes: _malayalamTtsService.quotesForCategory(category),
+        fallbackQuote: _malayalamTtsService.defaultQuote(),
+      );
+    }
+    return _quoteRotationService.nextQuoteFromMap(
+      category: category,
+      quotesByCategory: quotesByCategory,
+      fallbackCategory: 'General',
+      fallbackQuote: 'Stay steady and use this moment well.',
+      rotationScope: 'english',
+    );
+  }
+  String timeToWords() => _speechAnnouncementController.timeToWords();
+  void startClock() => _speechAnnouncementController.startClock();
+  void stopClock() => _speechAnnouncementController.stopClock();
+  void _scheduleNextClockAnnouncement() =>
+      _speechAnnouncementController.scheduleNextClockAnnouncement();
+  void speakClock(String text) =>
+      _speechAnnouncementController.speakClock(text);
+  void speakTimerMessage(
+    String text, {
+    String? finishedRunId,
+    int? finishedRevision,
+  }) => _speechAnnouncementController.speakTimerMessage(
+    text,
+    finishedRunId: finishedRunId,
+    finishedRevision: finishedRevision,
+  );
+  void speak(String text, {
     Map<dynamic, dynamic>? voice,
     String? languageOverride,
     bool isTimerAnnouncement = false,
@@ -3017,178 +2215,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
     bool isTimerCompletion = false,
     String? timerRunId,
     int? timerRevision,
-  }) {
-    if (_isAudioMuted()) {
-      speechQueue.clear();
-      return;
-    }
-    final pv = getPreferredVoice();
-    final useMalayalam = languageOverride == 'en'
-        ? false
-        : _isMalayalamActive(pv);
-    final language = languageOverride ?? (useMalayalam ? 'ml' : 'en');
-    final activeVoice =
-        voice ??
-        (languageOverride == 'en'
-            ? _preferredEnglishAnnouncementVoice()
-            : _resolveVoiceForNewAnnouncement(useMalayalam: useMalayalam));
-    speechQueue.add(
-      SpeechItem(
-        text,
-        language: language,
-        voice: activeVoice,
-        isTimerAnnouncement: isTimerAnnouncement,
-        isStopwatchAnnouncement: isStopwatchAnnouncement,
-        isTimerCompletion: isTimerCompletion,
-        timerRunId: timerRunId,
-        timerRevision: timerRevision,
-      ),
-    );
-    drainQueue();
-  }
-
-  bool _isNightTime() {
-    final now = DateTime.now();
-    final nowMinutes = now.hour * 60 + now.minute;
-
-    if (sleepStartMinutes == sleepEndMinutes) {
-      return false;
-    }
-
-    if (sleepStartMinutes < sleepEndMinutes) {
-      return nowMinutes >= sleepStartMinutes && nowMinutes < sleepEndMinutes;
-    }
-
-    return nowMinutes >= sleepStartMinutes || nowMinutes < sleepEndMinutes;
-  }
-
-  void _cancelNightIdleTimer() {
-    nightIdleTimer?.cancel();
-    nightIdleTimer = null;
-    nightWindowTimer?.cancel();
-    nightWindowTimer = null;
-  }
-
-  void _startNightIdleTimerIfNeeded() {
-    _cancelNightIdleTimer();
-    if (!muteSpeechAfterMidnight ||
-        nightMuteMode != 'automatic' ||
-        sleepStartMinutes == sleepEndMinutes) {
-      return;
-    }
-    if (!_isNightTime()) {
-      final now = DateTime.now();
-      var nextStart = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        sleepStartMinutes ~/ 60,
-        sleepStartMinutes % 60,
-      );
-      if (!nextStart.isAfter(now)) {
-        nextStart = nextStart.add(const Duration(days: 1));
-      }
-      nightWindowTimer = Timer(nextStart.difference(now), () {
-        if (WidgetsBinding.instance.lifecycleState !=
-            AppLifecycleState.resumed) {
-          _startNightIdleTimerIfNeeded();
-        }
-      });
-      return;
-    }
-
-    nightIdleTimer = Timer(const Duration(minutes: 5), () {
-      if (!mounted ||
-          !muteSpeechAfterMidnight ||
-          nightMuteMode != 'automatic' ||
-          !_isNightTime() ||
-          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-        return;
-      }
-      autoNightMuteActive = true;
-      _cancelPendingSpeech();
-      unawaited(_audioService.stopBackground());
-      unawaited(_audioService.stopNotification());
-      _stopMobileRingtone();
-      final now = DateTime.now();
-      var sleepEnd = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        sleepEndMinutes ~/ 60,
-        sleepEndMinutes % 60,
-      );
-      if (!sleepEnd.isAfter(now)) {
-        sleepEnd = sleepEnd.add(const Duration(days: 1));
-      }
-      nightWindowTimer = Timer(sleepEnd.difference(now), () {
-        if (!mounted ||
-            !autoNightMuteActive ||
-            !muteSpeechAfterMidnight ||
-            nightMuteMode != 'automatic' ||
-            _isNightTime()) {
-          return;
-        }
-        autoNightMuteActive = false;
-        _applyAudioSettings();
-      });
-    });
-  }
-
-  void _stopAudioForMute() {
-    _cancelPendingSpeech();
-    unawaited(_audioService.stopBackground());
-    unawaited(_audioService.stopNotification());
-    _stopMobileRingtone();
-  }
-
-  void _refreshNightMuteSchedule() {
-    _cancelNightIdleTimer();
-    if (muteSpeechAfterMidnight && nightMuteMode == 'automatic') {
-      _startNightIdleTimerIfNeeded();
-    }
-    if (_isAudioMuted()) {
-      _stopAudioForMute();
-    } else {
-      _applyAudioSettings();
-    }
-  }
-
-  void _scheduleNightResumeAnnouncement() {
-    nightResumeSpeechTimer?.cancel();
-    if (!muteSpeechAfterMidnight ||
-        nightMuteMode != 'automatic' ||
-        !_isNightTime()) {
-      return;
-    }
-
-    nightResumeSpeechTimer = Timer(const Duration(seconds: 5), () {
-      if (!mounted) return;
-      if (!muteSpeechAfterMidnight ||
-          nightMuteMode != 'automatic' ||
-          !_isNightTime()) {
-        return;
-      }
-      final announcement = timeToWords();
-      speakTimerMessage(announcement);
-    });
-  }
-
-  void _handleNightUsageStateChange(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      autoNightMuteActive = false;
-      _cancelNightIdleTimer();
-      _scheduleNightResumeAnnouncement();
-      return;
-    }
-
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.paused) {
-      _startNightIdleTimerIfNeeded();
-    }
-  }
-
+  }) => _speechAnnouncementController.speak(
+    text,
+    voice: voice,
+    languageOverride: languageOverride,
+    isTimerAnnouncement: isTimerAnnouncement,
+    isStopwatchAnnouncement: isStopwatchAnnouncement,
+    isTimerCompletion: isTimerCompletion,
+    timerRunId: timerRunId,
+    timerRevision: timerRevision,
+  );
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _handleNightUsageStateChange(state);
@@ -3209,63 +2245,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
   }
 
-  bool _isAudioMuted() {
-    // Master Audio — when OFF, suppress ALL audio (speech, sounds, ringtones)
-    if (!speechMasterOn) return true;
-
-    if (!muteSpeechAfterMidnight || !_isNightTime()) {
-      if (autoNightMuteActive) {
-        autoNightMuteActive = false;
-        unawaited(_restoreAudioAfterNightMute());
-      }
-      return false;
-    }
-    if (nightMuteMode == 'manual') {
-      return true;
-    }
-    return autoNightMuteActive;
-  }
-
-  Future<void> _restoreAudioAfterNightMute() async {
-    if (!mounted || _isAudioMuted()) return;
-    _applyAudioSettings();
-  }
-
-  void _speakAfterGap({
-    required String text,
-    required VoidCallback onFire,
-    bool Function()? isStillValid,
-  }) {
-    final generation = _speechGeneration;
-    _announcementTail = _announcementTail
-        .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('Announcement predecessor failed: $error');
-        })
-        .then((_) async {
-          final elapsed = _announcementClock.elapsedMilliseconds;
-          final waitMs = max(0, 10000 - (elapsed - _lastAnnouncementElapsedMs));
-          if (waitMs > 0) {
-            await Future<void>.delayed(Duration(milliseconds: waitMs));
-          }
-          if (!mounted ||
-              generation != _speechGeneration ||
-              _isAudioMuted() ||
-              (isStillValid != null && !isStillValid())) {
-            return;
-          }
-          _lastAnnouncementElapsedMs = _announcementClock.elapsedMilliseconds;
-          onFire();
-        });
-  }
-
-  String timeToWords() {
-    final preferredVoice = getPreferredVoice();
-    if (_isMalayalamActive(preferredVoice)) {
-      return _malayalamTtsService.clockAnnouncement(DateTime.now());
-    }
-    return _timerService.timeToWords(DateTime.now());
-  }
-
   void _persistClockDeadline(DateTime? dueAt) {
     unawaited(
       _timerRuntimeStore.saveClockNextAt(dueAt).catchError((
@@ -3275,48 +2254,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
         debugPrint('[STATE] Failed to persist clock deadline: $error');
       }),
     );
-  }
-
-  void startClock() {
-    stopClock();
-    if (!clockOn) return;
-    if (clockSpeakTime || motivationOn) speakClock(timeToWords());
-    _nextClockAt = DateTime.now().add(Duration(minutes: clockIntervalMins));
-    _scheduleNextClockAnnouncement();
-    unawaited(_reconcileForeground(force: true));
-  }
-
-  void _scheduleNextClockAnnouncement() {
-    clockTimer?.cancel();
-    final due = _nextClockAt;
-    if (due == null || !clockOn) return;
-    _persistClockDeadline(due);
-    final now = DateTime.now();
-    final delay = due.isAfter(now) ? due.difference(now) : Duration.zero;
-    clockTimer = Timer(delay, () {
-      if (!mounted || !clockOn) return;
-      final firedAt = DateTime.now();
-      debugPrint(
-        '[CLOCK] Interval fired at $firedAt; deadline=$due; '
-        'lateness=${firedAt.difference(due).inMilliseconds}ms',
-      );
-      if (clockSpeakTime || motivationOn) speakClock(timeToWords());
-      _nextClockAt = _timerService.nextClockAnnouncementAt(
-        firedAt: firedAt,
-        intervalMinutes: clockIntervalMins,
-      );
-      _scheduleNextClockAnnouncement();
-    });
-  }
-
-  void stopClock() {
-    _clockScheduleGeneration++;
-    speechQueue.removeWhere((item) => item.isClockAnnouncement);
-    clockTimer?.cancel();
-    clockTimer = null;
-    _nextClockAt = null;
-    _persistClockDeadline(null);
-    unawaited(_reconcileForeground(force: true));
   }
 
   void toggleClock() {
@@ -3332,113 +2269,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _applyAudioSettings();
   }
 
-  void speakClock(String text) {
-    if (_isAudioMuted()) {
-      speechQueue.clear();
-      return;
-    }
-    final scheduleGeneration = _clockScheduleGeneration;
-    _speakAfterGap(
-      text: text,
-      isStillValid: () =>
-          clockOn &&
-          (clockSpeakTime || motivationOn) &&
-          scheduleGeneration == _clockScheduleGeneration,
-      onFire: () {
-        final preferredVoice = getPreferredVoice();
-        final useMalayalam = _isMalayalamActive(preferredVoice);
-        final clockVoice = _resolveVoiceForNewAnnouncement(
-          useMalayalam: useMalayalam,
-        );
-        debugPrint('[CLOCK] Queuing announcement at ${DateTime.now()}');
-        speechQueue.removeWhere((item) => item.isClockAnnouncement);
-        if (clockSpeakTime) {
-          final currentText = timeToWords();
-          final repeatCount = clockSpeakRepeatCount.clamp(1, 3);
-          for (var i = 0; i < repeatCount; i++) {
-            speechQueue.add(
-              SpeechItem(
-                currentText,
-                isClockAnnouncement: true,
-                delayMs: i == 0 ? 0 : 350,
-                language: useMalayalam ? 'ml' : 'en',
-                voice: clockVoice,
-              ),
-            );
-          }
-        }
-        if (motivationOn) {
-          final quoteText = _nextQuoteForCategory(motivationCategory);
-          speechQueue.add(
-            SpeechItem(
-              quoteText,
-              isQuote: true,
-              isClockAnnouncement: true,
-              delayMs: motivationDelaySeconds * 1000,
-              language: useMalayalam ? 'ml' : 'en',
-              voice: clockVoice,
-            ),
-          );
-        }
-        drainQueue();
-      },
-    );
-  }
 
-  String _nextQuoteForCategory(String category) {
-    final preferredVoice = getPreferredVoice();
-    final useMalayalam = _isMalayalamActive(preferredVoice);
-
-    if (useMalayalam) {
-      final categoryQuotes = _malayalamTtsService.quotesForCategory(category);
-      return _quoteRotationService.nextQuoteForList(
-        key: 'malayalam:$category',
-        quotes: categoryQuotes,
-        fallbackQuote: _malayalamTtsService.defaultQuote(),
-      );
-    }
-
-    return _quoteRotationService.nextQuoteFromMap(
-      category: category,
-      quotesByCategory: quotesByCategory,
-      fallbackCategory: 'General',
-      fallbackQuote: 'Stay steady and use this moment well.',
-      rotationScope: 'english',
-    );
-  }
-
-  void speakTimerMessage(
-    String text, {
-    String? finishedRunId,
-    int? finishedRevision,
-  }) {
-    if (_isAudioMuted()) {
-      speechQueue.clear();
-      return;
-    }
-    final pv = getPreferredVoice();
-    final useMalayalam = _isMalayalamActive(pv);
-    final timerVoice = _resolveVoiceForNewAnnouncement(
-      useMalayalam: useMalayalam,
-    );
-    _speakAfterGap(
-      text: text,
-      isStillValid: () =>
-          timerSpeakOn &&
-          (finishedRunId == null ||
-              (_timerRuntime.status == TimerRuntimeStatus.finished &&
-                  _timerRuntime.runId == finishedRunId &&
-                  _timerRuntime.revision == finishedRevision)),
-      onFire: () => speak(
-        text,
-        voice: timerVoice,
-        isTimerAnnouncement: true,
-        isTimerCompletion: finishedRunId != null,
-        timerRunId: finishedRunId,
-        timerRevision: finishedRevision,
-      ),
-    );
-  }
 
   String _formatTimerDisplayValue(
     int totalSeconds, {
@@ -3475,444 +2306,40 @@ class _MainScreenState extends ConsumerState<MainScreen>
     return '$base.$centiseconds';
   }
 
-  String _stopwatchElapsedSpeechText() {
-    final hours = stopwatchElapsedSeconds ~/ 3600;
-    final minutes = (stopwatchElapsedSeconds % 3600) ~/ 60;
-    final secs = stopwatchElapsedSeconds % 60;
 
-    final parts = <String>[];
-    if (hours > 0) {
-      parts.add('$hours hour${hours == 1 ? '' : 's'}');
-    }
-    if (minutes > 0) {
-      parts.add('$minutes minute${minutes == 1 ? '' : 's'}');
-    }
-    if (secs > 0 || parts.isEmpty) {
-      parts.add('$secs second${secs == 1 ? '' : 's'}');
-    }
+  Future<void> _restoreStopwatchRuntime() =>
+      _timerRuntimeController.restoreStopwatchRuntime();
 
-    return 'Elapsed ${parts.join(', ')}';
-  }
+  void startStopwatch() => _timerRuntimeController.startStopwatch();
 
-  void _speakStopwatchMessage(String text, {bool explicit = false}) {
-    if (_isAudioMuted()) {
-      speechQueue.clear();
-      return;
-    }
-    final speechGeneration = _stopwatchSpeechGeneration;
-    _speakAfterGap(
-      text: text,
-      isStillValid: () =>
-          speechGeneration == _stopwatchSpeechGeneration &&
-          (explicit || (stopwatchInterval != null && stopwatchSpeakOn)),
-      onFire: () => speak(
-        text,
-        isStopwatchAnnouncement: !explicit,
-        languageOverride: 'en',
-      ),
-    );
-  }
+  void stopStopwatch() => _timerRuntimeController.stopStopwatch();
 
-  void _tickStopwatch(Timer timer) {
-    final nextSeconds = _stopwatchRuntime.elapsedMsAt(DateTime.now()) ~/ 1000;
-    setState(() {});
-    if (nextSeconds != _lastStopwatchNotificationSecond &&
-        (nextSeconds % 30 == 0 || nextSeconds <= 3)) {
-      _lastStopwatchNotificationSecond = nextSeconds;
-      unawaited(_reconcileForeground(force: true));
-    }
-    if (stopwatchSpeakOn &&
-        nextSeconds > 0 &&
-        nextSeconds % stopwatchSpeakDelaySeconds == 0 &&
-        nextSeconds != _lastStopwatchAutoAnnouncedSecond) {
-      _lastStopwatchAutoAnnouncedSecond = nextSeconds;
-      _speakStopwatchMessage(_stopwatchElapsedSpeechText());
-    }
-  }
+  void resetStopwatch() => _timerRuntimeController.resetStopwatch();
 
-  Future<void> _restoreStopwatchRuntime() async {
-    await _applyStopwatchRuntime(await _timerRuntimeStore.loadStopwatch());
-  }
+  void speakStopwatchElapsedNow() =>
+      _timerRuntimeController.speakStopwatchElapsedNow();
 
-  Future<void> _applyStopwatchRuntime(StopwatchRuntime runtime) async {
-    if (!mounted || runtime.revision < _stopwatchRuntime.revision) return;
-    _stopwatchSpeechGeneration++;
-    stopwatchInterval?.cancel();
-    _stopwatchRuntime = runtime;
-    setState(() {
-      stopwatchInterval = runtime.isRunning
-          ? Timer.periodic(
-              Duration(milliseconds: stopwatchShowMilliseconds ? 50 : 250),
-              _tickStopwatch,
-            )
-          : null;
-    });
-    await _reconcileForeground(force: true);
-  }
+  Future<void> _restoreTimerRuntime() =>
+      _timerRuntimeController.restoreTimerRuntime();
 
-  void startStopwatch() {
-    if (stopwatchInterval != null) return;
-    _stopwatchRuntime = _stopwatchRuntime.copyWith(
-      isRunning: true,
-      startedAtEpochMs: () => DateTime.now().millisecondsSinceEpoch,
-      revision: _stopwatchRuntime.revision + 1,
-    );
-    setState(() {
-      stopwatchInterval = Timer.periodic(
-        Duration(milliseconds: stopwatchShowMilliseconds ? 50 : 250),
-        _tickStopwatch,
-      );
-    });
-    unawaited(_timerRuntimeStore.saveStopwatch(_stopwatchRuntime));
-    unawaited(_reconcileForeground(force: true));
-  }
-
-  void stopStopwatch() {
-    if (!_stopwatchRuntime.isRunning) return;
-    _stopwatchSpeechGeneration++;
-    final elapsed = _stopwatchRuntime.elapsedMsAt(DateTime.now());
-    _stopwatchRuntime = _stopwatchRuntime.copyWith(
-      isRunning: false,
-      accumulatedMs: elapsed,
-      startedAtEpochMs: () => null,
-      revision: _stopwatchRuntime.revision + 1,
-    );
-    stopwatchInterval?.cancel();
-    setState(() => stopwatchInterval = null);
-    unawaited(_timerRuntimeStore.saveStopwatch(_stopwatchRuntime));
-    unawaited(_reconcileForeground(force: true));
-  }
-
-  void resetStopwatch() {
-    _stopwatchSpeechGeneration++;
-    stopwatchInterval?.cancel();
-    _stopwatchRuntime = StopwatchRuntime.idle().copyWith(
-      revision: _stopwatchRuntime.revision + 1,
-    );
-    setState(() {
-      stopwatchInterval = null;
-    });
-    unawaited(_timerRuntimeStore.saveStopwatch(_stopwatchRuntime));
-    unawaited(_reconcileForeground(force: true));
-  }
-
-  void speakStopwatchElapsedNow() {
-    _speakStopwatchMessage(_stopwatchElapsedSpeechText(), explicit: true);
-  }
-
-  Future<void> _restoreTimerRuntime() async {
-    if (timerInterval != null &&
-        _timerRuntime.status == TimerRuntimeStatus.running) {
-      return;
-    }
-    final runtime = await _timerRuntimeStore.load();
-    if (!mounted) return;
-    await _applyTimerRuntime(runtime, restored: true);
-  }
 
   Future<void> _applyTimerRuntime(
     TimerRuntime runtime, {
     bool restored = false,
-  }) async {
-    if (!mounted) return;
-    final isLocallyRunning =
-        timerInterval != null &&
-        _timerRuntime.status == TimerRuntimeStatus.running;
-    if (isLocallyRunning) {
-      if (runtime.status == TimerRuntimeStatus.idle) {
-        return;
-      }
-      if (runtime.runId.isNotEmpty && runtime.runId != _timerRuntime.runId) {
-        return;
-      }
-      if (runtime.revision < _timerRuntime.revision) {
-        return;
-      }
-    } else {
-      if (runtime.runId == _timerRuntime.runId &&
-          runtime.revision < _timerRuntime.revision) {
-        return;
-      }
-    }
-    final replacesCurrentRun =
-        runtime.runId != _timerRuntime.runId ||
-        runtime.revision > _timerRuntime.revision ||
-        runtime.status != _timerRuntime.status;
-    if (replacesCurrentRun) _invalidateTimerWork();
-    var next = runtime;
-    if (_timerRuntime.status == TimerRuntimeStatus.finished &&
-        next.status == TimerRuntimeStatus.running) {
-      unawaited(_audioService.stopNotification());
-    }
-    if (next.status == TimerRuntimeStatus.running &&
-        next.remainingAt(DateTime.now()) == 0) {
-      next = _advanceExpiredTimer(next, DateTime.now());
-      await _timerRuntimeStore.save(next);
-    }
-    if (!mounted) return;
+  }) => _timerRuntimeController.applyTimerRuntime(runtime, restored: restored);
 
-    timerInterval?.cancel();
-    timerInterval = null;
-    final remaining = next.remainingAt(DateTime.now());
-    if (next.status == TimerRuntimeStatus.running && taggingOn) {
-      final segmentChanged =
-          _timerRuntime.status != TimerRuntimeStatus.running ||
-          _timerRuntime.runId != next.runId ||
-          _timerRuntime.chainIndex != next.chainIndex ||
-          _sessionStartTime == null;
-      if (segmentChanged) {
-        final segmentStartSeconds = next.segmentStartRemainingSeconds > 0
-            ? next.segmentStartRemainingSeconds
-            : remaining;
-        final endAt =
-            next.endAtEpochMs ?? DateTime.now().millisecondsSinceEpoch;
-        _sessionStartTime = DateTime.fromMillisecondsSinceEpoch(
-          endAt - segmentStartSeconds * 1000,
-        );
-        _sessionStartRemainingSeconds = segmentStartSeconds;
-      }
-    } else {
-      _sessionStartTime = null;
-      _sessionStartRemainingSeconds = null;
-    }
-    setState(() {
-      _timerRuntime = next;
-      if (next.durationSeconds > 0) {
-        sliderValue = ((next.durationSeconds + 59) ~/ 60).clamp(1, 720).toInt();
-      }
-      if (next.status == TimerRuntimeStatus.finished) {
-        _lastFinishedTimerDurationSeconds = next.durationSeconds;
-      }
-      chainModeOn = next.chainModeOn;
-      chainPresetKey = next.chainPresetKey;
-      chainIndex = next.chainIndex;
-      _isTimerFinished = next.status == TimerRuntimeStatus.finished;
-      if (next.status == TimerRuntimeStatus.running) {
-        timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
-      }
-    });
-    if (replacesCurrentRun && _timerFinishedDialogOpen) {
-      unawaited(Navigator.of(context, rootNavigator: true).maybePop());
-    }
-    _applyAudioSettings();
-    await _reconcileForeground(force: true);
-    if (restored && next.status == TimerRuntimeStatus.finished && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_showTimerFinishedDialog());
-      });
-    }
-  }
 
-  void _invalidateTimerWork() {
-    _timerWorkGeneration++;
-  }
 
-  void tick(Timer timer) {
-    if (_timerRuntime.status != TimerRuntimeStatus.running) return;
-    final previous = seconds;
-    final remaining = _timerRuntime.remainingAt(DateTime.now());
-    if (remaining == previous) return;
-    if (remaining <= 0) {
-      unawaited(_completeTimerRun());
-      return;
-    }
-
-    final crossed = _timerService.crossedAnnouncementMinutes(
-      previousSeconds: previous,
-      currentSeconds: remaining,
-      announceEveryMinutes: timerAnnounceEvery,
-    );
-    setState(() {
-      _timerRuntime = _timerRuntime.copyWith(remainingSeconds: remaining);
-    });
-    if (timerSpeakOn && crossed.isNotEmpty) {
-      final minutes = crossed.last;
-      final preferredVoice = getPreferredVoice();
-      final useMalayalam = _isMalayalamActive(preferredVoice);
-      speakTimerMessage(
-        useMalayalam
-            ? _malayalamTtsService.timerRemaining(minutes)
-            : '$minutes minute${minutes == 1 ? '' : 's'} remaining',
-      );
-    }
-    if (remaining % 60 == 0 || remaining <= 10 || crossed.isNotEmpty) {
-      unawaited(_reconcileForeground(force: true));
-    }
-  }
-
-  Future<void> _completeTimerRun() async {
-    if (_timerCompletionInFlight ||
-        _timerRuntime.status != TimerRuntimeStatus.running) {
-      return;
-    }
-    _timerCompletionInFlight = true;
-    final workGeneration = _timerWorkGeneration;
-    final sessionId = '${_timerRuntime.runId}:${_timerRuntime.revision}';
-    try {
-      if (chainModeOn) {
-        final sequence = chainPresets[chainPresetKey] ?? const [25];
-        if (chainIndex < sequence.length - 1) {
-          chainIndex++;
-          final nextSeconds = sequence[chainIndex] * 60;
-          _timerRuntime = TimerRuntime.running(
-            durationSeconds: nextSeconds,
-            remainingSeconds: nextSeconds,
-            now: DateTime.now(),
-            chainModeOn: true,
-            chainPresetKey: chainPresetKey,
-            chainIndex: chainIndex,
-            runId: _timerRuntime.runId,
-            revision: _timerRuntime.revision + 1,
-          );
-          await _timerRuntimeStore.save(_timerRuntime);
-          if (!mounted || workGeneration != _timerWorkGeneration) return;
-          if (taggingOn && _sessionStartTime != null) {
-            _logCurrentSession(_taggedElapsedSeconds(0), sessionId: sessionId);
-            _sessionStartTime = DateTime.now();
-            _sessionStartRemainingSeconds = nextSeconds;
-          }
-          setState(() {});
-          if (timerSpeakOn) {
-            final preferredVoice = getPreferredVoice();
-            final useMalayalam = _isMalayalamActive(preferredVoice);
-            speakTimerMessage(
-              useMalayalam
-                  ? _malayalamTtsService.nextTimerStarting(nextSeconds ~/ 60)
-                  : 'Starting next timer: ${nextSeconds ~/ 60} minutes',
-            );
-          }
-          await _reconcileForeground(force: true);
-          return;
-        }
-        chainIndex = 0;
-      }
-
-      timerInterval?.cancel();
-      _lastFinishedTimerDurationSeconds = _activeTimerDurationSeconds > 0
-          ? _activeTimerDurationSeconds
-          : sliderValue * 60;
-      _timerRuntime = _timerRuntime.copyWith(
-        status: TimerRuntimeStatus.finished,
-        remainingSeconds: 0,
-        endAtEpochMs: () => null,
-        chainIndex: chainIndex,
-        revision: _timerRuntime.revision + 1,
-      );
-      await _timerRuntimeStore.save(_timerRuntime);
-      if (!mounted || workGeneration != _timerWorkGeneration) return;
-      setState(() {
-        timerInterval = null;
-        _isTimerFinished = true;
-      });
-      _applyAudioSettings();
-      await _reconcileForeground(force: true);
-      if (!mounted || workGeneration != _timerWorkGeneration) return;
-      if (Platform.isLinux) {
-        unawaited(
-          _desktopService.notify(
-            _appLocalizations.mainTimerFinishedTitle,
-            _appLocalizations.mainDesktopTimerFinishedBody(
-              (_lastFinishedTimerDurationSeconds / 60).ceil(),
-            ),
-          ),
-        );
-      }
-
-      if (taggingOn && _sessionStartTime != null) {
-        _logCurrentSession(_taggedElapsedSeconds(0), sessionId: sessionId);
-      }
-      if (timerSpeakOn) {
-        final preferredVoice = getPreferredVoice();
-        final useMalayalam = _isMalayalamActive(preferredVoice);
-        speakTimerMessage(
-          useMalayalam
-              ? _malayalamTtsService.timerFinished()
-              : 'Timer finished',
-          finishedRunId: _timerRuntime.runId,
-          finishedRevision: _timerRuntime.revision,
-        );
-      }
-      final alarmGeneration = ++_alarmGeneration;
-      if (Platform.isAndroid && !_isAudioMuted()) {
-        FlutterRingtonePlayer().playAlarm(looping: true);
-        Future<void>.delayed(const Duration(seconds: 30), () {
-          if (_alarmGeneration == alarmGeneration) {
-            _stopMobileRingtone();
-          }
-        });
-      } else if (!_isAudioMuted()) {
-        unawaited(
-          _audioService.playNotification(
-            assetPath: notifySound,
-            stopAfter: const Duration(seconds: 10),
-          ),
-        );
-      }
-      unawaited(_showTimerFinishedDialog());
-    } finally {
-      _timerCompletionInFlight = false;
-    }
-  }
-
-  void _startTimerFromMinutes(int minutes) {
-    final safeMinutes = minutes.clamp(1, 720).toInt();
-    _startTimerFromDurationSeconds(safeMinutes * 60);
-  }
+  void _startTimerFromMinutes(int minutes) =>
+      _startTimerFromDurationSeconds(minutes.clamp(1, 720) * 60);
 
   void _startTimerFromDurationSeconds(int durationSeconds) {
-    final safeSeconds = durationSeconds.clamp(1, 720 * 60).toInt();
-    final displayMinutes = ((safeSeconds + 59) ~/ 60).clamp(1, 720);
     _stopMobileRingtone();
-    stopTimer();
-    setState(() {
-      _isTimerFinished = false;
-      chainModeOn = false;
-      chainIndex = 0;
-      sliderValue = displayMinutes;
-    });
-    unawaited(_audioService.stopNotification());
-    startTimer(initialDurationSeconds: safeSeconds);
+    _armedPresetTimer?.cancel();
+    _armedPresetValue = null;
+    _timerRuntimeController.startTimerFromDurationSeconds(durationSeconds);
   }
 
-  Future<void> _showTimerFinishedDialog() async {
-    if (!mounted ||
-        _timerFinishedDialogOpen ||
-        _timerRuntime.status != TimerRuntimeStatus.finished) {
-      return;
-    }
-    final rootNavigator = Navigator.of(context, rootNavigator: true);
-    final workGeneration = _timerWorkGeneration;
-    final finishedRunId = _timerRuntime.runId;
-    final finishedRevision = _timerRuntime.revision;
-
-    _timerFinishedDialogOpen = true;
-    int? selectedDurationSeconds;
-    try {
-      selectedDurationSeconds = _fullscreenFocusOpen
-          ? await _showFullscreenTimerFinishedDialog()
-          : await _showNormalTimerFinishedDialog();
-    } finally {
-      _stopMobileRingtone();
-      _timerFinishedDialogOpen = false;
-    }
-
-    if (!mounted ||
-        workGeneration != _timerWorkGeneration ||
-        _timerRuntime.runId != finishedRunId ||
-        _timerRuntime.revision != finishedRevision ||
-        _timerRuntime.status != TimerRuntimeStatus.finished) {
-      return;
-    }
-    if (selectedDurationSeconds == null) {
-      await _dismissFinishedTimer();
-      if (_fullscreenFocusOpen &&
-          _fullscreenFocusMode.value == FullscreenFocusMode.timer) {
-        await rootNavigator.maybePop();
-      }
-      return;
-    }
-    _startTimerFromDurationSeconds(selectedDurationSeconds);
-  }
 
   Future<int?> _showNormalTimerFinishedDialog() async {
     final customController = TextEditingController();
@@ -4233,165 +2660,32 @@ class _MainScreenState extends ConsumerState<MainScreen>
     );
   }
 
-  void _saveChainSettingsToTimerRuntime() {
-    if (_timerRuntime.status == TimerRuntimeStatus.idle) return;
-    _timerRuntime = _timerRuntime.copyWith(
-      chainModeOn: chainModeOn,
-      chainPresetKey: chainPresetKey,
-      chainIndex: chainIndex,
-      revision: _timerRuntime.revision + 1,
-    );
-    unawaited(
-      _timerRuntimeStore.save(_timerRuntime).catchError((
-        Object error,
-        StackTrace stackTrace,
-      ) {
-        debugPrint('[STATE] Failed to save timer chain settings: $error');
-      }),
-    );
-  }
+  void _saveChainSettingsToTimerRuntime() =>
+      _timerRuntimeController.saveChainSettingsToTimerRuntime();
 
   void startTimer({int? initialDurationSeconds}) {
-    if (timerInterval != null) return;
-    if (_timerRuntime.status == TimerRuntimeStatus.finished) {
-      _cancelTimerCompletionSpeech();
-    }
-    unawaited(_audioService.stopNotification());
-    _invalidateTimerWork();
     _armedPresetTimer?.cancel();
     _armedPresetValue = null;
-    var remaining = initialDurationSeconds ?? seconds;
-    if (remaining <= 0) {
-      if (chainModeOn) {
-        final sequence = chainPresets[chainPresetKey] ?? const [25];
-        if (chainIndex >= sequence.length) chainIndex = 0;
-        remaining = sequence[chainIndex] * 60;
-      } else {
-        remaining = sliderValue * 60;
-      }
-    }
-    remaining = remaining.clamp(1, 720 * 60);
-    final resumedDuration =
-        initialDurationSeconds == null &&
-            _timerRuntime.status == TimerRuntimeStatus.paused
-        ? _timerRuntime.durationSeconds
-        : 0;
-    final duration = resumedDuration >= remaining ? resumedDuration : remaining;
-    _timerRuntime = TimerRuntime.running(
-      durationSeconds: duration,
-      remainingSeconds: remaining,
-      now: DateTime.now(),
-      chainModeOn: chainModeOn,
-      chainPresetKey: chainPresetKey,
-      chainIndex: chainIndex,
-      segmentStartRemainingSeconds: remaining,
-      revision: _timerRuntime.revision + 1,
+    _timerRuntimeController.startTimer(
+      initialDurationSeconds: initialDurationSeconds,
     );
-    setState(() {
-      _isTimerFinished = false;
-      timerInterval = Timer.periodic(const Duration(milliseconds: 250), tick);
-    });
-    if (taggingOn) {
-      if (_sessionStartTime == null) {
-        _sessionStartTime = DateTime.now();
-        _sessionStartRemainingSeconds = remaining;
-      }
-    } else {
-      _sessionStartTime = null;
-      _sessionStartRemainingSeconds = null;
-    }
-    unawaited(_timerRuntimeStore.save(_timerRuntime));
-    unawaited(_saveLastTimerSeconds(remaining));
-    _applyAudioSettings();
-    unawaited(_reconcileForeground(force: true));
-  }
-  void stopTimer() {
-    _invalidateTimerWork();
-    if (timerInterval == null) return;
-    final remaining = _timerRuntime.remainingAt(DateTime.now());
-    if (taggingOn && _sessionStartTime != null) {
-      _logCurrentSession(
-        _taggedElapsedSeconds(remaining),
-        sessionId: '${_timerRuntime.runId}:${_timerRuntime.revision}',
-      );
-    }
-    timerInterval?.cancel();
-    _timerRuntime = _timerRuntime.copyWith(
-      status: TimerRuntimeStatus.paused,
-      remainingSeconds: remaining,
-      endAtEpochMs: () => null,
-      revision: _timerRuntime.revision + 1,
-    );
-    unawaited(_timerRuntimeStore.save(_timerRuntime));
-    if (remaining > 0) unawaited(_saveLastTimerSeconds(remaining));
-    if (mounted) {
-      setState(() => timerInterval = null);
-    } else {
-      timerInterval = null;
-    }
-    _applyAudioSettings();
-    unawaited(_reconcileForeground(force: true));
   }
 
+  void stopTimer() => _timerRuntimeController.stopTimer();
 
   void resetTimer() {
-    _invalidateTimerWork();
-    if (timerInterval != null) stopTimer();
-    timerInterval?.cancel();
-    _sessionStartTime = null;
-    _sessionStartRemainingSeconds = null;
-    _timerRuntime = TimerRuntime.idle().copyWith(
-      revision: _timerRuntime.revision + 1,
-    );
-    unawaited(_timerRuntimeStore.save(_timerRuntime));
-    setState(() {
-      timerInterval = null;
-      chainIndex = 0;
-      _isTimerFinished = false;
-    });
-    unawaited(_reconcileForeground(force: true));
+    _timerRuntimeController.resetTimer();
+    if (mounted) setState(() => _isTimerFinished = false);
   }
 
   void choosePreset(int value) {
     resetTimer();
-    setState(() {
-      sliderValue = value.clamp(1, 720);
-    });
+    setState(() => sliderValue = value.clamp(1, 720));
     startTimer(initialDurationSeconds: sliderValue * 60);
   }
 
   void addTimeToRunningTimer(int additionalSeconds) {
-    if (timerInterval == null ||
-        _timerRuntime.status != TimerRuntimeStatus.running) {
-      return;
-    }
-    _invalidateTimerWork();
-    final remaining =
-        (_timerRuntime.remainingAt(DateTime.now()) + additionalSeconds).clamp(
-          1,
-          720 * 60,
-        );
-    final duration = (_timerRuntime.durationSeconds + additionalSeconds).clamp(
-      1,
-      720 * 60,
-    );
-    _timerRuntime = TimerRuntime.running(
-      durationSeconds: duration,
-      remainingSeconds: remaining,
-      now: DateTime.now(),
-      chainModeOn: chainModeOn,
-      chainPresetKey: chainPresetKey,
-      chainIndex: chainIndex,
-      runId: _timerRuntime.runId,
-      segmentStartRemainingSeconds:
-          _timerRuntime.segmentStartRemainingSeconds + additionalSeconds,
-      revision: _timerRuntime.revision + 1,
-    );
-    setState(() {
-      sliderValue = (remaining / 60).ceil().clamp(1, 720);
-    });
-    unawaited(_timerRuntimeStore.save(_timerRuntime));
-    unawaited(_reconcileForeground(force: true));
+    _timerRuntimeController.addTimeToRunningTimer(additionalSeconds);
   }
 
   /// Starts timer preset immediately on tap.
@@ -4466,9 +2760,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
               _lsSave();
             });
             if (!nowOn) {
-              speechQueue.removeWhere(
-                (item) => item.isClockAnnouncement && !item.isQuote,
-              );
+              _speechAnnouncementController.removeClockTimeAnnouncements();
             }
             if (needsStart) {
               startClock();
@@ -4502,7 +2794,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
               if (needsStart) clockOn = true;
               _lsSave();
             });
-            if (!nowOn) speechQueue.removeWhere((item) => item.isQuote);
+            if (!nowOn) {
+              _speechAnnouncementController.removeQuoteAnnouncements();
+            }
             if (needsStart) startClock();
           },
           onMotivationCategoryChanged: (val) {
@@ -4590,7 +2884,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
               _lsSave();
             });
             if (!nowOn) {
-              speechQueue.removeWhere((item) => item.isTimerAnnouncement);
+              _speechAnnouncementController.removeTimerAnnouncements();
             }
           },
           onTimerShowMillisecondsChanged: (val) {
@@ -4660,18 +2954,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     growable: false,
   );
 
-  void _recordLap() {
-    final laps = [
-      _stopwatchRuntime.elapsedMsAt(DateTime.now()),
-      ..._stopwatchRuntime.lapTimesMs,
-    ];
-    _stopwatchRuntime = _stopwatchRuntime.copyWith(
-      lapTimesMs: laps,
-      revision: _stopwatchRuntime.revision + 1,
-    );
-    setState(() {});
-    unawaited(_timerRuntimeStore.saveStopwatch(_stopwatchRuntime));
-  }
+  void _recordLap() => _timerRuntimeController.recordStopwatchLap();
 
   Widget _buildStopwatchTab() {
     final cs = Theme.of(context).colorScheme;
@@ -4707,7 +2990,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
               _lsSave();
             });
             if (!nowOn) {
-              speechQueue.removeWhere((item) => item.isStopwatchAnnouncement);
+              _speechAnnouncementController.removeStopwatchAnnouncements();
             }
           },
           onStopwatchShowMillisecondsChanged: (val) {
@@ -4720,8 +3003,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
             if (val == null) return;
             setState(() {
               stopwatchSpeakDelaySeconds = val;
-              _lastStopwatchAutoAnnouncedSecond = -1;
-              _stopwatchSpeechGeneration++;
+              _timerRuntimeController.lastStopwatchAutoAnnouncedSecond = -1;
+              _timerRuntimeController.stopwatchSpeechGeneration++;
               _lsSave();
             });
           },
@@ -4771,30 +3054,208 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     PersistenceErrorReporter.latest.removeListener(_onPersistenceFailure);
-    foregroundHealthTimer?.cancel();
-    nightIdleTimer?.cancel();
-    nightResumeSpeechTimer?.cancel();
-    goalReminderTimer?.cancel();
+    _foregroundNotificationController.dispose();
     _armedPresetTimer?.cancel();
-    _widgetArmedTimer?.cancel();
-    clockTimer?.cancel();
-    clockTimer = null;
-    timerInterval?.cancel();
-    timerInterval = null;
-    stopwatchInterval?.cancel();
-    stopwatchInterval = null;
+    _platformIntentController.dispose();
+    _timerRuntimeController.dispose();
     displayTick?.cancel();
+    _speechAnnouncementController.dispose();
+    unawaited(_stopTts());
     unawaited(_speechService.disposeDesktopSpeech());
-    if (!Platform.isLinux) unawaited(flutterTts.stop());
     unawaited(_settingsService.flush());
     unawaited(_audioService.dispose());
     _desktopService.dispose();
-    // Remove callback to avoid memory leaks
-    FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
     _fullscreenFocusMode.dispose();
-    _settingsVoices.dispose();
     super.dispose();
   }
+
+  @override
+  int get sliderMinutes => sliderValue;
+
+  @override
+  bool get audioMuted => _isAudioMuted();
+
+  @override
+  void setChainModeOn(bool value) => chainModeOn = value;
+
+  @override
+  void onTimerRuntimeChanged({
+    required TimerRuntime runtime,
+    required bool tickerActive,
+    required int sliderMinutes,
+    required int chainIndex,
+    required bool finished,
+    required int lastFinishedDurationSeconds,
+  }) {
+    if (!mounted) return;
+    setState(() {
+      sliderValue = sliderMinutes;
+      this.chainIndex = chainIndex;
+      chainModeOn = runtime.chainModeOn;
+      chainPresetKey = runtime.chainPresetKey;
+      _isTimerFinished = finished;
+    });
+  }
+
+  @override
+  void onStopwatchRuntimeChanged({
+    required StopwatchRuntime runtime,
+    required bool tickerActive,
+  }) {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void onTimerSpeechRemaining(int minutes) {
+    final useMalayalam = _isMalayalamActive(getPreferredVoice());
+    speakTimerMessage(
+      useMalayalam
+          ? _malayalamTtsService.timerRemaining(minutes)
+          : '$minutes minute${minutes == 1 ? '' : 's'} remaining',
+    );
+  }
+
+  @override
+  void onTimerSpeechNext(int seconds) {
+    final useMalayalam = _isMalayalamActive(getPreferredVoice());
+    speakTimerMessage(
+      useMalayalam
+          ? _malayalamTtsService.nextTimerStarting(seconds ~/ 60)
+          : 'Starting next timer: ${seconds ~/ 60} minutes',
+    );
+  }
+
+  @override
+  void onTimerSpeechFinished(String runId, int revision) {
+    final useMalayalam = _isMalayalamActive(getPreferredVoice());
+    speakTimerMessage(
+      useMalayalam
+          ? _malayalamTtsService.timerFinished()
+          : 'Timer finished',
+      finishedRunId: runId,
+      finishedRevision: revision,
+    );
+  }
+
+  @override
+  void onStopwatchSpeech(
+    String text, {
+    required bool explicit,
+    required int generation,
+  }) => _speakStopwatchMessage(
+    text,
+    explicit: explicit,
+    generation: generation,
+  );
+
+  @override
+  String stopwatchElapsedSpeechText(StopwatchRuntime runtime) =>
+      _formatStopwatchElapsed(
+        runtime.elapsedMsAt(DateTime.now()) ~/ 1000,
+        showMilliseconds: stopwatchShowMilliseconds,
+      );
+
+  @override
+  Future<void> applyAudioSettings() async => _applyAudioSettings();
+
+  @override
+  Future<void> reconcileForeground({required bool force}) =>
+      _reconcileForeground(force: force);
+
+  @override
+  Future<void> stopNotification() => _audioService.stopNotification();
+  @override
+  void onStopwatchSpeechGenerationChanged(int generation) {
+    _speechAnnouncementController.invalidateStopwatchSpeech();
+  }
+
+  @override
+  Future<void> saveLastTimerSeconds(int seconds) =>
+      _saveLastTimerSeconds(seconds);
+
+  @override
+  Future<void> onTimerFinishedEffects(int durationSeconds) async {
+    if (Platform.isLinux) {
+      unawaited(
+        _desktopService.notify(
+          _appLocalizations.mainTimerFinishedTitle,
+          _appLocalizations.mainDesktopTimerFinishedBody(
+            (durationSeconds / 60).ceil(),
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<void> onTimerAlarm() async {
+    if (_isAudioMuted()) return;
+    final generation = _timerRuntimeController.alarmGeneration;
+    if (Platform.isAndroid) {
+      FlutterRingtonePlayer().playAlarm(looping: true);
+      Future<void>.delayed(const Duration(seconds: 30), () {
+        if (_timerRuntimeController.alarmGeneration == generation) {
+          _stopMobileRingtone();
+        }
+      });
+    } else {
+      unawaited(
+        _audioService.playNotification(
+          assetPath: notifySound,
+          stopAfter: const Duration(seconds: 10),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<int?> onTimerFinishedDialog() async {
+    final selected = _fullscreenFocusOpen
+        ? await _showFullscreenTimerFinishedDialog()
+        : await _showNormalTimerFinishedDialog();
+    if (selected == null &&
+        _fullscreenFocusOpen &&
+        _fullscreenFocusMode.value == FullscreenFocusMode.timer) {
+      _dismissFocusAfterFinishedDialog = true;
+    }
+    return selected;
+  }
+
+  @override
+  Future<void> closeTimerFinishedDialog() async {
+    if (mounted) await Navigator.of(context, rootNavigator: true).maybePop();
+  }
+
+  @override
+  void scheduleRestoredTimerFinishedDialog() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(_timerRuntimeController.showTimerFinishedDialog());
+      }
+    });
+  }
+
+  @override
+  Future<void> dismissFinishedTimer() async {
+    await _dismissFinishedTimer();
+    if (_dismissFocusAfterFinishedDialog) {
+      _dismissFocusAfterFinishedDialog = false;
+      if (mounted) {
+        await Navigator.of(context, rootNavigator: true).maybePop();
+      }
+    }
+  }
+
+  @override
+  Future<void> refreshTimerSummary() => _refreshTodaySummary();
+
+  @override
+  void cancelTimerCompletionSpeech() => _cancelTimerCompletionSpeech();
+
+
+  @override
+  void onTimerDialogClosed() => _stopMobileRingtone();
+
 
   @override
   Widget build(BuildContext context) {
