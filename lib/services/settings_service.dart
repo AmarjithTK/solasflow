@@ -71,8 +71,8 @@ class SettingsService {
       if (taskOverride != null) {
         await acknowledgeSpeechMasterOverride(taskOverride);
       }
-    } catch (error) {
-      debugPrint('Loaded settings could not be persisted: $error');
+    } catch (error, stackTrace) {
+      PersistenceErrorReporter.report('Settings bootstrap', error, stackTrace);
     }
     return settings;
   }
@@ -104,7 +104,10 @@ class SettingsService {
     final prefs = await SharedPreferences.getInstance();
     if (SafePreferenceReads.boolean(prefs, speechMasterOverrideKey) ==
         enabled) {
-      await prefs.remove(speechMasterOverrideKey);
+      final removed = await prefs.remove(speechMasterOverrideKey);
+      if (!removed) {
+        throw StateError('SharedPreferences rejected speech override removal');
+      }
     }
   }
 
@@ -127,7 +130,13 @@ class SettingsService {
           defaults.speakVolume,
       maximumSpeechVolume:
           SafePreferenceReads.boolean(prefs, PrefKeys.maximumSpeechVolume) ??
-          defaults.maximumSpeechVolume,
+          ((SafePreferenceReads.boolean(prefs, 'TtsVolumeBoostEnabled') ??
+                  false) ||
+              (SafePreferenceReads.boolean(
+                    prefs,
+                    'TtsMaxVolumeLockEnabled',
+                  ) ??
+                  false)),
       clockOn:
           SafePreferenceReads.boolean(prefs, PrefKeys.clockOn) ??
           defaults.clockOn,
