@@ -108,7 +108,6 @@ import 'services/session_log_service.dart';
 import 'widgets/dashboard_screen.dart';
 import 'widgets/kokoro_download_consent_dialog.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterForegroundTask.initCommunicationPort();
@@ -173,8 +172,11 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen>
     with WidgetsBindingObserver
-    implements PlatformIntentHost, TimerRuntimeControllerHost, ForegroundNotificationHost, SpeechAnnouncementHost {
-
+    implements
+        PlatformIntentHost,
+        TimerRuntimeControllerHost,
+        ForegroundNotificationHost,
+        SpeechAnnouncementHost {
   @override
   AppSettings get settings => _settings;
 
@@ -188,13 +190,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
   @override
   bool get stopwatchRunning => stopwatchInterval != null;
 
-
   @override
   bool get desktopHidden => Platform.isLinux && _desktopService.hidden.value;
 
   @override
   void setSpeechActive(bool active) {
-    if (mounted && isSpeechActive != active) setState(() => isSpeechActive = active);
+    if (mounted && isSpeechActive != active)
+      setState(() => isSpeechActive = active);
   }
 
   @override
@@ -213,12 +215,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
   @override
   void stopMobileRingtone() => _stopMobileRingtone();
 
-
   @override
   Future<void> updateSpeechMaster(bool enabled) async {
-    await ref.read(settingsProvider.notifier).update(
-      (settings) => settings.copyWith(speechMasterOn: enabled),
-    );
+    await ref
+        .read(settingsProvider.notifier)
+        .update((settings) => settings.copyWith(speechMasterOn: enabled));
   }
 
   @override
@@ -235,7 +236,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   @override
-  String nextQuoteForCategory(String category) => _nextQuoteForCategory(category);
+  String nextQuoteForCategory(String category) =>
+      _nextQuoteForCategory(category);
 
   @override
   bool get isMounted => mounted;
@@ -324,10 +326,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// Today's summary display string for the timer panel
   String _todaySummary = '';
   DateTime _todaySummaryDate = DateTime.now();
-  
 
-  late final ForegroundNotificationController _foregroundNotificationController =
-      ForegroundNotificationController(host: this);
+  late final ForegroundNotificationController
+  _foregroundNotificationController = ForegroundNotificationController(
+    host: this,
+  );
 
   /// ============================================================================
   /// TTS & SPEECH STATE - Text-to-speech management
@@ -337,7 +340,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   bool isSpeechActive = false;
 
   FlutterTts get flutterTts => _speechAnnouncementController.flutterTts;
-  List<Map<dynamic, dynamic>> get voices => _speechAnnouncementController.voices;
+  List<Map<dynamic, dynamic>> get voices =>
+      _speechAnnouncementController.voices;
   set voices(List<Map<dynamic, dynamic>> value) =>
       _speechAnnouncementController.voices = value;
   ValueNotifier<List<Map<dynamic, dynamic>>> get _settingsVoices =>
@@ -360,13 +364,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
   int get seconds => _timerRuntimeController.seconds;
   TimerRuntime get _timerRuntime => _timerRuntimeController.timerRuntime;
   Timer? get timerInterval => _timerRuntimeController.timerTicker;
+
   /// Two-tap confirmation state: the preset value currently awaiting
   /// a second tap before the timer starts.  Null = no button armed.
   int? _armedPresetValue;
 
   /// 3-second auto-clear timer for the armed preset state.
   Timer? _armedPresetTimer;
-
 
   String get timerDisplayValue {
     final now = DateTime.now();
@@ -385,13 +389,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
   /// ============================================================================
   /// Manages clock time display and interval-based time announcements
 
-
   /// Display ticker: updates UI at 250ms intervals (reduced from 30ms for performance)
   Timer? displayTick;
 
   /// Current time formatted for display (HH:MM or HH:MM:SS)
   String currentTimeDisplay = "";
-
 
   /// Currently active tab index (0=SpeakClock, 1=Timer Setup, 2=Stopwatch, 3=Goals, 4=Settings)
   int currentTabIndex = 1;
@@ -699,8 +701,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   final List<int> clockIntervalOptions = AppSettings.clockIntervalOptions;
 
   /// Allowed repetitions for each clock speech announcement
-  final List<int> clockSpeakRepeatOptions =
-      AppSettings.clockSpeakRepeatOptions;
+  final List<int> clockSpeakRepeatOptions = AppSettings.clockSpeakRepeatOptions;
 
   /// Timer announcement frequency options (announce every N minutes)
   final List<int> timerAnnounceOptions = AppSettings.timerAnnounceOptions;
@@ -950,18 +951,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
       }
     } catch (error, stackTrace) {
       debugPrint(
-        '[ERROR] Unable to load Settings voice engines: $error\n$stackTrace',
+        '[ERROR] Unable to load Settings voice engines; opening Settings '
+        'without engine choices: $error\n$stackTrace',
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _appLocalizations.mainSettingsOpenFailed(error.toString()),
-            ),
-          ),
-        );
-      }
-      return;
     }
     if (!mounted) return;
     Navigator.of(context).push(
@@ -1367,9 +1359,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final shouldMute = !normalized.speechMasterOn;
     _cancelPendingSpeech();
     await _stopTts();
-    final settingsWrite = ref.read(settingsProvider.notifier).replace(
-      normalized,
-    );
+    final settingsWrite = ref
+        .read(settingsProvider.notifier)
+        .replace(normalized);
     _speechLanguageService.setLanguage(normalized.voiceListMode);
     _voiceSessionManager.resetSession();
 
@@ -1648,7 +1640,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       );
     });
   }
-
 
   void _dispatchExternal(Future<void> Function() action) {
     _platformIntentController.dispatch(action);
@@ -2123,11 +2114,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void _restartGoalReminderTimer() =>
       _speechAnnouncementController.restartGoalReminderTimer();
 
-
-
   void _testSpeech() => _speechAnnouncementController.testSpeech();
-
-
 
   void _handleNightUsageStateChange(AppLifecycleState state) =>
       _speechAnnouncementController.handleNightUsageStateChange(state);
@@ -2141,8 +2128,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void _startNightIdleTimerIfNeeded() =>
       _speechAnnouncementController.startNightIdleTimerIfNeeded();
 
-  void _stopAudioForMute() =>
-      _speechAnnouncementController.stopAudioForMute();
+  void _stopAudioForMute() => _speechAnnouncementController.stopAudioForMute();
 
   void _speakStopwatchMessage(
     String text, {
@@ -2191,6 +2177,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       rotationScope: 'english',
     );
   }
+
   String timeToWords() => _speechAnnouncementController.timeToWords();
   void startClock() => _speechAnnouncementController.startClock();
   void stopClock() => _speechAnnouncementController.stopClock();
@@ -2207,7 +2194,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     finishedRunId: finishedRunId,
     finishedRevision: finishedRevision,
   );
-  void speak(String text, {
+  void speak(
+    String text, {
     Map<dynamic, dynamic>? voice,
     String? languageOverride,
     bool isTimerAnnouncement = false,
@@ -2269,8 +2257,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _applyAudioSettings();
   }
 
-
-
   String _formatTimerDisplayValue(
     int totalSeconds, {
     int? remainingMilliseconds,
@@ -2306,7 +2292,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     return '$base.$centiseconds';
   }
 
-
   Future<void> _restoreStopwatchRuntime() =>
       _timerRuntimeController.restoreStopwatchRuntime();
 
@@ -2322,13 +2307,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
   Future<void> _restoreTimerRuntime() =>
       _timerRuntimeController.restoreTimerRuntime();
 
-
   Future<void> _applyTimerRuntime(
     TimerRuntime runtime, {
     bool restored = false,
   }) => _timerRuntimeController.applyTimerRuntime(runtime, restored: restored);
-
-
 
   void _startTimerFromMinutes(int minutes) =>
       _startTimerFromDurationSeconds(minutes.clamp(1, 720) * 60);
@@ -2339,7 +2321,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _armedPresetValue = null;
     _timerRuntimeController.startTimerFromDurationSeconds(durationSeconds);
   }
-
 
   Future<int?> _showNormalTimerFinishedDialog() async {
     final customController = TextEditingController();
@@ -3129,9 +3110,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void onTimerSpeechFinished(String runId, int revision) {
     final useMalayalam = _isMalayalamActive(getPreferredVoice());
     speakTimerMessage(
-      useMalayalam
-          ? _malayalamTtsService.timerFinished()
-          : 'Timer finished',
+      useMalayalam ? _malayalamTtsService.timerFinished() : 'Timer finished',
       finishedRunId: runId,
       finishedRevision: revision,
     );
@@ -3142,11 +3121,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     String text, {
     required bool explicit,
     required int generation,
-  }) => _speakStopwatchMessage(
-    text,
-    explicit: explicit,
-    generation: generation,
-  );
+  }) =>
+      _speakStopwatchMessage(text, explicit: explicit, generation: generation);
 
   @override
   String stopwatchElapsedSpeechText(StopwatchRuntime runtime) =>
@@ -3252,10 +3228,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   @override
   void cancelTimerCompletionSpeech() => _cancelTimerCompletionSpeech();
 
-
   @override
   void onTimerDialogClosed() => _stopMobileRingtone();
-
 
   @override
   Widget build(BuildContext context) {
