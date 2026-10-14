@@ -128,9 +128,14 @@ class SolasFlowApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final themeMode = settings.appDarkTheme ? ThemeMode.dark : ThemeMode.light;
-    final fontSizeMultiplier = settings.appFontSizeMultiplier;
+    final themeMode = ref.watch(
+      settingsProvider.select(
+        (settings) => settings.appDarkTheme ? ThemeMode.dark : ThemeMode.light,
+      ),
+    );
+    final fontSizeMultiplier = ref.watch(
+      settingsProvider.select((settings) => settings.appFontSizeMultiplier),
+    );
 
     return WithForegroundTask(
       child: Builder(
