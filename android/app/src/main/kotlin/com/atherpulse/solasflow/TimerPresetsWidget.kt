@@ -79,13 +79,11 @@ class TimerPresetsWidget : AppWidgetProvider() {
         }
 
         private fun makeActionIntent(context: Context, action: String, widgetId: Int): PendingIntent {
-            val intent = Intent(context, MainActivity::class.java).apply {
+            val intent = Intent(context, WidgetActionReceiver::class.java).apply {
                 putExtra("widget_action", action)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
-            return PendingIntent.getActivity(
+            return PendingIntent.getBroadcast(
                 context,
-                // Use a unique request code per (action + widgetId) to avoid PendingIntent collisions
                 (action.hashCode() and 0xFFFF) or (widgetId shl 16),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

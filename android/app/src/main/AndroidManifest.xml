@@ -30,6 +30,10 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps running the timer and TTS while locked" />
         </service>
+        <receiver
+            android:name=".WidgetActionReceiver"
+            android:exported="false" />
+
 
         <activity
             android:name=".MainActivity"

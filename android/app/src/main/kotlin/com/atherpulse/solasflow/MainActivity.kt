@@ -83,35 +83,11 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        captureWidgetIntent(intent)
-    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        captureWidgetIntent(intent)
-    }
-
-    private fun captureWidgetIntent(intent: Intent?) {
-        val action = intent?.getStringExtra("widget_action") ?: return
-        intent.removeExtra("widget_action")
-        enqueueAction(action)
         widgetChannel?.invokeMethod("widgetActionsAvailable", null)
-    }
-
-    @Synchronized
-    private fun enqueueAction(action: String) {
-        val prefs = getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
-        val queue = parseQueue(prefs.getString(ACTION_QUEUE_KEY, null))
-        queue.put(
-            JSONObject()
-                .put("id", UUID.randomUUID().toString())
-                .put("action", action)
-                .put("receivedAtEpochMs", System.currentTimeMillis())
-        )
-        prefs.edit().putString(ACTION_QUEUE_KEY, queue.toString()).commit()
     }
 
     @Synchronized
@@ -163,5 +139,41 @@ class MainActivity : FlutterActivity() {
         TimerPresetsWidget.updateAllWidgets(applicationContext)
         SpeechControlsWidget.updateAllWidgets(applicationContext)
         LiveClockWidget.updateAllWidgets(applicationContext)
+    }
+}
+
+class WidgetActionReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.getStringExtra("widget_action") ?: return
+        val allowed = setOf(
+            "open_app", "open_clock", "open_fullscreen_clock_direct",
+            "toggle_speech_master", "open_fullscreen_clock",
+            "start_1m", "start_2m", "start_3m", "start_5m", "start_7m",
+            "start_10m", "start_12m", "start_15m", "start_20m", "start_25m",
+            "start_30m", "start_35m", "start_45m", "start_60m", "start_90m"
+        )
+        if (action !in allowed) return
+        val prefs = context.getSharedPreferences(
+            "FlutterSharedPreferences",
+            Context.MODE_PRIVATE
+        )
+        val queueKey = "native_widget_action_queue_v1"
+        val queue = try {
+            JSONArray(prefs.getString(queueKey, null) ?: "[]")
+        } catch (_: Exception) {
+            JSONArray()
+        }
+        queue.put(
+            JSONObject()
+                .put("id", UUID.randomUUID().toString())
+                .put("action", action)
+                .put("receivedAtEpochMs", System.currentTimeMillis())
+        )
+        prefs.edit().putString(queueKey, queue.toString()).commit()
+        context.startActivity(
+            Intent(context, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            )
+        )
     }
 }

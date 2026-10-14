@@ -101,11 +101,10 @@ class SpeechControlsWidget : AppWidgetProvider() {
             widgetId: Int,
             slot: Int
         ): PendingIntent {
-            val intent = Intent(context, MainActivity::class.java).apply {
+            val intent = Intent(context, WidgetActionReceiver::class.java).apply {
                 putExtra("widget_action", action)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
-            return PendingIntent.getActivity(
+            return PendingIntent.getBroadcast(
                 context,
                 widgetId * 10 + slot,
                 intent,

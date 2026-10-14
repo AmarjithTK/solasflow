@@ -321,9 +321,8 @@ class SpeechService {
     Map<dynamic, dynamic>? preferredVoice,
   }) async {
     final generation = _desktopSpeechGeneration;
-    final outFile = File(
-      '${Directory.systemTemp.path}/solasflow_${DateTime.now().microsecondsSinceEpoch}.wav',
-    );
+    final tempDir = await Directory.systemTemp.createTemp('solasflow_tts_');
+    final outFile = File('${tempDir.path}/speech.wav');
     try {
       final model = await _persistentModel(
         useMalayalamNuance ? 'ml' : 'en',
@@ -360,6 +359,7 @@ class SpeechService {
       return false;
     } finally {
       if (await outFile.exists()) await outFile.delete();
+      if (await tempDir.exists()) await tempDir.delete(recursive: true);
     }
   }
 
@@ -1064,35 +1064,38 @@ class SpeechService {
             lowerCommand.endsWith('offline-tts.exe');
 
         if (isFileGenerator) {
+          final tempDir = await Directory.systemTemp.createTemp(
+            'solasflow_tts_',
+          );
           final outFile =
-              '${Directory.systemTemp.path}${Platform.pathSeparator}sherpa_tts_${DateTime.now().microsecondsSinceEpoch}.wav';
-          final generated = await _runExternal(command, [
-            ...baseModelArgs(),
-            '--output-filename=$outFile',
-            text,
-          ]);
-          if (generated && await File(outFile).exists()) {
-            if (generation != _desktopSpeechGeneration) {
-              await File(outFile).delete();
-              return true;
-            }
-            final played = await _playWaveFile(
-              outFile,
-              volume: volume,
-              generation: generation,
-            );
-            try {
-              await File(outFile).delete();
-            } catch (_) {}
-            if (played && generation == _desktopSpeechGeneration) {
-              _setEngineStatus(
-                'sherpa',
-                model['description']?.toString() ??
-                    'Sherpa ${model['id'] ?? language}',
+              '${tempDir.path}${Platform.pathSeparator}speech.wav';
+          try {
+            final generated = await _runExternal(command, [
+              ...baseModelArgs(),
+              '--output-filename=$outFile',
+              text,
+            ]);
+            if (generated && await File(outFile).exists()) {
+              if (generation != _desktopSpeechGeneration) return true;
+              final played = await _playWaveFile(
+                outFile,
+                volume: volume,
+                generation: generation,
               );
-              return true;
+              if (played && generation == _desktopSpeechGeneration) {
+                _setEngineStatus(
+                  'sherpa',
+                  model['description']?.toString() ??
+                      'Sherpa ${model['id'] ?? language}',
+                );
+                return true;
+              }
+              if (generation != _desktopSpeechGeneration) return true;
             }
-            if (generation != _desktopSpeechGeneration) return true;
+          } finally {
+            if (await Directory(tempDir.path).exists()) {
+              await Directory(tempDir.path).delete(recursive: true);
+            }
           }
         }
 
