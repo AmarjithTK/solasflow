@@ -52,9 +52,7 @@
 // ## Future Roadmap
 //
 // - [ ] Custom preset creation UI
-// - [ ] Session history & analytics
 // - [ ] Haptic feedback on timer complete
-// - [ ] Circular progress indicator widget
 // - [ ] Cloud sync of settings & session history
 // - [ ] Wear OS companion app
 // - [ ] Export session data to Google Fit
@@ -973,7 +971,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
               appDarkTheme = val;
               _lsSave();
             });
-            debugPrint('[UI] App dark theme enabled=$val');
           },
           onAppFontSizeMultiplierChanged: (val) {
             if (val != null) {
@@ -1142,13 +1139,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
           onPickSleepStart: () => unawaited(_pickSleepStartTime()),
           onPickSleepEnd: () => unawaited(_pickSleepEndTime()),
           onVoiceListModeChanged: (val) {
-            debugPrint('[SettingsPanel] onVoiceListModeChanged val=$val');
             if (val == null) return;
             _voiceSessionManager.resetSession();
             _cancelPendingSpeech();
             setState(() {
               final normalized = _speechService.normalizeVoiceLanguageMode(val);
-              debugPrint('[SettingsPanel] normalized language=$normalized');
               voiceListMode = normalized;
               _speechLanguageService.setLanguage(normalized);
               final available = _availableVoicesForSettings();
@@ -1170,7 +1165,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
             if (val != null) unawaited(_changeSpeechEngineMode(val));
           },
           onFavoriteVoiceChanged: (val) {
-            debugPrint('[SettingsPanel] onFavoriteVoiceChanged val=$val');
             _cancelPendingSpeech();
             setState(() {
               if (val == null || val == '__auto__') {

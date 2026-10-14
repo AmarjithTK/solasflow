@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
 
 class AudioService {
   final AudioPlayer _backgroundPlayer = AudioPlayer();
@@ -72,7 +71,6 @@ class AudioService {
     if (_disposed || active == _speechDucking) return _operationTail;
     _speechDucking = active;
     final revision = ++_volumeRevision;
-    debugPrint('[AudioService] Speech ducking ${active ? 'on' : 'off'}');
     return _enqueue(() async {
       if (_disposed || revision != _volumeRevision || !_backgroundPlaying) {
         return;
@@ -88,7 +86,6 @@ class AudioService {
     const duration = Duration(milliseconds: 350);
     const interval = Duration(milliseconds: 25);
     final elapsed = Stopwatch()..start();
-    debugPrint('[AudioService] Ambient volume ramp $start -> $target');
     while (!_disposed && revision == _volumeRevision) {
       final progress = (elapsed.elapsedMicroseconds / duration.inMicroseconds)
           .clamp(0.0, 1.0);
@@ -98,12 +95,10 @@ class AudioService {
       await _backgroundPlayer.setVolume(volume);
       _activeVolume = volume;
       if (progress >= 1) {
-        debugPrint('[AudioService] Ambient volume ramp complete');
         return;
       }
       await Future<void>.delayed(interval);
     }
-    debugPrint('[AudioService] Ambient volume ramp cancelled');
   }
 
   Future<void> playNotification({
