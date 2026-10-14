@@ -444,7 +444,11 @@ class TimerRuntimeController {
             runId: timerRuntime.runId,
             revision: timerRuntime.revision + 1,
           );
-          await _runtimeStore.save(timerRuntime);
+          try {
+            await _runtimeStore.save(timerRuntime);
+          } catch (_) {
+            // PersistenceErrorReporter already notified by _runtimeStore.
+          }
           if (!_host.mounted || workGeneration != timerWorkGeneration) return;
           if (_host.taggingOn && sessionStartTime != null) {
             _logCurrentSession(_taggedElapsedSeconds(0), sessionId: sessionId);
@@ -470,7 +474,11 @@ class TimerRuntimeController {
         chainIndex: chainIndex,
         revision: timerRuntime.revision + 1,
       );
-      await _runtimeStore.save(timerRuntime);
+      try {
+        await _runtimeStore.save(timerRuntime);
+      } catch (_) {
+        // PersistenceErrorReporter already notified by _runtimeStore.
+      }
       if (!_host.mounted || workGeneration != timerWorkGeneration) return;
       _changedTimer();
       await _host.applyAudioSettings();
@@ -623,15 +631,18 @@ class TimerRuntimeController {
       return;
     }
     _invalidateTimerWork();
+    final previousRemaining = timerRuntime.remainingAt(DateTime.now());
     final remaining =
-        (timerRuntime.remainingAt(DateTime.now()) + additionalSeconds).clamp(
-          1,
-          720 * 60,
-        );
-    final duration = (timerRuntime.durationSeconds + additionalSeconds).clamp(
+        (previousRemaining + additionalSeconds).clamp(1, 720 * 60);
+    final appliedDelta = remaining - previousRemaining;
+    final duration = (timerRuntime.durationSeconds + appliedDelta).clamp(
       1,
       720 * 60,
     );
+    if (sessionStartRemainingSeconds != null) {
+      sessionStartRemainingSeconds =
+          (sessionStartRemainingSeconds! + appliedDelta).clamp(1, 720 * 60);
+    }
     timerRuntime = TimerRuntime.running(
       durationSeconds: duration,
       remainingSeconds: remaining,
@@ -641,7 +652,10 @@ class TimerRuntimeController {
       chainIndex: chainIndex,
       runId: timerRuntime.runId,
       segmentStartRemainingSeconds:
-          timerRuntime.segmentStartRemainingSeconds + additionalSeconds,
+          (timerRuntime.segmentStartRemainingSeconds + appliedDelta).clamp(
+            1,
+            720 * 60,
+          ),
       revision: timerRuntime.revision + 1,
     );
     _sliderMinutesOverride = (remaining / 60).ceil().clamp(1, 720);

@@ -120,7 +120,11 @@ class PresetGrid extends StatelessWidget {
   }
 
   String _formatLabel(int minutes) {
-    if (minutes >= 60) return '${minutes ~/ 60}h';
+    if (minutes >= 60) {
+      final h = minutes ~/ 60;
+      final m = minutes % 60;
+      return m == 0 ? '${h}h' : '${h}h ${m}m';
+    }
     return '${minutes}m';
   }
 }
