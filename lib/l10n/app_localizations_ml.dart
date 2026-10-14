@@ -1238,6 +1238,12 @@ class AppLocalizationsMl extends AppLocalizations {
   }
 
   @override
+  String get settingsPanelBuiltBy => 'നിർമ്മിച്ചത്: അമർജിത്ത് ടി.കെ.';
+
+  @override
+  String get settingsPanelCompany => 'ഏതർപൾസ് ടെക്നോളജീസ്';
+
+  @override
   String get mainPersistenceWriteFailed =>
       'ആപ്പ് ഡാറ്റ സംരക്ഷിക്കാനായില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.';
 }

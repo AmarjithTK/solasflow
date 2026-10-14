@@ -195,8 +195,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   @override
   void setSpeechActive(bool active) {
-    if (mounted && isSpeechActive != active)
+    if (mounted && isSpeechActive != active) {
       setState(() => isSpeechActive = active);
+    }
   }
 
   @override

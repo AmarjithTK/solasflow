@@ -2282,6 +2282,18 @@ abstract class AppLocalizations {
   /// **'{minutes} minute timer completed.'**
   String mainDesktopTimerFinishedBody(int minutes);
 
+  /// No description provided for @settingsPanelBuiltBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Built by Amarjith TK'**
+  String get settingsPanelBuiltBy;
+
+  /// No description provided for @settingsPanelCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Atherpulse Technologies'**
+  String get settingsPanelCompany;
+
   /// No description provided for @mainPersistenceWriteFailed.
   ///
   /// In en, this message translates to:

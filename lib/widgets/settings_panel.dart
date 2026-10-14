@@ -535,6 +535,12 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     );
   }
 
+  String _formatMinutesAsTime(BuildContext context, int totalMinutes) {
+    final normalized = totalMinutes % (24 * 60);
+    final time = TimeOfDay(hour: normalized ~/ 60, minute: normalized % 60);
+    return MaterialLocalizations.of(context).formatTimeOfDay(time);
+  }
+
   String _soundTitle(BuildContext context, String link) {
     final l10n = AppLocalizations.of(context)!;
     for (final sound in widget.soundList) {
@@ -580,12 +586,15 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     }
     if (lower.contains('female')) return l10n.settingsPanelFemale;
     if (lower.contains('male')) return l10n.settingsPanelMale;
-    if (locale.toLowerCase().startsWith('en-in'))
+    if (locale.toLowerCase().startsWith('en-in')) {
       return l10n.settingsPanelIndianEnglish;
-    if (locale.toLowerCase().startsWith('en-us'))
+    }
+    if (locale.toLowerCase().startsWith('en-us')) {
       return l10n.settingsPanelUsEnglish;
-    if (locale.toLowerCase().startsWith('en-gb'))
+    }
+    if (locale.toLowerCase().startsWith('en-gb')) {
       return l10n.settingsPanelUkEnglish;
+    }
     return name;
   }
 
@@ -629,8 +638,9 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     final fav = s.favoriteVoiceName;
     if (fav == null || fav == '__auto__' || fav == '__rotate__') {
       final lang = s.voiceListMode.toLowerCase();
-      if (lang == 'malayalam')
+      if (lang == 'malayalam') {
         return l10n.settingsPanelRotateAllMalayalamVoices;
+      }
       if (lang == 'english') return l10n.settingsPanelRotateVoicesDefault;
       return l10n.settingsPanelRotateVoicesDefault;
     }
@@ -1177,7 +1187,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               context,
               icon: Icons.schedule_rounded,
               title: l10n.sleepStartLabel,
-              value: widget.sleepStartLabel,
+              value: _formatMinutesAsTime(context, s.sleepStartMinutes),
               onTap: widget.onPickSleepStart,
             ),
             _settingsDivider(context),
@@ -1185,7 +1195,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               context,
               icon: Icons.alarm_rounded,
               title: l10n.sleepEndLabel,
-              value: widget.sleepEndLabel,
+              value: _formatMinutesAsTime(context, s.sleepEndMinutes),
               onTap: widget.onPickSleepEnd,
             ),
           ],
@@ -1261,7 +1271,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               size: 22,
             ),
             title: Text(
-              'Built by Amarjith TK',
+              l10n.settingsPanelBuiltBy,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -1269,7 +1279,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               ),
             ),
             subtitle: Text(
-              'Atherpulse Technologies',
+              l10n.settingsPanelCompany,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 12,

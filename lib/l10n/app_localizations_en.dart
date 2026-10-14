@@ -1218,6 +1218,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsPanelBuiltBy => 'Built by Amarjith TK';
+
+  @override
+  String get settingsPanelCompany => 'Atherpulse Technologies';
+
+  @override
   String get mainPersistenceWriteFailed =>
       'Could not save app data. Please try again.';
 }

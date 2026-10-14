@@ -597,5 +597,7 @@
       }
     }
   },
+  "settingsPanelBuiltBy": "Built by Amarjith TK",
+  "settingsPanelCompany": "Atherpulse Technologies",
   "mainPersistenceWriteFailed": "Could not save app data. Please try again."
 }
