@@ -442,11 +442,14 @@ class SpeechAnnouncementController {
         await _audioService.setSpeechDucking(false);
       }
       if (identical(_activeSpeechItem, item)) _activeSpeechItem = null;
+      if (_host.mounted) {
+        isSpeechActive = false;
+        _host.setSpeechActive(false);
+        if (generation == _speechGeneration && !_isAudioMuted()) {
+          unawaited(drainQueue());
+        }
+      }
     }
-    if (!_host.mounted) return;
-    isSpeechActive = false;
-    _host.setSpeechActive(false);
-    if (generation == _speechGeneration) unawaited(drainQueue());
   }
 
   void stopClock() {
@@ -846,7 +849,9 @@ class SpeechAnnouncementController {
   void announceNextGoalReminder({required bool force}) {
     final items = _settings.goalReminderItems;
     if ((!_settings.goalReminderOn && !force) || items.isEmpty) return;
-    final index = _host.goalReminderNextIndex % items.length;
+    final index =
+        ((_host.goalReminderNextIndex % items.length) + items.length) %
+        items.length;
     _host.setGoalReminderNextIndex((index + 1) % items.length);
     _host.saveSettings();
     speakGoalReminderMessage(

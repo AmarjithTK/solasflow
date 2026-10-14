@@ -507,7 +507,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               borderRadius: BorderRadius.circular(4),
             ),
           ],
-          if (canStart || status.phase == SpeechModelDownloadPhase.downloading)
+          if (canStart || status.isBusy)
             Align(
               alignment: Alignment.centerRight,
               child: canStart

@@ -196,7 +196,10 @@ class AppSettings {
         .where((item) => item.isNotEmpty)
         .toSet()
         .toList(growable: false);
-    final nextIndex = items.isEmpty ? 0 : goalReminderNextIndex % items.length;
+    final nextIndex = items.isEmpty
+        ? 0
+        : ((goalReminderNextIndex % items.length) + items.length) %
+            items.length;
     final voiceMode = switch (voiceListMode.trim().toLowerCase()) {
       'english' => 'english',
       'malayalam' => 'malayalam',

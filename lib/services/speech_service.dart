@@ -488,9 +488,7 @@ class SpeechService {
 
   Future<void> cancelKokoroVoiceDownload() async {
     final active = _kokoroDownloadFuture;
-    if (active == null ||
-        kokoroDownloadStatus.value.phase !=
-            SpeechModelDownloadPhase.downloading) {
+    if (active == null || !kokoroDownloadStatus.value.isBusy) {
       return;
     }
     _kokoroCancelRequested = true;
