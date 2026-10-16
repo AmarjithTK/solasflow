@@ -70,6 +70,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/persistence_error_reporter.dart';
 import 'core/pref_keys.dart';
+import 'core/safe_preference_reads.dart';
 import 'providers/app_state.dart';
 import 'theme/app_theme.dart';
 
@@ -199,13 +200,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
   @override
   void setSpeechActive(bool active) {
     if (mounted && isSpeechActive != active) {
-      setState(() => isSpeechActive = active);
+      isSpeechActive = active;
     }
   }
 
   @override
   void setVoices(List<Map<dynamic, dynamic>> value) {
-    if (mounted) setState(() => voices = value);
+    voices = value;
   }
 
   @override
@@ -634,11 +635,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     FullscreenFocusMode.clock,
   );
 
-  /// True when the timer has finished but the dialog hasn't been
-  /// dismissed yet.  Used by the foreground notification to show
-  /// "Timer finished!" with action buttons.
-  bool _isTimerFinished = false;
-
   /// Presets shown in the timer-finished popup.
   final List<int> _timerFinishedPresetMinutes = [
     1,
@@ -799,7 +795,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
   @override
   bool get foregroundBackgroundPersistence => backgroundPersistenceOn;
   @override
-  bool get foregroundTimerFinished => _isTimerFinished;
+  bool get foregroundTimerFinished =>
+      _timerRuntime.status == TimerRuntimeStatus.finished;
   @override
   String get foregroundTimerValue => timerDisplayValue;
   @override
@@ -1659,7 +1656,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
       }
       if (type == 'runtime' && data['snapshot'] is Map) {
         final snapshot = Map<String, dynamic>.from(data['snapshot'] as Map);
-        await _applyTimerRuntime(TimerRuntime.fromJson(snapshot));
+        final incoming = TimerRuntime.fromJson(snapshot);
+        if (incoming.status == TimerRuntimeStatus.idle &&
+            _timerRuntime.status == TimerRuntimeStatus.finished) {
+          await _dismissFinishedTimer();
+        } else {
+          await _applyTimerRuntime(incoming);
+        }
         if (data['stopwatch'] is Map) {
           await _timerRuntimeController.applyStopwatchRuntime(
             StopwatchRuntime.fromJson(
@@ -1725,7 +1728,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _timerRuntimeController.resetTimer();
     await _timerRuntimeStore.save(_timerRuntimeController.timerRuntime);
     if (!mounted) return;
-    setState(() => _isTimerFinished = false);
     await _reconcileForeground(force: true);
   }
 
@@ -1942,7 +1944,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       chainModeOn = false;
       chainIndex = 0;
       sliderValue = safeMins;
-      _isTimerFinished = false;
       fullscreenShowClock = true;
     });
     _timerRuntimeController.replaceWithWidgetPreset(safeMins * 60);
@@ -2223,10 +2224,19 @@ class _MainScreenState extends ConsumerState<MainScreen>
       if (clockOn) _scheduleNextClockAnnouncement();
       _applyAudioSettings();
       _dispatchExternal(() async {
-        if (timerInterval == null ||
-            _timerRuntime.status != TimerRuntimeStatus.running) {
-          await _restoreTimerRuntime();
+        final prefs = await SharedPreferences.getInstance();
+        try {
+          await prefs.reload();
+        } catch (_) {}
+        final taskOverride = SafePreferenceReads.boolean(
+          prefs,
+          SettingsService.speechMasterOverrideKey,
+        );
+        if (taskOverride != null && taskOverride != speechMasterOn) {
+          await _setSpeechMaster(taskOverride);
         }
+        await _restoreTimerRuntime();
+        await _restoreStopwatchRuntime();
         await _drainWidgetActions();
         await _reconcileForeground(force: true);
       });
@@ -2656,7 +2666,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void resetTimer() {
     _timerRuntimeController.resetTimer();
-    if (mounted) setState(() => _isTimerFinished = false);
   }
 
   void choosePreset(int value) {
@@ -3074,7 +3083,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       this.chainIndex = chainIndex;
       chainModeOn = runtime.chainModeOn;
       chainPresetKey = runtime.chainPresetKey;
-      _isTimerFinished = finished;
     });
   }
 

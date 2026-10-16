@@ -62,6 +62,7 @@ abstract interface class TimerRuntimeControllerHost {
   Future<void> dismissFinishedTimer();
   Future<void> refreshTimerSummary();
   void cancelTimerCompletionSpeech();
+  void stopMobileRingtone();
   void onStopwatchSpeechGenerationChanged(int generation);
   void onTimerDialogClosed();
 }
@@ -196,10 +197,6 @@ class TimerRuntimeController {
   }
 
   Future<void> restoreTimerRuntime() async {
-    if (timerTicker != null &&
-        timerRuntime.status == TimerRuntimeStatus.running) {
-      return;
-    }
     await applyTimerRuntime(await _runtimeStore.load(), restored: true);
   }
 
@@ -316,8 +313,11 @@ class TimerRuntimeController {
         timerTicker != null &&
         timerRuntime.status == TimerRuntimeStatus.running;
     if (isLocallyRunning) {
-      if (runtime.status == TimerRuntimeStatus.idle ||
-          (runtime.runId.isNotEmpty && runtime.runId != timerRuntime.runId) ||
+      if ((runtime.status == TimerRuntimeStatus.idle &&
+              runtime.revision <= timerRuntime.revision) ||
+          (runtime.runId.isNotEmpty &&
+              runtime.runId != timerRuntime.runId &&
+              runtime.revision <= timerRuntime.revision) ||
           runtime.revision < timerRuntime.revision) {
         return;
       }
@@ -331,8 +331,10 @@ class TimerRuntimeController {
         runtime.status != timerRuntime.status;
     if (replacesCurrentRun) _invalidateTimerWork();
     var next = runtime;
-    if (timerRuntime.status == TimerRuntimeStatus.finished &&
-        next.status == TimerRuntimeStatus.running) {
+    final wasFinished = timerRuntime.status == TimerRuntimeStatus.finished;
+    if (wasFinished && next.status != TimerRuntimeStatus.finished) {
+      _host.stopMobileRingtone();
+      _host.cancelTimerCompletionSpeech();
       unawaited(_host.stopNotification());
     }
     if (next.status == TimerRuntimeStatus.running &&
@@ -516,6 +518,7 @@ class TimerRuntimeController {
     if (timerTicker != null) return;
     if (timerRuntime.status == TimerRuntimeStatus.finished) {
       _host.cancelTimerCompletionSpeech();
+      _host.stopMobileRingtone();
     }
     unawaited(_host.stopNotification());
     _invalidateTimerWork();
@@ -611,6 +614,12 @@ class TimerRuntimeController {
 
   void resetTimer() {
     _invalidateTimerWork();
+    final wasFinished = timerRuntime.status == TimerRuntimeStatus.finished;
+    if (wasFinished) {
+      _host.stopMobileRingtone();
+      _host.cancelTimerCompletionSpeech();
+      unawaited(_host.stopNotification());
+    }
     if (timerTicker != null) stopTimer();
     timerTicker?.cancel();
     timerTicker = null;
