@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppSettings {
   static const volumeOptions = [0.1, 0.2, 0.6, 0.8, 1.0];
   static const clockIntervalOptions = [1, 2, 5, 10, 15, 20, 30, 60];
@@ -659,4 +661,108 @@ class AppSettings {
     final value = json[key];
     return value is num ? value.toDouble() : fallback;
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is AppSettings &&
+        other.soundChosen == soundChosen &&
+        other.noiseVolume == noiseVolume &&
+        other.speakVolume == speakVolume &&
+        other.maximumSpeechVolume == maximumSpeechVolume &&
+        other.clockOn == clockOn &&
+        other.clockIntervalMins == clockIntervalMins &&
+        other.clockShowMilliseconds == clockShowMilliseconds &&
+        other.clockShowSeconds == clockShowSeconds &&
+        other.clockSpeakTime == clockSpeakTime &&
+        other.clockSpeakRepeatCount == clockSpeakRepeatCount &&
+        other.clockNoiseOn == clockNoiseOn &&
+        other.motivationOn == motivationOn &&
+        other.motivationCategory == motivationCategory &&
+        other.motivationDelaySeconds == motivationDelaySeconds &&
+        other.timerSpeakOn == timerSpeakOn &&
+        other.timerAnnounceEvery == timerAnnounceEvery &&
+        other.timerShowMilliseconds == timerShowMilliseconds &&
+        other.timerNoiseOn == timerNoiseOn &&
+        other.goalReminderOn == goalReminderOn &&
+        other.goalReminderIntervalMins == goalReminderIntervalMins &&
+        listEquals(other.goalReminderItems, goalReminderItems) &&
+        other.goalReminderNextIndex == goalReminderNextIndex &&
+        other.stopwatchSpeakOn == stopwatchSpeakOn &&
+        other.stopwatchShowMilliseconds == stopwatchShowMilliseconds &&
+        other.stopwatchSpeakDelaySeconds == stopwatchSpeakDelaySeconds &&
+        other.muteSpeechAfterMidnight == muteSpeechAfterMidnight &&
+        other.nightMuteMode == nightMuteMode &&
+        other.sleepStartMinutes == sleepStartMinutes &&
+        other.sleepEndMinutes == sleepEndMinutes &&
+        other.appDarkTheme == appDarkTheme &&
+        other.fullscreenDarkTheme == fullscreenDarkTheme &&
+        other.fullscreenDimBrightness == fullscreenDimBrightness &&
+        other.fullscreenStartLandscape == fullscreenStartLandscape &&
+        other.fullscreenShowClock == fullscreenShowClock &&
+        other.fullscreenClockScale == fullscreenClockScale &&
+        other.voiceListMode == voiceListMode &&
+        other.speechEngineMode == speechEngineMode &&
+        other.favoriteVoiceName == favoriteVoiceName &&
+        other.favoriteVoiceLocale == favoriteVoiceLocale &&
+        other.speechMasterOn == speechMasterOn &&
+        other.appFontSizeMultiplier == appFontSizeMultiplier &&
+        other.backgroundPersistenceOn == backgroundPersistenceOn &&
+        other.fullscreenDimBrightnessLevel == fullscreenDimBrightnessLevel &&
+        other.taggingOn == taggingOn &&
+        other.sessionTag == sessionTag &&
+        other.chainModeOn == chainModeOn &&
+        other.chainPresetKey == chainPresetKey;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        soundChosen,
+        noiseVolume,
+        speakVolume,
+        maximumSpeechVolume,
+        clockOn,
+        clockIntervalMins,
+        clockShowMilliseconds,
+        clockShowSeconds,
+        clockSpeakTime,
+        clockSpeakRepeatCount,
+        clockNoiseOn,
+        motivationOn,
+        motivationCategory,
+        motivationDelaySeconds,
+        timerSpeakOn,
+        timerAnnounceEvery,
+        timerShowMilliseconds,
+        timerNoiseOn,
+        goalReminderOn,
+        goalReminderIntervalMins,
+        Object.hashAll(goalReminderItems),
+        goalReminderNextIndex,
+        stopwatchSpeakOn,
+        stopwatchShowMilliseconds,
+        stopwatchSpeakDelaySeconds,
+        muteSpeechAfterMidnight,
+        nightMuteMode,
+        sleepStartMinutes,
+        sleepEndMinutes,
+        appDarkTheme,
+        fullscreenDarkTheme,
+        fullscreenDimBrightness,
+        fullscreenStartLandscape,
+        fullscreenShowClock,
+        fullscreenClockScale,
+        voiceListMode,
+        speechEngineMode,
+        favoriteVoiceName,
+        favoriteVoiceLocale,
+        speechMasterOn,
+        appFontSizeMultiplier,
+        backgroundPersistenceOn,
+        fullscreenDimBrightnessLevel,
+        taggingOn,
+        sessionTag,
+        chainModeOn,
+        chainPresetKey,
+      ]);
 }

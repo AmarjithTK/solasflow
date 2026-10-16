@@ -25,6 +25,9 @@ class SettingsService {
   Future<AppSettings> load({required String defaultSound}) async {
     await flush();
     final prefs = await SharedPreferences.getInstance();
+    try {
+      await prefs.reload();
+    } catch (_) {}
     await _runLegacyMigrations(prefs);
 
     AppSettings settings;
@@ -102,6 +105,9 @@ class SettingsService {
 
   Future<void> acknowledgeSpeechMasterOverride(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
+    try {
+      await prefs.reload();
+    } catch (_) {}
     if (SafePreferenceReads.boolean(prefs, speechMasterOverrideKey) ==
         enabled) {
       final removed = await prefs.remove(speechMasterOverrideKey);

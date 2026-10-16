@@ -26,12 +26,16 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   Future<void> replace(AppSettings settings) {
     final snapshot = settings.normalized();
+    if (snapshot == state) return Future.value();
+    _bootSettings = snapshot;
     state = snapshot;
     return _persist(snapshot);
   }
 
   Future<void> update(AppSettings Function(AppSettings current) transform) {
     final snapshot = transform(state).normalized();
+    if (snapshot == state) return Future.value();
+    _bootSettings = snapshot;
     state = snapshot;
     return _persist(snapshot);
   }
