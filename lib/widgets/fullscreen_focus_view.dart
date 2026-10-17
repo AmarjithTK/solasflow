@@ -456,6 +456,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
     AppLocalizations l10n,
     Color fg,
     Color primary,
+    Color onPrimary,
     Color outline,
   ) {
     final bool isTimer = _mode == FullscreenFocusMode.timer;
@@ -467,6 +468,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
       VoidCallback? onPressed, {
       bool isPrimary = false,
     }) {
+      final btnFg = isPrimary ? onPrimary : fg;
       return Expanded(
         child: Material(
           color: isPrimary ? primary : Colors.transparent,
@@ -481,6 +483,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                   },
             child: Container(
               height: isPrimary ? 52 : 48,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: isPrimary ? Colors.transparent : outline,
@@ -491,14 +494,20 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, color: isPrimary ? Colors.white : fg, size: 20),
+                  Icon(icon, color: btnFg, size: 20),
                   const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isPrimary ? Colors.white : fg,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: btnFg,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -775,7 +784,13 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                       const Spacer(),
                       // ── Start/Stop/Reset (Timer & Stopwatch modes) ────────
                       if (showActionButtons) ...[
-                        _buildActionButtons(l10n, fg, primary, outline),
+                        _buildActionButtons(
+                          l10n,
+                          fg,
+                          primary,
+                          c.primaryActionOn,
+                          outline,
+                        ),
                         const SizedBox(height: 14),
                       ],
                     ],

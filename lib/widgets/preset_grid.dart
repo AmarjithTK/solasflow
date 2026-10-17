@@ -70,7 +70,8 @@ class PresetGrid extends StatelessWidget {
                     rowItems.add(
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.only(right: spacing),
+                          padding:
+                              const EdgeInsetsDirectional.only(end: spacing),
                           child: _PresetChip(
                             label: _formatLabel(presets[i]),
                             selected: presets[i] == selectedValue,
@@ -85,7 +86,8 @@ class PresetGrid extends StatelessWidget {
                     rowItems.add(
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.only(right: spacing),
+                          padding:
+                              const EdgeInsetsDirectional.only(end: spacing),
                           child: _PresetChip(
                             label: '',
                             selected: false,
@@ -159,41 +161,58 @@ class _PresetChip extends StatelessWidget {
     } else if (selected) {
       bgColor = colors.accent;
       borderColor = colors.accent;
-      textColor = Colors.white;
+      textColor = colors.primaryActionOn;
     } else {
       bgColor = Colors.transparent;
       borderColor = colors.chipBorder;
       textColor = colors.textPrimary;
     }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        height: 36,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: borderColor, width: 1),
-        ),
-        child: iconOnly
-            ? Center(
-                child: Icon(Icons.edit_rounded, size: 16, color: textColor),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      color: textColor,
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+    final semanticLabel = iconOnly
+        ? AppLocalizations.of(context)!.timerPanelCustomTimer
+        : label;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticLabel,
+      child: Tooltip(
+        message: semanticLabel,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            height: 36,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderColor, width: 1),
+            ),
+            child: iconOnly
+                ? Center(
+                    child: Icon(Icons.edit_rounded, size: 16, color: textColor),
+                  )
+                : Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          style: GoogleFonts.inter(
+                            color: textColor,
+                            fontSize: 13,
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+          ),
+        ),
       ),
     );
   }

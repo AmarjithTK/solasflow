@@ -80,29 +80,41 @@ class _NavTab extends StatelessWidget {
     final activeColor = colors.navActive;
     final inactiveColor = colors.navInactive;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        AnimatedScale(
-          scale: selected ? 1.0 : 0.85,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          child: Icon(
-            destination.icon,
-            size: 22,
-            color: selected ? activeColor : inactiveColor,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.label,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedScale(
+            scale: selected ? 1.0 : 0.85,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            child: Icon(
+              destination.icon,
+              size: 22,
+              color: selected ? activeColor : inactiveColor,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          destination.label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? activeColor : inactiveColor,
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                destination.label,
+                maxLines: 1,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? activeColor : inactiveColor,
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

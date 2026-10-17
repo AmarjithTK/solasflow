@@ -96,11 +96,15 @@ class ClockPanel extends StatelessWidget {
             const SizedBox(height: 16),
 
             // ── Hero clock display ───────────────────────────────
-            GestureDetector(
-              onTap: onFullscreenPressed,
-              onDoubleTap: onFullscreenImmersivePressed,
-              child: Center(
-                child: Container(
+            Semantics(
+              button: true,
+              label: AppLocalizations.of(context)!.clockPanelCurrentTime,
+              hint: AppLocalizations.of(context)!.timerPanelFullscreenHint,
+              child: GestureDetector(
+                onTap: onFullscreenPressed,
+                onDoubleTap: onFullscreenImmersivePressed,
+                child: Center(
+                  child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     vertical: 36,
@@ -165,6 +169,7 @@ class ClockPanel extends StatelessWidget {
                 ),
               ),
             ),
+          ),
             const SizedBox(height: 24),
 
             // ── Sound / Noise / Quotes toggle row ────────────────
@@ -475,12 +480,19 @@ class _FeatureToggle extends StatelessWidget {
                   size: 22,
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    color: active ? c.textPrimary : c.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: GoogleFonts.inter(
+                        color: active ? c.textPrimary : c.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -489,7 +501,7 @@ class _FeatureToggle extends StatelessWidget {
                       ? AppLocalizations.of(context)!.clockPanelOn
                       : AppLocalizations.of(context)!.clockPanelOff,
                   style: GoogleFonts.inter(
-                    color: active ? c.accent : c.textMuted,
+                    color: active ? c.accent : c.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),

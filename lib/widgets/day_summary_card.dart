@@ -34,8 +34,11 @@ class DaySummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final studyColor = Colors.green;
-    final nonStudyColor = Colors.amber;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final studyColor =
+        isLight ? const Color(0xFF15803D) : const Color(0xFF4ADE80);
+    final nonStudyColor =
+        isLight ? const Color(0xFFB45309) : const Color(0xFFFBBF24);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -53,15 +56,19 @@ class DaySummaryCard extends StatelessWidget {
                 // Day header
                 Row(
                   children: [
-                    Text(
-                      _dayLabel(context),
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface,
+                    Expanded(
+                      child: Text(
+                        _dayLabel(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       summary.totalFormatted,
                       style: GoogleFonts.inter(
@@ -125,15 +132,19 @@ class _SummaryRow extends StatelessWidget {
           child: Icon(icon, size: 16, color: color),
         ),
         const SizedBox(width: 10),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: cs.onSurfaceVariant,
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         Text(
           time,
           style: GoogleFonts.inter(

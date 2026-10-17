@@ -47,6 +47,8 @@ class SettingsRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -56,12 +58,19 @@ class SettingsRow extends StatelessWidget {
                 ),
                 ?trailing,
                 if (trailing == null && value != null) ...[
-                  Text(
-                    value!,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
+                  const SizedBox(width: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    child: Text(
+                      value!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ),
                 ],
@@ -115,26 +124,34 @@ class SettingsToggleRow extends StatelessWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18, color: colors.textSecondary),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textPrimary,
+        InkWell(
+          onTap: () => onChanged(!value),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 18, color: colors.textSecondary),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-              Switch(value: value, onChanged: onChanged),
-            ],
+                Semantics(
+                  label: label,
+                  child: Switch(value: value, onChanged: onChanged),
+                ),
+              ],
+            ),
           ),
         ),
         if (showDivider)

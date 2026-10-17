@@ -113,11 +113,15 @@ class StopwatchPanel extends StatelessWidget {
             const SizedBox(height: 16),
 
             // ── Hero elapsed display ─────────────────────────────
-            GestureDetector(
-              onTap: onFullscreenPressed,
-              onDoubleTap: onFullscreenImmersivePressed,
-              child: Center(
-                child: Container(
+            Semantics(
+              button: true,
+              label: AppLocalizations.of(context)!.stopwatchPanelElapsed,
+              hint: AppLocalizations.of(context)!.timerPanelFullscreenHint,
+              child: GestureDetector(
+                onTap: onFullscreenPressed,
+                onDoubleTap: onFullscreenImmersivePressed,
+                child: Center(
+                  child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     vertical: 36,
@@ -172,6 +176,7 @@ class StopwatchPanel extends StatelessWidget {
                 ),
               ),
             ),
+          ),
             const SizedBox(height: 24),
 
             // ── Action buttons (all equal size) ─────────────────

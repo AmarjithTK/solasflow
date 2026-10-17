@@ -808,12 +808,19 @@ class _FeatureToggle extends StatelessWidget {
                   size: 22,
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    color: active ? c.textPrimary : c.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: GoogleFonts.inter(
+                        color: active ? c.textPrimary : c.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -822,7 +829,7 @@ class _FeatureToggle extends StatelessWidget {
                       ? AppLocalizations.of(context)!.timerPanelOn
                       : AppLocalizations.of(context)!.timerPanelOff,
                   style: GoogleFonts.inter(
-                    color: active ? c.accent : c.textMuted,
+                    color: active ? c.accent : c.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
