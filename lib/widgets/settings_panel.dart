@@ -509,7 +509,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           ],
           if (canStart || status.isBusy)
             Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: canStart
                   ? FilledButton.tonalIcon(
                       onPressed: widget.onDownloadEnglishVoice,
@@ -849,7 +849,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           ),
           if (s.goalReminderItems.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(72, 0, 16, 12),
+              padding: const EdgeInsetsDirectional.fromSTEB(72, 0, 16, 12),
               child: Text(
                 l10n.settingsPanelNoGoalsSaved,
                 style: const TextStyle(fontSize: 12),
@@ -858,7 +858,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           for (final goal in s.goalReminderItems)
             ListTile(
               dense: true,
-              contentPadding: const EdgeInsets.only(left: 72, right: 8),
+              contentPadding: const EdgeInsetsDirectional.only(start: 72, end: 8),
               title: Text(goal),
               trailing: IconButton(
                 tooltip: l10n.settingsPanelRemoveGoal,

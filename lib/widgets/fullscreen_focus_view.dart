@@ -422,28 +422,33 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
       button: true,
       selected: selected,
       label: label,
-      child: Material(
-        color: selected ? selectedBg : Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: selected ? fg : variant, size: 17),
-                const SizedBox(width: 5),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: selected ? fg : variant,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+        child: Center(
+          child: Material(
+            color: selected ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, color: selected ? fg : variant, size: 17),
+                    const SizedBox(width: 5),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: selected ? fg : variant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -662,7 +667,7 @@ class _FullscreenFocusViewState extends State<FullscreenFocusView> {
                             Expanded(
                               child: SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
-                                reverse: true,
+                                reverse: Directionality.of(context) == TextDirection.ltr,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [

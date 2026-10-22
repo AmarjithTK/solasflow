@@ -79,7 +79,7 @@ class SettingsRow extends StatelessWidget {
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: colors.textMuted,
+                    color: colors.textSecondary,
                   ),
                 ],
               ],

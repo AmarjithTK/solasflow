@@ -23,7 +23,7 @@ class SectionHeader extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: GoogleFonts.inter(
-          color: colors.textMuted,
+          color: colors.textSecondary,
           fontSize: 11,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.2,

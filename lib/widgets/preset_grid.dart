@@ -181,14 +181,17 @@ class _PresetChip extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            height: 36,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: borderColor, width: 1),
-            ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                height: 36,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor, width: 1),
+                ),
             child: iconOnly
                 ? Center(
                     child: Icon(Icons.edit_rounded, size: 16, color: textColor),
@@ -211,6 +214,8 @@ class _PresetChip extends StatelessWidget {
                       ),
                     ),
                   ),
+              ),
+            ),
           ),
         ),
       ),

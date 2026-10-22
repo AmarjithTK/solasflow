@@ -189,38 +189,43 @@ class TimerPanel extends StatelessWidget {
                                   trackColor: c.surfaceBorder,
                                   size: 200,
                                 ),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.timerPanelRemaining,
-                                    style: GoogleFonts.inter(
-                                      color: c.textMuted,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      displayTime,
-                                      textAlign: TextAlign.center,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 48,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.timerPanelRemaining,
                                       style: GoogleFonts.inter(
-                                        color: c.textPrimary,
-                                        fontSize: 56,
-                                        height: 0.9,
-                                        fontWeight: FontWeight.w800,
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures(),
-                                        ],
+                                        color: c.textMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 1.5,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 4),
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        displayTime,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.inter(
+                                          color: c.textPrimary,
+                                          fontSize: 56,
+                                          height: 0.9,
+                                          fontWeight: FontWeight.w800,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               // −1 button (left, vertically centered)
                               if (isRunning)
@@ -518,7 +523,7 @@ class TimerPanel extends StatelessWidget {
                       ),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: c.textMuted,
+                        color: c.textSecondary,
                         size: 20,
                       ),
                     ],
