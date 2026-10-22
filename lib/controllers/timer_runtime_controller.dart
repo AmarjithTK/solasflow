@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../models/session_log.dart';
 import '../models/timer_runtime.dart';
 import '../services/session_log_service.dart';
@@ -157,15 +159,19 @@ class TimerRuntimeController {
     sessionStartRemainingSeconds = null;
     if (startedAt == null || elapsedSeconds <= 0) return;
     unawaited(
-      _sessionLogService.logSession(
-        SessionLog(
-          startTime: startedAt,
-          endTime: DateTime.now(),
-          durationSeconds: elapsedSeconds,
-          tag: _host.sessionTag,
-          sessionId: sessionId,
-        ),
-      ),
+      _sessionLogService
+          .logSession(
+            SessionLog(
+              startTime: startedAt,
+              endTime: DateTime.now(),
+              durationSeconds: elapsedSeconds,
+              tag: _host.sessionTag,
+              sessionId: sessionId,
+            ),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint('[ERROR] Failed to persist session log: $error');
+          }),
     );
     unawaited(_host.refreshTimerSummary());
   }
@@ -181,7 +187,11 @@ class TimerRuntimeController {
         segmentStartRemainingSeconds: sessionStartRemainingSeconds,
         revision: timerRuntime.revision + 1,
       );
-      unawaited(_runtimeStore.save(timerRuntime));
+      unawaited(
+        _runtimeStore.save(timerRuntime).catchError((Object error, StackTrace stackTrace) {
+          debugPrint('[ERROR] Failed to persist timer runtime: $error');
+        }),
+      );
       _changedTimer();
     } else if (!enabled) {
       if (wasEnabled && timerTicker != null && sessionStartTime != null) {
@@ -227,8 +237,16 @@ class TimerRuntimeController {
     );
     stopwatchTicker = Timer.periodic(_stopwatchPeriod, _tickStopwatch);
     _changedStopwatch();
-    unawaited(_runtimeStore.saveStopwatch(stopwatchRuntime));
-    unawaited(_host.reconcileForeground(force: true));
+    unawaited(
+      _runtimeStore.saveStopwatch(stopwatchRuntime).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to persist stopwatch runtime: $error');
+      }),
+    );
+    unawaited(
+      _host.reconcileForeground(force: true).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Foreground reconcile failed: $error');
+      }),
+    );
   }
 
   void stopStopwatch() {
@@ -244,8 +262,16 @@ class TimerRuntimeController {
     stopwatchTicker?.cancel();
     stopwatchTicker = null;
     _changedStopwatch();
-    unawaited(_runtimeStore.saveStopwatch(stopwatchRuntime));
-    unawaited(_host.reconcileForeground(force: true));
+    unawaited(
+      _runtimeStore.saveStopwatch(stopwatchRuntime).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to persist stopwatch runtime: $error');
+      }),
+    );
+    unawaited(
+      _host.reconcileForeground(force: true).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Foreground reconcile failed: $error');
+      }),
+    );
   }
 
   void resetStopwatch() {
@@ -256,8 +282,16 @@ class TimerRuntimeController {
       revision: stopwatchRuntime.revision + 1,
     );
     _changedStopwatch();
-    unawaited(_runtimeStore.saveStopwatch(stopwatchRuntime));
-    unawaited(_host.reconcileForeground(force: true));
+    unawaited(
+      _runtimeStore.saveStopwatch(stopwatchRuntime).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to persist stopwatch runtime: $error');
+      }),
+    );
+    unawaited(
+      _host.reconcileForeground(force: true).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Foreground reconcile failed: $error');
+      }),
+    );
   }
 
   void recordStopwatchLap() {
@@ -269,7 +303,11 @@ class TimerRuntimeController {
       revision: stopwatchRuntime.revision + 1,
     );
     _changedStopwatch();
-    unawaited(_runtimeStore.saveStopwatch(stopwatchRuntime));
+    unawaited(
+      _runtimeStore.saveStopwatch(stopwatchRuntime).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to persist stopwatch runtime: $error');
+      }),
+    );
   }
 
   void _tickStopwatch(Timer timer) {
@@ -433,6 +471,7 @@ class TimerRuntimeController {
       if (_host.chainModeOn) {
         final sequence =
             timerChainSequences[_host.chainPresetKey] ?? const [25];
+        if (chainIndex < 0) chainIndex = 0;
         if (chainIndex < sequence.length - 1) {
           chainIndex++;
           final nextSeconds = sequence[chainIndex] * 60;
@@ -510,7 +549,11 @@ class TimerRuntimeController {
       chainIndex: chainIndex,
       revision: timerRuntime.revision + 1,
     );
-    unawaited(_runtimeStore.save(timerRuntime));
+    unawaited(
+      _runtimeStore.save(timerRuntime).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to persist timer runtime: $error');
+      }),
+    );
     _changedTimer();
   }
 
@@ -527,7 +570,7 @@ class TimerRuntimeController {
       if (_host.chainModeOn) {
         final sequence =
             timerChainSequences[_host.chainPresetKey] ?? const [25];
-        if (chainIndex >= sequence.length) chainIndex = 0;
+        if (chainIndex < 0 || chainIndex >= sequence.length) chainIndex = 0;
         remaining = sequence[chainIndex] * 60;
       } else {
         remaining = _host.sliderMinutes * 60;
@@ -561,10 +604,26 @@ class TimerRuntimeController {
       sessionStartRemainingSeconds = null;
     }
     _changedTimer();
-    unawaited(_runtimeStore.save(timerRuntime));
-    unawaited(_host.saveLastTimerSeconds(remaining));
-    unawaited(_host.applyAudioSettings());
-    unawaited(_host.reconcileForeground(force: true));
+    unawaited(
+      _runtimeStore.save(timerRuntime).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to persist timer runtime: $error');
+      }),
+    );
+    unawaited(
+      _host.saveLastTimerSeconds(remaining).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to persist last timer seconds: $error');
+      }),
+    );
+    unawaited(
+      _host.applyAudioSettings().catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Failed to apply audio settings: $error');
+      }),
+    );
+    unawaited(
+      _host.reconcileForeground(force: true).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Foreground reconcile failed: $error');
+      }),
+    );
   }
 
   void startTimerFromDurationSeconds(int durationSeconds) {

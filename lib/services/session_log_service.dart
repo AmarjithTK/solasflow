@@ -16,6 +16,9 @@ class SessionLogService {
   Future<void> logSession(SessionLog session) {
     final operation = _writeTail.then((_) async {
       final prefs = await SharedPreferences.getInstance();
+      try {
+        await prefs.reload();
+      } catch (_) {}
       final stored = _decode(
         SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
       );
@@ -67,6 +70,9 @@ class SessionLogService {
   Future<void> prune() {
     final operation = _writeTail.then((_) async {
       final prefs = await SharedPreferences.getInstance();
+      try {
+        await prefs.reload();
+      } catch (_) {}
       final stored = _decode(
         SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
       );
@@ -89,6 +95,9 @@ class SessionLogService {
   Future<List<SessionLog>> _loadAll() async {
     await _writeTail;
     final prefs = await SharedPreferences.getInstance();
+    try {
+      await prefs.reload();
+    } catch (_) {}
     return _decode(
       SafePreferenceReads.stringList(prefs, _prefsKey) ?? const [],
     ).sessions;

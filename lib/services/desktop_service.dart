@@ -92,7 +92,7 @@ class DesktopService {
   Future<void> _enqueue(Future<void> Function() operation) {
     _ensureAlive();
     if (!isSupported) return Future<void>.value();
-    _updates = _updates
+    final task = _updates
         .catchError((Object error, StackTrace stackTrace) {
           debugPrint('Previous desktop operation failed: $error');
         })
@@ -101,7 +101,10 @@ class DesktopService {
           _ensureAlive();
           await operation();
         });
-    return _updates;
+    _updates = task.catchError((Object error, StackTrace stackTrace) {
+      debugPrint('Desktop operation failed: $error\n$stackTrace');
+    });
+    return task;
   }
 
   Future<void> setBackgroundEnabled(bool enabled) => _enqueue(() async {

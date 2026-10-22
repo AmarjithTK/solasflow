@@ -229,7 +229,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   @override
   void notifyDesktop(String title, String message) {
-    unawaited(_desktopService.notify(title, message));
+    unawaited(
+      _desktopService.notify(title, message).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Desktop notify failed: $error');
+      }),
+    );
   }
 
   @override
@@ -237,7 +241,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   @override
   void reconcileSpeechForeground() {
-    unawaited(_reconcileForeground(force: true));
+    unawaited(
+      _reconcileForeground(force: true).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Foreground reconcile failed: $error');
+      }),
+    );
   }
 
   @override
@@ -852,7 +860,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       context: context,
       initialTime: initial,
     );
-    if (selected == null) return;
+    if (!mounted || selected == null) return;
 
     setState(() {
       sleepStartMinutes = selected.hour * 60 + selected.minute;
@@ -870,7 +878,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
       context: context,
       initialTime: initial,
     );
-    if (selected == null) return;
+    if (!mounted || selected == null) return;
 
     setState(() {
       sleepEndMinutes = selected.hour * 60 + selected.minute;
@@ -2595,7 +2603,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                   ),
                   const SizedBox(height: 18),
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: Text(
                       _appLocalizations.mainStartPresetTimer,
                       style: TextStyle(

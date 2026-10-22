@@ -92,7 +92,11 @@ class PlatformIntentController {
       _pendingExternalActions.add(action);
       return;
     }
-    unawaited(action());
+    unawaited(
+      action().catchError((Object error, StackTrace stackTrace) {
+        debugPrint('[ERROR] Dispatched action failed: $error\n$stackTrace');
+      }),
+    );
   }
 
   Future<void> markBootstrapReady() async {
