@@ -888,6 +888,10 @@ class AppLocalizationsMl extends AppLocalizations {
   String get settingsPanelAuto => 'ഓട്ടോമാറ്റിക്';
 
   @override
+  String get settingsPanelRotateMalayalamVoices =>
+      'മലയാള ശബ്ദങ്ങൾ മാറിമാറി ഉപയോഗിക്കുക';
+
+  @override
   String get settingsPanelRotateVoicesDefault =>
       'ശബ്ദങ്ങൾ മാറിമാറി ഉപയോഗിക്കുക';
 

@@ -1706,6 +1706,12 @@ abstract class AppLocalizations {
   /// **'Automatic'**
   String get settingsPanelAuto;
 
+  /// No description provided for @settingsPanelRotateMalayalamVoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate Malayalam voices'**
+  String get settingsPanelRotateMalayalamVoices;
+
   /// No description provided for @settingsPanelRotateVoicesDefault.
   ///
   /// In en, this message translates to:

@@ -881,6 +881,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPanelAuto => 'Automatic';
 
   @override
+  String get settingsPanelRotateMalayalamVoices => 'Rotate Malayalam voices';
+
+  @override
   String get settingsPanelRotateVoicesDefault => 'Rotate voices';
 
   @override

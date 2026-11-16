@@ -23,31 +23,46 @@ class VoiceSessionManager {
   /// The favorite voice locale at the time of caching.
   String? _cachedFavoriteVoiceLocale;
 
+  int _malayalamRotationIndex = 0;
   int _englishRotationIndex = 0;
 
-  /// Advances and returns the next English voice in rotation.
+  /// Advances and returns the next voice in rotation.
+  ///
+  /// Malayalam rotation is restricted to the bundled studio voices
+  /// (`backend: neural_asset`) so a removed Piper model can never be selected.
   Map<dynamic, dynamic>? nextRotatedVoice({
     required List<Map<dynamic, dynamic>> voices,
     required String language,
   }) {
+    final isMalayalam = language.toLowerCase() == 'ml' ||
+        language.toLowerCase() == 'malayalam';
     final filtered = voices.where((v) {
-      final loc = (v['locale']?.toString() ?? '').toLowerCase().replaceAll('_', '-');
+      final loc =
+          (v['locale']?.toString() ?? '').toLowerCase().replaceAll('_', '-');
+      if (isMalayalam) {
+        return loc.startsWith('ml') && v['backend'] == 'neural_asset';
+      }
       return loc.startsWith('en');
     }).toList();
 
     if (filtered.isEmpty) return null;
 
-    final voice = filtered[_englishRotationIndex % filtered.length];
-    _englishRotationIndex = (_englishRotationIndex + 1) % filtered.length;
+    final index = isMalayalam ? _malayalamRotationIndex : _englishRotationIndex;
+    final voice = filtered[index % filtered.length];
+    if (isMalayalam) {
+      _malayalamRotationIndex = (_malayalamRotationIndex + 1) % filtered.length;
+    } else {
+      _englishRotationIndex = (_englishRotationIndex + 1) % filtered.length;
+    }
     return voice;
   }
 
   /// Resolves the voice to use for an announcement.
   ///
-  /// Malayalam is pinned to exactly one studio voice for the whole session —
-  /// the pinned favourite when set, otherwise the default studio voice — so a
-  /// clock/quote announcement can never change voice mid-sentence. English may
-  /// still rotate when the user explicitly selects "rotate".
+  /// Rotation happens once per announcement, never inside one: every item of
+  /// a clock/timer announcement (for example the hour and minute clips of
+  /// "8:05") shares the voice returned here, while the next announcement gets
+  /// the next studio voice. A pinned favourite still disables rotation.
   Map<dynamic, dynamic>? resolveVoiceForAnnouncement({
     required List<Map<dynamic, dynamic>> voices,
     required String voiceListMode,
@@ -72,17 +87,9 @@ class VoiceSessionManager {
     }
 
     if (isMalayalam) {
-      // Single voice, no rotation. The resolver is session-cached, so every
-      // Malayalam announcement reuses the same studio voice.
-      return getPreferredVoice(
-        voiceResolver: fallbackResolver,
-        voiceListMode: voiceListMode,
-        favoriteVoiceName: favoriteVoiceName,
-        favoriteVoiceLocale: favoriteVoiceLocale,
-      );
-    }
-
-    if (favoriteVoiceName == '__rotate__') {
+      final rotated = nextRotatedVoice(voices: voices, language: 'ml');
+      if (rotated != null) return rotated;
+    } else if (favoriteVoiceName == '__rotate__') {
       final rotated = nextRotatedVoice(voices: voices, language: 'en');
       if (rotated != null) return rotated;
     }

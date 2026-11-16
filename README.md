@@ -53,7 +53,7 @@
 ### Voice and audio settings
 - Nature sound selection (local bundled assets).
 - Separate noise volume and speech volume controls.
-- Four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux. Malayalam uses one fixed voice per session (Aoede by default) and no longer rotates between announcements; the legacy Piper Meera/Arjun voices are gone.
+- Four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux. By default Malayalam rotates to the next studio voice for each new announcement (8:00, then 8:05, then 8:10), while every sentence is spoken entirely by one voice. Pin a single voice in Settings to turn rotation off; the legacy Piper Meera/Arjun voices are gone.
 - Favorite voice selection.
 
 ### Quick Actions (launcher shortcuts)
@@ -157,7 +157,7 @@ Keep the entire generated `build/linux/x64/release/bundle` directory together wh
 
 Linux bundles offline Sherpa-ONNX, Piper voices for English, and eSpeak-NG language data. On first Linux launch, a consent dialog offers **Accept and download** for the optional 140 MiB INT8 Kokoro v1.1 English model, or **Keep Piper**. No Kokoro bytes are fetched before acceptance. If declined, the download can be started later from **Settings → Kokoro English voice → Download**. The Settings card shows live transfer percentage and byte counts, then SHA-256 verification and installation status; cancel is available during transfer, and failed or cancelled downloads can be retried. English speech continues with bundled Piper until Kokoro is installed, or if the download fails. The verified model is cached under `~/.local/share/solasflow_runtime/assets/tts/models/en/kokoro`. Linux-generated WAV audio plays through the app's GStreamer-backed audio player, rather than relying on `paplay` or `aplay`.
 
-The four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux for clock, timer, and quote announcements. Malayalam speech always comes from these recordings — there is no Piper Malayalam fallback and no per-announcement voice rotation, so a single announcement (for example the time "10:15") is always one voice. Kokoro v1.1 does not speak Malayalam. Use **Settings → Test voice** to check the selected voice and audio output. See `assets/tts/models_manifest.json` for runtime model selection.
+The four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux for clock, timer, and quote announcements. Malayalam speech always comes from these recordings — there is no Piper Malayalam fallback. Rotation happens only between announcements: the hour and minute clips of one time (for example "10:15") always share the same voice, and the next announcement moves to the next studio voice. Kokoro v1.1 does not speak Malayalam. Use **Settings → Test voice** to check the selected voice and audio output. See `assets/tts/models_manifest.json` for runtime model selection.
 
 Kokoro installation keeps its matching eSpeak language data with the model. Older caches containing only the weights are treated as incomplete; choose **Download** once to refresh them. Bundled Piper remains available until the refreshed model is ready.
 

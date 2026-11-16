@@ -456,6 +456,7 @@
   "settingsPanelGoogleSpeechServices": "Google Speech Services",
   "settingsPanelSamsungTextToSpeech": "Samsung Text-to-Speech",
   "settingsPanelAuto": "Automatic",
+  "settingsPanelRotateMalayalamVoices": "Rotate Malayalam voices",
   "settingsPanelRotateVoicesDefault": "Rotate voices",
   "settingsPanelAutoSystemDefault": "Automatic (system default)",
   "settingsPanelUseDeviceDefaultEngine": "Use the device's default speech engine",
