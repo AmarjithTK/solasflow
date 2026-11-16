@@ -812,12 +812,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPanelCharonVoice => 'Charon';
 
   @override
-  String get settingsPanelPiperMeeraVoice => 'Meera';
-
-  @override
-  String get settingsPanelPiperArjunVoice => 'Arjun';
-
-  @override
   String get settingsPanelPiperLessacVoice => 'Lessac';
 
   @override
@@ -885,10 +879,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPanelAuto => 'Automatic';
-
-  @override
-  String get settingsPanelRotateAllMalayalamVoices =>
-      'Rotate all Malayalam voices';
 
   @override
   String get settingsPanelRotateVoicesDefault => 'Rotate voices';

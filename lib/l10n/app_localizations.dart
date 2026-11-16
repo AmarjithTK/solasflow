@@ -1568,18 +1568,6 @@ abstract class AppLocalizations {
   /// **'Charon'**
   String get settingsPanelCharonVoice;
 
-  /// No description provided for @settingsPanelPiperMeeraVoice.
-  ///
-  /// In en, this message translates to:
-  /// **'Meera'**
-  String get settingsPanelPiperMeeraVoice;
-
-  /// No description provided for @settingsPanelPiperArjunVoice.
-  ///
-  /// In en, this message translates to:
-  /// **'Arjun'**
-  String get settingsPanelPiperArjunVoice;
-
   /// No description provided for @settingsPanelPiperLessacVoice.
   ///
   /// In en, this message translates to:
@@ -1717,12 +1705,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Automatic'**
   String get settingsPanelAuto;
-
-  /// No description provided for @settingsPanelRotateAllMalayalamVoices.
-  ///
-  /// In en, this message translates to:
-  /// **'Rotate all Malayalam voices'**
-  String get settingsPanelRotateAllMalayalamVoices;
 
   /// No description provided for @settingsPanelRotateVoicesDefault.
   ///

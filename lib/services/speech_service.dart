@@ -205,8 +205,11 @@ class SpeechService {
 
   Future<void> warmDesktopSpeech({required bool useMalayalamNuance}) async {
     if (!Platform.isLinux) return;
+    // Malayalam is played from the bundled studio voice clips, so there is no
+    // Piper model to warm (Meera/Arjun were removed).
+    if (useMalayalamNuance) return;
     try {
-      final model = await _persistentModel(useMalayalamNuance ? 'ml' : 'en');
+      final model = await _persistentModel('en');
       await _desktopOffline.engine.warm(_desktopOffline.library, model);
       _setEngineStatus(
         'sherpa_ready',
@@ -243,19 +246,18 @@ class SpeechService {
     String language, {
     Map<dynamic, dynamic>? preferredVoice,
   }) async {
+    if (language == 'ml') {
+      throw StateError(
+        'Malayalam always uses the bundled studio voice clips; '
+        'no Piper Malayalam model is bundled',
+      );
+    }
     await _desktopOffline.initialize();
     final imported = _desktopOffline.selected(language);
     if (imported != null) return imported;
 
     final voiceName = preferredVoice?['name']?.toString() ?? '';
     final voiceNameLower = voiceName.toLowerCase();
-
-    if (language == 'ml') {
-      final variant = (voiceNameLower.contains('arjun') || voiceNameLower.contains('male'))
-          ? 'backup'
-          : 'primary';
-      return _desktopOffline.builtIn('ml', voiceVariant: variant);
-    }
 
     final isPiperRequested = preferredVoice?['backend'] == 'piper' ||
         voiceNameLower.contains('piper');
@@ -320,12 +322,13 @@ class SpeechService {
     required double volume,
     Map<dynamic, dynamic>? preferredVoice,
   }) async {
+    if (useMalayalamNuance) return false;
     final generation = _desktopSpeechGeneration;
     final tempDir = await Directory.systemTemp.createTemp('solasflow_tts_');
     final outFile = File('${tempDir.path}/speech.wav');
     try {
       final model = await _persistentModel(
-        useMalayalamNuance ? 'ml' : 'en',
+        'en',
         preferredVoice: preferredVoice,
       );
       if (generation != _desktopSpeechGeneration) return true;
@@ -365,24 +368,10 @@ class SpeechService {
 
   List<Map<dynamic, dynamic>> desktopVoices() {
     final list = <Map<dynamic, dynamic>>[];
-    // Studio Neural Malayalam voices
+    // Studio Neural Malayalam voices (the only Malayalam voice set).
     for (final v in MalayalamTtsService.voices) {
       list.add(Map<String, dynamic>.from(v));
     }
-
-    // Built-in Piper Malayalam fallback voices
-    list.add({
-      'name': 'Piper Malayalam Meera',
-      'locale': 'ml-IN',
-      'gender': 'female',
-      'backend': 'piper',
-    });
-    list.add({
-      'name': 'Piper Malayalam Arjun',
-      'locale': 'ml-IN',
-      'gender': 'male',
-      'backend': 'piper',
-    });
 
     // Kokoro voices if installed
     if (_kokoroModelInstalled()) {
@@ -780,7 +769,21 @@ class SpeechService {
     required int generation,
   }) async {
     if (generation != _desktopSpeechGeneration) return true;
+
+    // Validate the whole phrase before making any sound. If a clip is missing
+    // we must fall back to one other engine *before* playback starts, never
+    // half-way through a sentence (that is what produced mixed voices).
+    for (final path in assetPaths) {
+      try {
+        await rootBundle.load('assets/$path');
+      } catch (error) {
+        debugPrint('[ERROR] Missing studio clip assets/$path: $error');
+        return false;
+      }
+    }
+
     final player = _desktopTtsPlayer ??= AudioPlayer();
+    var playedAny = false;
 
     for (final path in assetPaths) {
       if (generation != _desktopSpeechGeneration) return true;
@@ -795,6 +798,7 @@ class SpeechService {
           AssetSource(path),
           volume: volume.clamp(0.0, 1.0).toDouble(),
         );
+        playedAny = true;
         if (generation != _desktopSpeechGeneration) {
           await player.stop();
           if (!completed.isCompleted) completed.complete();
@@ -802,8 +806,10 @@ class SpeechService {
         await completed.future.timeout(const Duration(seconds: 45));
         if (generation != _desktopSpeechGeneration) return false;
       } catch (error) {
-        debugPrint('Unable to play asset speech clip ($path): $error');
-        return false;
+        debugPrint('[ERROR] Unable to play studio clip ($path): $error');
+        // If audio from this voice already started, never re-speak the phrase
+        // with another engine (that would mix two voices in one announcement).
+        return playedAny;
       } finally {
         await subscription.cancel();
         if (identical(_desktopPlaybackCompleter, completed)) {
@@ -980,6 +986,9 @@ class SpeechService {
     Map<dynamic, dynamic>? preferredVoice,
   }) async {
     if (!(Platform.isLinux || Platform.isWindows)) return false;
+    // Malayalam never uses a Piper/Sherpa model: it must stay on the studio
+    // voice clips so one announcement cannot switch voices.
+    if (useMalayalamNuance) return false;
     if (Platform.isLinux) {
       return _speakPersistentLinux(
         text: text,
@@ -1282,9 +1291,9 @@ class SpeechService {
     final ttsVolume = maximumSpeechVolume
         ? 1.0
         : speakVolume.clamp(0.0, 1.0).toDouble();
-    if (useMalayalamNuance &&
-        mode != 'system_only' &&
-        mode != 'sherpa_only') {
+    if (useMalayalamNuance && mode != 'system_only') {
+      // Malayalam always speaks from the bundled studio clips, in every other
+      // engine mode, so a single announcement cannot mix voice backends.
       final voiceId = MalayalamTtsService.resolveVoiceId(preferredVoice);
       final clips = _malayalamTts.resolveAudioClips(item.text, voiceId: voiceId);
       if (clips != null && clips.isNotEmpty) {
@@ -1305,6 +1314,11 @@ class SpeechService {
           );
           return;
         }
+      } else {
+        debugPrint(
+          '[ERROR] No Malayalam studio clip for "${item.text}"; '
+          'falling back to a single system voice',
+        );
       }
     }
 

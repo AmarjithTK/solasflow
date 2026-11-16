@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "Desktop Sherpa-ONNX model manifest. Piper voices are bundled under assets/tts/models; Linux Kokoro is checksum-pinned and cached under ~/.local/share/solasflow_runtime/assets/tts/models.",
+  "notes": "Desktop Sherpa-ONNX model manifest. English Piper voices are bundled under assets/tts/models; Linux Kokoro is checksum-pinned and cached under ~/.local/share/solasflow_runtime/assets/tts/models.",
   "commands": {
     "linux": [
       "assets/tts/bin/linux-x64/sherpa-onnx-offline-tts-play",
@@ -23,7 +23,9 @@
       "language": "en",
       "tier": "primary",
       "modelType": "kokoro",
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "modelPath": "assets/tts/models/en/kokoro/model.int8.onnx",
       "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
       "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
@@ -37,7 +39,9 @@
       "language": "en",
       "tier": "primary",
       "modelType": "kokoro",
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "modelPath": "assets/tts/models/en/kokoro/model.int8.onnx",
       "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
       "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
@@ -51,7 +55,9 @@
       "language": "en",
       "tier": "primary",
       "modelType": "kokoro",
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "modelPath": "assets/tts/models/en/kokoro/model.int8.onnx",
       "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
       "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
@@ -65,7 +71,9 @@
       "language": "en",
       "tier": "primary",
       "modelType": "kokoro",
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "modelPath": "assets/tts/models/en/kokoro/model.int8.onnx",
       "tokensPath": "assets/tts/models/en/kokoro/tokens.txt",
       "voicesPath": "assets/tts/models/en/kokoro/voices.bin",
@@ -91,24 +99,6 @@
       "tokensPath": "assets/tts/models/en/backup/tokens.txt",
       "dataDir": "assets/tts/models/espeak-ng-data",
       "description": "Piper English backup"
-    },
-    {
-      "id": "ml_primary",
-      "language": "ml",
-      "tier": "primary",
-      "modelPath": "assets/tts/models/ml/primary/model.onnx",
-      "tokensPath": "assets/tts/models/ml/primary/tokens.txt",
-      "dataDir": "assets/tts/models/espeak-ng-data",
-      "description": "Piper Malayalam Meera"
-    },
-    {
-      "id": "ml_backup",
-      "language": "ml",
-      "tier": "backup",
-      "modelPath": "assets/tts/models/ml/backup/model.onnx",
-      "tokensPath": "assets/tts/models/ml/backup/tokens.txt",
-      "dataDir": "assets/tts/models/espeak-ng-data",
-      "description": "Piper Malayalam Arjun backup"
     }
   ]
 }

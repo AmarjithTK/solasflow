@@ -15,7 +15,7 @@ class DesktopTtsController {
   final String? bundledModelsDirectory;
   final engine = DesktopTtsEngine();
   final status = ValueNotifier<String>(
-    'Built-in English and Malayalam voices selected',
+    'Studio Malayalam voices and built-in English voice selected',
   );
   final _selected = <String, Map<String, dynamic>>{};
   Future<void>? _initializing;
@@ -101,25 +101,13 @@ class DesktopTtsController {
       );
     }
     final preferences = await SharedPreferences.getInstance();
-    for (final language in ['en', 'ml']) {
-      var folder = preferences.getString('desktop_tts_model_$language');
+    // Piper Malayalam voices (Meera/Arjun) and any imported Malayalam Piper
+    // model are no longer used: Malayalam speaks the bundled studio clips.
+    await preferences.remove('desktop_tts_model_ml');
+    for (final language in ['en']) {
+      final folder = preferences.getString('desktop_tts_model_$language');
       if (folder == null) continue;
-      if (language == 'ml') {
-        if (folder.startsWith('builtin:')) {
-          await preferences.remove('desktop_tts_model_ml');
-          continue;
-        }
-        final separator = folder.lastIndexOf('|');
-        if (separator > 0) {
-          final voice = folder.substring(separator + 1);
-          if (voice == 'meera' || voice == 'arjun') {
-            folder = folder.substring(0, separator);
-            await preferences.setString('desktop_tts_model_ml', folder);
-          }
-        }
-      }
-      if (!RegExp(r'^(en|ml)-[0-9]+$').hasMatch(folder) ||
-          !folder.startsWith('$language-')) {
+      if (!RegExp(r'^en-[0-9]+$').hasMatch(folder)) {
         status.value =
             'Invalid saved $language model selection; built-in voice will be used';
         continue;
@@ -139,13 +127,9 @@ class DesktopTtsController {
   }
 
   void _refreshStatus() {
-    status.value = ['en', 'ml']
-        .map((language) {
-          final label = language == 'en' ? 'English' : 'Malayalam';
-          final model = _selected[language];
-          return '$label: ${model == null ? 'built-in voice' : model['name']}';
-        })
-        .join('\n');
+    final model = _selected['en'];
+    status.value =
+        'English: ${model == null ? 'built-in voice' : model['name']}';
   }
 
   Map<String, dynamic>? selected(String language) => _selected[language];
@@ -154,16 +138,19 @@ class DesktopTtsController {
     String voiceVariant = 'primary',
   }) async {
     await initialize();
+    if (language != 'en') {
+      throw StateError(
+        'Only English has a bundled Piper model; Malayalam uses the studio voice clips',
+      );
+    }
     final variant = (voiceVariant == 'backup') ? 'backup' : 'primary';
-    final model = '$bundledModelsDirectory/$language/$variant/model.onnx';
-    final tokens = '$bundledModelsDirectory/$language/$variant/tokens.txt';
+    final model = '$bundledModelsDirectory/en/$variant/model.onnx';
+    final tokens = '$bundledModelsDirectory/en/$variant/tokens.txt';
     if (!File(model).existsSync() || !File(tokens).existsSync()) {
       throw StateError('The bundled $language voice ($variant) is missing');
     }
     final isPrimary = variant == 'primary';
-    final name = language == 'en'
-        ? (isPrimary ? 'Piper English Lessac' : 'Piper English Ryan')
-        : (isPrimary ? 'Piper Malayalam Meera' : 'Piper Malayalam Arjun');
+    final name = isPrimary ? 'Piper English Lessac' : 'Piper English Ryan';
     return {
       'language': language,
       'type': 'vits',

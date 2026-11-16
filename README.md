@@ -53,7 +53,7 @@
 ### Voice and audio settings
 - Nature sound selection (local bundled assets).
 - Separate noise volume and speech volume controls.
-- Four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux; automatic Malayalam rotation cycles through the four voices.
+- Four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux. Malayalam uses one fixed voice per session (Aoede by default) and no longer rotates between announcements; the legacy Piper Meera/Arjun voices are gone.
 - Favorite voice selection.
 
 ### Quick Actions (launcher shortcuts)
@@ -155,9 +155,9 @@ Keep the entire generated `build/linux/x64/release/bundle` directory together wh
 
 ### Linux speech models
 
-Linux bundles offline Sherpa-ONNX, Piper voices for English and Malayalam, and eSpeak-NG language data. On first Linux launch, a consent dialog offers **Accept and download** for the optional 140 MiB INT8 Kokoro v1.1 English model, or **Keep Piper**. No Kokoro bytes are fetched before acceptance. If declined, the download can be started later from **Settings → Kokoro English voice → Download**. The Settings card shows live transfer percentage and byte counts, then SHA-256 verification and installation status; cancel is available during transfer, and failed or cancelled downloads can be retried. English speech continues with bundled Piper until Kokoro is installed, or if the download fails. The verified model is cached under `~/.local/share/solasflow_runtime/assets/tts/models/en/kokoro`. Linux-generated WAV audio plays through the app's GStreamer-backed audio player, rather than relying on `paplay` or `aplay`.
+Linux bundles offline Sherpa-ONNX, Piper voices for English, and eSpeak-NG language data. On first Linux launch, a consent dialog offers **Accept and download** for the optional 140 MiB INT8 Kokoro v1.1 English model, or **Keep Piper**. No Kokoro bytes are fetched before acceptance. If declined, the download can be started later from **Settings → Kokoro English voice → Download**. The Settings card shows live transfer percentage and byte counts, then SHA-256 verification and installation status; cancel is available during transfer, and failed or cancelled downloads can be retried. English speech continues with bundled Piper until Kokoro is installed, or if the download fails. The verified model is cached under `~/.local/share/solasflow_runtime/assets/tts/models/en/kokoro`. Linux-generated WAV audio plays through the app's GStreamer-backed audio player, rather than relying on `paplay` or `aplay`.
 
-The four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux for clock, timer, and quote announcements. Linux retains Piper Malayalam as a fallback for text without a matching recording; Kokoro v1.1 does not speak Malayalam. Use **Settings → Test voice** to check the selected voice and audio output. See `assets/tts/models_manifest.json` for runtime model selection.
+The four bundled Malayalam studio voices (Aoede, Kore, Puck, Charon) play offline on Android and Linux for clock, timer, and quote announcements. Malayalam speech always comes from these recordings — there is no Piper Malayalam fallback and no per-announcement voice rotation, so a single announcement (for example the time "10:15") is always one voice. Kokoro v1.1 does not speak Malayalam. Use **Settings → Test voice** to check the selected voice and audio output. See `assets/tts/models_manifest.json` for runtime model selection.
 
 Kokoro installation keeps its matching eSpeak language data with the model. Older caches containing only the weights are treated as incomplete; choose **Download** once to refresh them. Bundled Piper remains available until the refreshed model is ready.
 
@@ -165,11 +165,11 @@ Linux x64 keeps the Sherpa v1.12.34 C API in a reusable worker isolate: selected
 
 #### Import a local Hugging Face / Sherpa model
 
-Download a **trusted, Sherpa-converted** Piper/VITS voice or English Kokoro model folder, then choose **Settings → Local offline model → Model language → Import folder**. HF source weights and arbitrary ONNX exports cannot be loaded directly. The folder needs exactly one self-contained `.onnx` file with Sherpa metadata and `tokens.txt`; Kokoro additionally needs matching `voices.bin` and an English `lexicon-us-en.txt` or `lexicon.txt`. Compatible bundled eSpeak data is reused unless the folder supplies its own regular `espeak-ng-data` files. External ONNX tensors, symlinks, unsupported formats, and mismatched languages are rejected before installation.
+Download a **trusted, Sherpa-converted** English Piper/VITS voice or English Kokoro model folder, then choose **Settings → Local offline model → Import folder**. HF source weights and arbitrary ONNX exports cannot be loaded directly. The folder needs exactly one self-contained `.onnx` file with Sherpa metadata and `tokens.txt`; Kokoro additionally needs matching `voices.bin` and an English `lexicon-us-en.txt` or `lexicon.txt`. Compatible bundled eSpeak data is reused unless the folder supplies its own regular `espeak-ng-data` files. External ONNX tensors, symlinks, unsupported formats, and mismatched languages are rejected before installation.
 
-**Model language** also selects and saves the app's speech language. It stays synchronized with **Language list**, so an explicit Malayalam choice survives leaving Settings and restarting the app instead of resetting to English.
+The local-model card is English-only. **Language list** still saves the app's speech language, so an explicit Malayalam choice survives leaving Settings and restarting the app instead of resetting to English.
 
-Import copies model data into app-owned storage and persists separate English/Malayalam selections; it does not execute downloaded scripts. **Use built-in voice** clears the selected import. A native model is still trusted input, not a sandbox for malicious model files. Model redistribution must respect each model's license. Runtime attribution and corresponding-source links are in `assets/tts/Sherpa-runtime-NOTICE.txt` and `assets/tts/espeak-ng-LICENSE.txt`; distributors of the GPLv3 eSpeak runtime/data must also satisfy its corresponding-source obligations.
+Import copies model data into app-owned storage and persists the English selection; it does not execute downloaded scripts. **Use built-in voice** clears the selected import. A native model is still trusted input, not a sandbox for malicious model files. Model redistribution must respect each model's license. Runtime attribution and corresponding-source links are in `assets/tts/Sherpa-runtime-NOTICE.txt` and `assets/tts/espeak-ng-LICENSE.txt`; distributors of the GPLv3 eSpeak runtime/data must also satisfy its corresponding-source obligations.
 
 ### App appearance
 

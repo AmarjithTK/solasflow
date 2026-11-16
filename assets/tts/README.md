@@ -1,6 +1,6 @@
 # Sherpa-ONNX desktop assets
 
-Linux x64 uses a bundled native Sherpa C API in a persistent Dart worker. Windows retains the executable backend. Keep model folders and language data with the release bundle.
+Linux x64 uses a bundled native Sherpa C API in a persistent Dart worker. Windows retains the executable backend. Keep model folders and language data with the release bundle. Malayalam speech is served by the bundled studio neural clips under `assets/audio/malayalam/`; no Piper Malayalam model (Meera/Arjun) ships any more.
 
 ## Expected layout
 
@@ -12,11 +12,7 @@ Linux x64 uses a bundled native Sherpa C API in a persistent Dart worker. Window
 - `assets/tts/models/en/primary/tokens.txt`
 - `assets/tts/models/en/backup/model.onnx`
 - `assets/tts/models/en/backup/tokens.txt`
-- `assets/tts/models/ml/primary/model.onnx`
-- `assets/tts/models/ml/primary/tokens.txt`
-- `assets/tts/models/ml/backup/model.onnx`
-- `assets/tts/models/ml/backup/tokens.txt`
 
 Linux uses `libsherpa-onnx-c-api.so` and `libonnxruntime.so` from the pinned archive; it does not launch the CLI for each phrase or download a native runtime automatically. Existing executable assets remain for the Windows backend and standalone tooling.
 
-Local imports must be trusted self-contained Sherpa-converted Piper/VITS or English Kokoro folders, not arbitrary Hugging Face weights. See the main README's Linux speech section for required files, import controls, language restrictions, and license obligations.
+Local imports must be trusted self-contained Sherpa-converted English Piper/VITS or English Kokoro folders, not arbitrary Hugging Face weights. See the main README's Linux speech section for required files, import controls, language restrictions, and license obligations.

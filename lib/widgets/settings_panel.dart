@@ -10,6 +10,7 @@ import '../providers/app_state.dart';
 import '../models/speech_model_download_status.dart';
 
 import '../services/desktop_autostart_service.dart';
+import '../services/malayalam_tts_service.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -265,13 +266,15 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     );
   }
 
-  String get _desktopModelLanguage =>
+  String get _previewLanguage =>
       ref.read(settingsProvider).voiceListMode == 'malayalam' ? 'ml' : 'en';
   bool _modelOperationBusy = false;
 
   Future<void> _changeDesktopModel({required bool clear}) async {
     if (_modelOperationBusy) return;
-    final language = _desktopModelLanguage;
+    // Malayalam always speaks the bundled studio voice clips now, so only the
+    // English offline model can be imported or cleared.
+    const language = 'en';
     final l10n = AppLocalizations.of(context)!;
     setState(() => _modelOperationBusy = true);
     try {
@@ -323,36 +326,6 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             style: const TextStyle(fontSize: 12),
           ),
           const SizedBox(height: 8),
-          InputDecorator(
-            decoration: InputDecoration(
-              labelText: l10n.settingsPanelModelLanguage,
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _desktopModelLanguage,
-                isExpanded: true,
-                items: [
-                  DropdownMenuItem(
-                    value: 'en',
-                    child: Text(l10n.settingsPanelEnglish),
-                  ),
-                  DropdownMenuItem(
-                    value: 'ml',
-                    child: Text(l10n.settingsPanelMalayalam),
-                  ),
-                ],
-                onChanged: _modelOperationBusy
-                    ? null
-                    : (value) {
-                        if (value == null) return;
-                        widget.onVoiceListModeChanged(
-                          value == 'ml' ? 'malayalam' : 'english',
-                        );
-                      },
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
           ValueListenableBuilder<String>(
             valueListenable: widget.customModelStatus,
             builder: (context, value, _) =>
@@ -385,7 +358,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                     ? null
                     : () {
                         widget.onVoiceListModeChanged(
-                          _desktopModelLanguage == 'ml'
+                          _previewLanguage == 'ml'
                               ? 'malayalam'
                               : 'english',
                         );
@@ -394,7 +367,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                 icon: const Icon(Icons.volume_up_outlined),
                 label: Text(
                   l10n.settingsPanelTestLanguage(
-                    _desktopModelLanguage == 'ml'
+                    _previewLanguage == 'ml'
                         ? l10n.settingsPanelMalayalam
                         : l10n.settingsPanelEnglish,
                   ),
@@ -568,8 +541,6 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     if (lower.contains('charon')) return l10n.settingsPanelCharonVoice;
     if (lower.contains('veena')) return 'Veena';
     if (lower.contains('rishi')) return 'Rishi';
-    if (lower.contains('meera')) return l10n.settingsPanelPiperMeeraVoice;
-    if (lower.contains('arjun')) return l10n.settingsPanelPiperArjunVoice;
     if (lower.contains('lessac')) return l10n.settingsPanelPiperLessacVoice;
     if (lower.contains('ryan')) return l10n.settingsPanelPiperRyanVoice;
     if (lower.contains('bella')) return l10n.settingsPanelKokoroBellaVoice;
@@ -639,7 +610,15 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     if (fav == null || fav == '__auto__' || fav == '__rotate__') {
       final lang = s.voiceListMode.toLowerCase();
       if (lang == 'malayalam') {
-        return l10n.settingsPanelRotateAllMalayalamVoices;
+        // Malayalam is pinned to one studio voice, so show that voice instead
+        // of a rotation label.
+        return _voiceCharacterName(
+          context,
+          MalayalamTtsService.voiceDisplayName(
+            MalayalamTtsService.defaultVoiceId,
+          ),
+          'ml-IN',
+        );
       }
       if (lang == 'english') return l10n.settingsPanelRotateVoicesDefault;
       return l10n.settingsPanelRotateVoicesDefault;
@@ -652,6 +631,10 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     if (s.favoriteVoiceName == null ||
         s.favoriteVoiceName == '__auto__' ||
         s.favoriteVoiceName == '__rotate__') {
+      if (s.voiceListMode.toLowerCase() == 'malayalam') {
+        final voice = MalayalamTtsService.defaultVoice();
+        return '${voice['name']}|${voice['locale']}';
+      }
       return '__rotate__';
     }
     return '${s.favoriteVoiceName}|${s.favoriteVoiceLocale}';
@@ -753,13 +736,12 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     }
 
     final voiceOptions = <(String, String, String?)>[
-      (
-        '__rotate__',
-        currentLanguageMode == 'malayalam'
-            ? l10n.settingsPanelRotateAllMalayalamVoices
-            : l10n.settingsPanelRotateVoicesDefault,
-        l10n.settingsPanelAlternatesVoices,
-      ),
+      if (currentLanguageMode != 'malayalam')
+        (
+          '__rotate__',
+          l10n.settingsPanelRotateVoicesDefault,
+          l10n.settingsPanelAlternatesVoices,
+        ),
       ...languageVoices.map((voice) {
         final name =
             voice['name']?.toString() ?? l10n.settingsPanelUnknownVoice;

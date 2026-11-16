@@ -61,6 +61,20 @@ class SettingsService {
       }
     }
 
+    final favoriteName =
+        settings.favoriteVoiceName?.toLowerCase().trim() ?? '';
+    if (favoriteName.contains('piper malayalam') ||
+        favoriteName.contains('meera') ||
+        favoriteName.contains('arjun')) {
+      // The Piper Malayalam voices (Meera/Arjun) were removed in favour of the
+      // studio neural voice set; drop any stale pinned selection.
+      debugPrint('[STATE] Dropping removed Malayalam voice: $favoriteName');
+      settings = settings.copyWith(
+        favoriteVoiceName: () => null,
+        favoriteVoiceLocale: () => null,
+      );
+    }
+
     final taskOverride = SafePreferenceReads.boolean(
       prefs,
       speechMasterOverrideKey,

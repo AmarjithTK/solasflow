@@ -34,8 +34,12 @@ class MalayalamTtsService {
     },
   ];
 
+  /// The single Malayalam voice used when the user has not pinned one.
+  /// Studio neural voice set only — the Piper Meera/Arjun models were removed.
+  static const String defaultVoiceId = 'female_1';
+
   static String resolveVoiceId(Map<dynamic, dynamic>? preferredVoice) {
-    if (preferredVoice == null) return 'female_1';
+    if (preferredVoice == null) return defaultVoiceId;
     final name = (preferredVoice['name']?.toString() ?? '').toLowerCase();
     final id = (preferredVoice['id']?.toString() ?? '').toLowerCase();
 
@@ -50,10 +54,9 @@ class MalayalamTtsService {
     if (name.contains('charon') || id == 'male_2' || name.contains('male 2')) {
       return 'male_2';
     }
-    if (name.contains('arjun') || name.contains('male')) {
-      return 'male_1';
-    }
-    return 'female_1';
+    // Any stale Piper/legacy selection (Meera, Arjun, system voice) resolves
+    // to the default studio voice so Malayalam never switches voice sets.
+    return defaultVoiceId;
   }
 
   static String voiceDisplayName(String voiceId) {
@@ -62,6 +65,9 @@ class MalayalamTtsService {
     }
     return 'Malayalam Aoede (Female 1 · Natural)';
   }
+
+  static Map<String, dynamic> defaultVoice() =>
+      Map<String, dynamic>.from(voices.first);
 
   bool isMalayalamMode({
     required String voiceListMode,

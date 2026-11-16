@@ -818,12 +818,6 @@ class AppLocalizationsMl extends AppLocalizations {
   String get settingsPanelCharonVoice => 'Charon';
 
   @override
-  String get settingsPanelPiperMeeraVoice => 'Meera';
-
-  @override
-  String get settingsPanelPiperArjunVoice => 'Arjun';
-
-  @override
   String get settingsPanelPiperLessacVoice => 'Lessac';
 
   @override
@@ -892,10 +886,6 @@ class AppLocalizationsMl extends AppLocalizations {
 
   @override
   String get settingsPanelAuto => 'ഓട്ടോമാറ്റിക്';
-
-  @override
-  String get settingsPanelRotateAllMalayalamVoices =>
-      'എല്ലാ മലയാള ശബ്ദങ്ങളും മാറിമാറി ഉപയോഗിക്കുക';
 
   @override
   String get settingsPanelRotateVoicesDefault =>
