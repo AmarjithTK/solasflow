@@ -91,6 +91,7 @@ class SpeechAnnouncementController {
   Timer? _goalReminderTimer;
   DateTime? _nextGoalReminderAt;
   int _stopwatchSpeechGeneration = 0;
+  bool _shuttingDown = false;
 
   AppSettings get _settings => _host.settings;
   bool get speechMasterOn => _settings.speechMasterOn;
@@ -342,6 +343,7 @@ class SpeechAnnouncementController {
   }
 
   Future<void> drainQueue() async {
+    if (_shuttingDown) return;
     if (!_host.mounted || _isAudioMuted()) {
       speechQueue.clear();
       if (isSpeechActive && _host.mounted) {
@@ -471,6 +473,37 @@ class SpeechAnnouncementController {
     await _host.applyAudioSettings();
   }
 
+  /// Hard stop for the app Exit/power action.
+  ///
+  /// Cancels every scheduled announcement (clock, night, goal) and the queued
+  /// speech, invalidates in-flight announcement futures, and silences the
+  /// current utterance and mobile ringtone. New speech is rejected afterwards,
+  /// so nothing can restart audio while the process is being torn down.
+  Future<void> shutdown() async {
+    if (_shuttingDown) return;
+    _shuttingDown = true;
+    clockTimer?.cancel();
+    clockTimer = null;
+    nextClockAt = null;
+    nightIdleTimer?.cancel();
+    nightWindowTimer?.cancel();
+    nightResumeSpeechTimer?.cancel();
+    _goalReminderTimer?.cancel();
+    _goalReminderTimer = null;
+    _nextGoalReminderAt = null;
+    _host.persistClockDeadline(null);
+    _speechGeneration++;
+    _clockScheduleGeneration++;
+    _stopwatchSpeechGeneration++;
+    speechQueue.clear();
+    if (isSpeechActive) {
+      isSpeechActive = false;
+      if (_host.mounted) _host.setSpeechActive(false);
+    }
+    _host.stopMobileRingtone();
+    await _stopTts();
+  }
+
   void cancelPendingSpeech() {
     _speechGeneration++;
     speechQueue.clear();
@@ -509,6 +542,7 @@ class SpeechAnnouncementController {
     String? timerRunId,
     int? timerRevision,
   }) {
+    if (_shuttingDown) return;
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;
@@ -728,6 +762,7 @@ class SpeechAnnouncementController {
   }
 
   void speakClock(String text) {
+    if (_shuttingDown) return;
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;
@@ -780,6 +815,7 @@ class SpeechAnnouncementController {
     String? finishedRunId,
     int? finishedRevision,
   }) {
+    if (_shuttingDown) return;
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;
@@ -810,6 +846,7 @@ class SpeechAnnouncementController {
     bool explicit = false,
     required bool stopwatchSpeakOn,
   }) {
+    if (_shuttingDown) return;
     if (_isAudioMuted()) {
       speechQueue.clear();
       return;

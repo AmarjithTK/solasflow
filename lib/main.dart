@@ -1598,29 +1598,53 @@ class _MainScreenState extends ConsumerState<MainScreen>
     await SystemChrome.setPreferredOrientations([]);
   }
 
+  /// Runs one exit step without letting a stuck plugin block the shutdown.
+  Future<void> _exitStep(String label, Future<void> Function() action) async {
+    try {
+      await action().timeout(const Duration(seconds: 4));
+    } catch (error, stackTrace) {
+      debugPrint('[ERROR] Exit step "$label" failed: $error\n$stackTrace');
+    }
+  }
+
   Future<void> _exitAppFully() async {
     if (_exiting) return;
     _exiting = true;
-    try {
-      stopClock();
+
+    // Speech first: cancel scheduled/queued announcements so nothing can start
+    // talking again while the rest of the app is being torn down.
+    await _exitStep('speech', _speechAnnouncementController.shutdown);
+    await _exitStep('timer', () async {
       _timerRuntimeController.dispose();
       await _timerRuntimeController.clearPersistedRuntimes();
-      await _stopTts();
+    });
+    await _exitStep('audio', () async {
       await _audioService.stopBackground();
       await _audioService.stopNotification();
-      await _stopForegroundService();
+      _stopMobileRingtone();
+    });
+    await _exitStep('foreground service', _stopForegroundService);
+    await _exitStep('storage', () async {
       await _quoteRotationService.flush();
-      if (Platform.isLinux) {
-        await _speechService.disposeDesktopSpeech();
-        await _settingsService.flush();
-      }
-    } catch (error, stackTrace) {
-      debugPrint('Exit cleanup failed: $error\n$stackTrace');
+      await _settingsService.flush();
+    });
+    if (Platform.isLinux) {
+      await _exitStep('desktop speech', _speechService.disposeDesktopSpeech);
     }
 
-    if (!mounted) return;
-    if (Platform.isAndroid || Platform.isIOS) {
-      await SystemNavigator.pop();
+    if (Platform.isAndroid) {
+      // Finishing the activity is not enough: a foreground service or the TTS
+      // engine can keep the process alive and let a queued announcement keep
+      // playing. Killing the process makes the Exit button actually exit.
+      await _exitStep('android finish', () async {
+        await SystemNavigator.pop();
+      });
+      exit(0);
+    }
+    if (Platform.isIOS) {
+      await _exitStep('ios finish', () async {
+        await SystemNavigator.pop();
+      });
       return;
     }
     if (Platform.isLinux) {
