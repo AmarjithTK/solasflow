@@ -7,6 +7,17 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
+// Canonical Linux window size, shared with Thoughts Flow. Keep these values and
+// update README.md's "LOCKED LINUX WINDOW SIZE" section when changing them.
+#define SOLASFLOW_WINDOW_WIDTH 400
+#define SOLASFLOW_WINDOW_HEIGHT 711
+// Lets the window shrink to the 9:16 phone ratio on short work areas while
+// staying wide enough to borrow the header bar's height at its locked ratio.
+#define SOLASFLOW_WINDOW_MIN_WIDTH 262
+#define SOLASFLOW_WINDOW_MIN_HEIGHT 466
+#define SOLASFLOW_ASPECT_NUMERATOR 711
+#define SOLASFLOW_ASPECT_DENOMINATOR 400
+
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
@@ -220,6 +231,15 @@ static gboolean window_delete_cb(GtkWidget* window,
   return TRUE;
 }
 
+// ---------------------------------------------------------------------------
+// Locked 400x711 (9:16) startup window.
+//
+// The clamped window keeps the locked aspect ratio, so smaller work areas scale
+// the window down instead of cropping it. On very short work areas the ratio is
+// borrowed from the header bar height: the 400-wide window then fits, and the
+// window is clamped to the work area.
+// ---------------------------------------------------------------------------
+
 static GdkMonitor* window_monitor(GtkWindow* window) {
   GdkDisplay* display = gtk_widget_get_display(GTK_WIDGET(window));
   GdkWindow* surface = gtk_widget_get_window(GTK_WIDGET(window));
@@ -232,40 +252,92 @@ static GdkMonitor* window_monitor(GtkWindow* window) {
   return monitor;
 }
 
+/**
+ * Applies the startup size both as a default size and as geometry hints.
+ *
+ * Resizing to the exact same size disarms GTK's built-in widget aspect ratio
+ * clamp, so the ratio holds until the user resizes the window freely.
+ */
 static void initial_window_size(GtkWindow* window, gboolean include_frame) {
   GdkMonitor* monitor = window_monitor(window);
-  if (monitor == nullptr) {
-    gtk_window_set_default_size(window, 400, 860);
+  GdkRectangle workarea = {};
+  gboolean have_workarea = FALSE;
+  if (monitor != nullptr) {
+    gdk_monitor_get_workarea(monitor, &workarea);
+    have_workarea = workarea.width > 0 && workarea.height > 0;
+  }
+
+  const gint max_client_width =
+      have_workarea ? MAX(1, workarea.width - 32 - 16) : SOLASFLOW_WINDOW_WIDTH;
+  const gint max_client_height =
+      have_workarea ? MAX(1, workarea.height - 32) : SOLASFLOW_WINDOW_HEIGHT;
+  const gint width = MAX(1, MIN(SOLASFLOW_WINDOW_WIDTH, max_client_width));
+  const gint height = MAX(1, MIN(SOLASFLOW_WINDOW_HEIGHT, max_client_height));
+
+  GdkGeometry hints = {};
+  hints.min_width = SOLASFLOW_WINDOW_MIN_WIDTH;
+  hints.min_height = SOLASFLOW_WINDOW_MIN_HEIGHT;
+  hints.max_width = SOLASFLOW_WINDOW_WIDTH;
+  hints.max_height = SOLASFLOW_WINDOW_HEIGHT;
+  hints.win_gravity = GDK_GRAVITY_CENTER;
+  GdkWindowHints mask = static_cast<GdkWindowHints>(
+      GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE | GDK_HINT_WIN_GRAVITY);
+  GtkWidget* geometry_widget = nullptr;
+
+  if (height < width) {
+    // Borrow the ratio from the header bar height, keep it armed so shrinks on
+    // short work areas scale down instead of cropping.
+    const gint header_height = MAX(0, width - SOLASFLOW_WINDOW_MIN_WIDTH);
+    const gint min_content_height =
+        MAX(1, MIN(SOLASFLOW_WINDOW_MIN_HEIGHT, height - header_height));
+    const gint min_width =
+        MAX(min_content_height / 2,
+            MIN(width, (gint)((double)min_content_height *
+                              SOLASFLOW_ASPECT_DENOMINATOR /
+                              SOLASFLOW_ASPECT_NUMERATOR)));
+    const gdouble aspect = (gdouble)SOLASFLOW_ASPECT_DENOMINATOR /
+                           (gdouble)SOLASFLOW_ASPECT_NUMERATOR;
+    hints.min_width = min_width;
+    hints.min_height = min_content_height;
+    hints.min_aspect = aspect;
+    hints.max_aspect = aspect;
+    mask = static_cast<GdkWindowHints>(mask | GDK_HINT_ASPECT);
+    geometry_widget = GTK_WIDGET(window);
+    gtk_widget_set_size_request(GTK_WIDGET(window), width,
+                                min_content_height + header_height);
+    gtk_window_resize(window, width, height);
+  } else {
+    gtk_widget_set_size_request(GTK_WIDGET(window), -1, -1);
+    gtk_window_set_default_size(window, width, height);
+  }
+  gtk_window_set_geometry_hints(window, geometry_widget, &hints, mask);
+
+  if (!include_frame) {
+    gtk_window_set_position(window, GTK_WIN_POS_CENTER);
     return;
   }
-  GdkRectangle workarea;
-  gdk_monitor_get_workarea(monitor, &workarea);
-  const gint outer_width = MIN(400, MAX(1, workarea.width - 32));
-  const gint outer_height = MIN(860, MAX(1, workarea.height - 32));
+
   gint frame_width = 0;
   gint frame_height = 0;
   GdkWindow* surface = gtk_widget_get_window(GTK_WIDGET(window));
-  if (include_frame && surface != nullptr) {
-    GdkRectangle frame;
+  if (surface != nullptr) {
+    GdkRectangle frame = {};
+    gint current_width = 0;
+    gint current_height = 0;
     gdk_window_get_frame_extents(surface, &frame);
-    gint width;
-    gint height;
-    gtk_window_get_size(window, &width, &height);
-    frame_width = MAX(0, frame.width - width);
-    frame_height = MAX(0, frame.height - height);
+    gtk_window_get_size(window, &current_width, &current_height);
+    frame_width = MAX(0, frame.width - current_width);
+    frame_height = MAX(0, frame.height - current_height);
   }
-  const gint width = MAX(1, outer_width - frame_width);
-  const gint height = MAX(1, outer_height - frame_height);
-  if (include_frame) {
-    gtk_window_resize(window, width, height);
+  gtk_window_resize(window, width + frame_width, height + frame_height);
+  if (have_workarea) {
     // Wayland compositors own positioning and may ignore this request.
-    gtk_window_move(window, workarea.x + (workarea.width - outer_width) / 2,
-                    workarea.y + (workarea.height - outer_height) / 2);
-  } else {
-    gtk_window_set_default_size(window, width, height);
-    gtk_window_set_position(window, GTK_WIN_POS_CENTER);
+    gtk_window_move(window,
+                    workarea.x +
+                        (workarea.width - width - frame_width) / 2,
+                    workarea.y +
+                        (workarea.height - height - frame_height) / 2);
   }
-  // Deliberately no maximum geometry hints: landscape/fullscreen stay usable.
 }
 
 static gboolean initial_configure_cb(GtkWidget* window,

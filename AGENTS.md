@@ -260,4 +260,8 @@ On `finstall`:
 5. Verify install; report build + install result concisely.
 
 
+## 15. Locked Linux Window Size — DO NOT CHANGE
+
+The Linux window is fixed and installed at **400 × 711** (≈9:16) and preserves that ratio when scaling for smaller screens. It is shared with Thoughts Flow for consistency. Constants live in `linux/runner/my_application.cc` (`SOLASFLOW_WINDOW_WIDTH/HEIGHT/MIN_*/ASPECT_*`); the contract is stated loudly at the top of `README.md`. Never change these numbers without a matching Thoughts Flow change and an explicit user decision.
+
 [You have received this identical output 3 times. Re-reading 'thoughtsflow_atherpulse/AGENTS.md:raw' will not change it — use a narrower selector (path:A-B), or proceed with the edit.]

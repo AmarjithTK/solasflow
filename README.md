@@ -2,6 +2,17 @@
 
 `Solas Flow` is a Flutter focus app that combines a speaking clock, a configurable timer, and an immersive fullscreen focus mode.
 
+> ## 🔒 LOCKED LINUX WINDOW SIZE — DO NOT CHANGE
+>
+> **The Linux window is fixed and installed at `400 × 711` (approximately 9:16), and it preserves that ratio when scaling for smaller screens.** These exact values are shared with **Thoughts Flow** so both apps are visually consistent on Linux.
+>
+> - **Fixed and installed:** this is the size the shipped `/opt/solasflow` package opens with — not a draft or a suggestion.
+> - **Source of truth:** `linux/runner/my_application.cc` → `SOLASFLOW_WINDOW_WIDTH 400`, `SOLASFLOW_WINDOW_HEIGHT 711`, `SOLASFLOW_WINDOW_MIN_WIDTH 262`, `SOLASFLOW_WINDOW_MIN_HEIGHT 466`, and `SOLASFLOW_ASPECT_NUMERATOR/DENOMINATOR 711/400`.
+> - **Do not** change `400`, `711`, the `711:400` aspect hint, or the scaling clamps without a matching change in Thoughts Flow **and** an explicit user decision. Do not "fix", round, or re-derive these numbers, and do not reintroduce a different default size anywhere (Dart, GTK, installer, or package).
+> - **Integrity:** `linux/runner/my_application.cc` has the same header comment. Any change here must leave both apps matching.
+>
+> *Updated 2026-11-22.*
+
 ## What it does
 
 ### Speaking Clock
@@ -95,6 +106,7 @@
 - `lib/services/settings_service.dart` — settings persistence
 - `lib/models/app_settings.dart` — settings model
 - `lib/core/pref_keys.dart` — preference keys
+- `linux/runner/my_application.cc` — Linux window sizing (**locked 400×711**, see top of README)
 - `assets/audio/` — bundled local audio files
 
 ## Getting started
@@ -179,7 +191,7 @@ The normal **Timer finished** dialog fills the app window. Presets use uniform b
 
 ### Linux window and background operation
 
-- Starts at approximately **400×860**, centered and clamped to the monitor work area; remains resizable for landscape use.
+- Starts at exactly **400×711** window size (locked 9:16, same as Thoughts Flow), centered. On smaller work areas it keeps the same ratio and scales down (content minimum **262×466**); it is never launched larger than 400×711. Users can still resize freely downward afterward, and fullscreen/landscape remain usable.
 - **Desktop controls (⋮) → Keep running when closed** persists independently of audio settings. Closing then hides the window while timers and speech keep running. Relaunching presents the same process/window; X11 also offers a legacy tray **Open/Quit** menu when the desktop supports it.
 - **Hide window** enables background mode before hiding. Hidden speech and timer completion send desktop notifications with an **Open** action. Notification visibility depends on the desktop notification service.
 - **Always on top** is a window-manager hint. Wayland compositors may ignore it; use compositor window rules when necessary. Wayland does not use the legacy X11 tray.
