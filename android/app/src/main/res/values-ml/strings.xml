@@ -12,4 +12,10 @@
     <string name="timer_presets_widget_name">സോളസ്ഫ്ലോ ടൈമർ പ്രീസെറ്റുകൾ</string>
     <string name="speech_controls_widget_name">സോളസ്ഫ്ലോ സംസാര നിയന്ത്രണങ്ങൾ</string>
     <string name="live_clock_widget_name">സോളസ്ഫ്ലോ തത്സമയ ക്ലോക്ക്</string>
+    <string name="fullscreen_clock_widget_description">വെളിച്ചം കുറച്ച പൂർണ സ്ക്രീൻ ക്ലോക്ക് ഒരു ടാപ്പിൽ</string>
+    <string name="fullscreen_clock_widget_name">സോളസ്ഫ്ലോ പൂർണ സ്ക്രീൻ ക്ലോക്ക്</string>
+    <string name="fullscreen_clock_widget_tap">പൂർണ സ്ക്രീനിനായി ടാപ്പ് ചെയ്യുക</string>
+    <string name="fullscreen_clock_widget_dim_hint">കുറഞ്ഞ വെളിച്ചം</string>
+    <string name="fullscreen_clock_widget_wide_label">പൂർണ സ്ക്രീൻ ക്ലോക്ക്</string>
+    <string name="fullscreen_clock_widget_dim">മങ്ങല്‍</string>
 </resources>

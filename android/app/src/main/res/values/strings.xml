@@ -13,4 +13,10 @@
     <string name="timer_presets_widget_name">SolasFlow Timer Presets</string>
     <string name="speech_controls_widget_name">SolasFlow Speech Controls</string>
     <string name="live_clock_widget_name">SolasFlow Live Clock</string>
+    <string name="fullscreen_clock_widget_description">One-tap full screen clock with dimmed brightness</string>
+    <string name="fullscreen_clock_widget_name">SolasFlow Full Screen Clock</string>
+    <string name="fullscreen_clock_widget_tap">Tap for Full Screen</string>
+    <string name="fullscreen_clock_widget_dim_hint">Dimmed clock</string>
+    <string name="fullscreen_clock_widget_wide_label">Full Screen Clock</string>
+    <string name="fullscreen_clock_widget_dim">Dim</string>
 </resources>

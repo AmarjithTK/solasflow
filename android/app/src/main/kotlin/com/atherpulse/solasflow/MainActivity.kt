@@ -23,6 +23,10 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        window.decorView.setOnWindowFocusChangeListener { hasFocus ->
+            if (!hasFocus) return@setOnWindowFocusChangeListener
+            applyPendingBrightness()
+        }
         widgetChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WIDGET_CHANNEL)
         widgetChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -125,6 +129,27 @@ class MainActivity : FlutterActivity() {
         JSONArray()
     }
 
+    /**
+     * Dims the window on the first focus gain after a widget launch.
+     *
+     * The dim level is a one-shot request from [WidgetActionReceiver]; it is
+     * cleared immediately so only the widget-launched window is affected.
+     * Flutter re-asserts or releases the same level when the fullscreen clock
+     * opens or closes.
+     */
+    private fun applyPendingBrightness() {
+        val prefs = getSharedPreferences("solasflow_native_launch", Context.MODE_PRIVATE)
+        val level = prefs.getFloat(
+            WidgetActionReceiver.PENDING_BRIGHTNESS_KEY, -1f
+        )
+        if (level <= 0f) return
+        prefs.edit().remove(WidgetActionReceiver.PENDING_BRIGHTNESS_KEY).commit()
+        val attributes = window.attributes
+        attributes.screenBrightness = level.coerceIn(0.01f, 1f)
+        window.attributes = attributes
+        android.util.Log.i("SolasFlowWidget", "Launch brightness dimmed to $level")
+    }
+
     private fun updateWidgetState(state: Map<*, *>) {
         val prefs = getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
         prefs.edit()
@@ -139,10 +164,17 @@ class MainActivity : FlutterActivity() {
         TimerPresetsWidget.updateAllWidgets(applicationContext)
         SpeechControlsWidget.updateAllWidgets(applicationContext)
         LiveClockWidget.updateAllWidgets(applicationContext)
+        FullscreenClockWidget.updateAllWidgets(applicationContext)
     }
 }
 
 class WidgetActionReceiver : android.content.BroadcastReceiver() {
+    companion object {
+        private const val SETTINGS_SNAPSHOT_KEY = "flutter.SettingsSnapshotV9"
+        private const val DEFAULT_DIM_LEVEL = 0.08f
+        const val PENDING_BRIGHTNESS_KEY = "pending_screen_brightness"
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.getStringExtra("widget_action") ?: return
         val allowed = setOf(
@@ -153,6 +185,11 @@ class WidgetActionReceiver : android.content.BroadcastReceiver() {
             "start_30m", "start_35m", "start_45m", "start_60m", "start_90m"
         )
         if (action !in allowed) return
+        // Dim before the app window exists so the immersive clock never flashes
+        // at full brightness on launch.
+        if (action == "open_fullscreen_clock_direct") {
+            applyDimmedBrightness(context)
+        }
         val prefs = context.getSharedPreferences(
             "FlutterSharedPreferences",
             Context.MODE_PRIVATE
@@ -175,5 +212,43 @@ class WidgetActionReceiver : android.content.BroadcastReceiver() {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             )
         )
+    }
+
+    /**
+     * Stores the user's saved fullscreen dim preference for this launch.
+     *
+     * The preference lives inside Flutter's settings snapshot JSON. It is only
+     * stored when the user has dimming enabled, so the app otherwise keeps its
+     * current screen brightness behaviour untouched.
+     */
+    private fun applyDimmedBrightness(context: Context) {
+        val prefs = context.getSharedPreferences(
+            "FlutterSharedPreferences",
+            Context.MODE_PRIVATE
+        )
+        val snapshot = prefs.getString(SETTINGS_SNAPSHOT_KEY, null)
+        val launchPrefs = context.getSharedPreferences(
+            "solasflow_native_launch",
+            Context.MODE_PRIVATE
+        )
+        var level: Float? = null
+        if (!snapshot.isNullOrBlank()) {
+            try {
+                val json = JSONObject(snapshot)
+                if (json.optBoolean("fullscreenDimBrightness", false)) {
+                    level = json.optDouble(
+                        "fullscreenDimBrightnessLevel",
+                        DEFAULT_DIM_LEVEL.toDouble()
+                    ).toFloat().coerceIn(0.01f, 1f)
+                }
+            } catch (error: Exception) {
+                android.util.Log.w("SolasFlowWidget", "Dim preference read failed", error)
+            }
+        }
+        if (level != null) {
+            launchPrefs.edit().putFloat(PENDING_BRIGHTNESS_KEY, level).commit()
+        } else {
+            launchPrefs.edit().remove(PENDING_BRIGHTNESS_KEY).commit()
+        }
     }
 }

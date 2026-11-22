@@ -26,6 +26,13 @@ class PlatformIntentController {
     'com.atherpulse.solasflow/widget',
   );
 
+  /// Widget actions that must never wait for the 3s confirmation window.
+  ///
+  /// Opening the homescreen clock tile launches straight into the immersive
+  /// clock, but a half-armed queue from a previous Home press is still
+  /// resolved so the user can enter immediately.
+  static const Set<String> _immediateActions = {'open_fullscreen_clock_direct'};
+
   final PlatformIntentHost _host;
   final QuickActions _quickActions = const QuickActions();
   bool _supportsQuickActions = false;
@@ -135,6 +142,14 @@ class PlatformIntentController {
 
   Future<void> handleWidgetAction(String type) async {
     if (!_host.isMounted) return;
+    if (_immediateActions.contains(type)) {
+      // Clear any queued Home press so it cannot fire a second entry later.
+      _armedTimer?.cancel();
+      _armedAction = null;
+      unawaited(writeWidgetState());
+      await _host.handleWidgetAction(type);
+      return;
+    }
     if (type == 'toggle_speech_master' || type == 'open_fullscreen_clock') {
       if (_armedAction == type) {
         _armedTimer?.cancel();

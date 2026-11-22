@@ -1523,6 +1523,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     FullscreenFocusMode? specificMode,
     bool forceHorizontal = false,
     bool startImmersive = false,
+    bool launchOnOpen = false,
   }) async {
     final initialMode =
         specificMode ??
@@ -1532,7 +1533,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                   ? FullscreenFocusMode.timer
                   : FullscreenFocusMode.clock));
     _fullscreenFocusMode.value = initialMode;
-    if (_fullscreenFocusOpen) return;
+    if (_fullscreenFocusOpen && !launchOnOpen) return;
     _fullscreenFocusOpen = true;
     await Navigator.of(context)
         .push(
@@ -1592,10 +1593,12 @@ class _MainScreenState extends ConsumerState<MainScreen>
           ),
         )
         .whenComplete(() {
-          _fullscreenFocusOpen = false;
+          // A launch-on-open route may replace an earlier one that is still
+          // closing; only the newest route may clear the shared flag.
+          if (!launchOnOpen) _fullscreenFocusOpen = false;
           _fullscreenFocusMode.value = FullscreenFocusMode.clock;
         });
-    await SystemChrome.setPreferredOrientations([]);
+    if (!launchOnOpen) await SystemChrome.setPreferredOrientations([]);
   }
 
   /// Runs one exit step without letting a stuck plugin block the shutdown.
@@ -2048,6 +2051,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
           currentTabIndex = 0;
         });
         break;
+      // Home-screen clock tile. launchOnOpen bypasses the shared fullscreen
+      // route guard so a cold launch opens the immersive clock even when the
+      // app's first frame has not finished settling yet.
       case 'open_fullscreen_clock_direct':
         setState(() {
           currentTabIndex = 0;
@@ -2056,6 +2062,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           specificMode: FullscreenFocusMode.clock,
           forceHorizontal: true,
           startImmersive: true,
+          launchOnOpen: true,
         );
         break;
       case 'resume_last':

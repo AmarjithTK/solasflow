@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/fs_clock_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@drawable/widget_bg"
+    android:padding="10dp">
+
+    <!-- Live time preview -->
+    <TextClock
+        android:id="@+id/fs_clock_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:format12Hour="h:mm"
+        android:format24Hour="H:mm"
+        android:textSize="30sp"
+        android:textColor="#FFFFFFFF"
+        android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/fullscreen_clock_widget_tap"
+        android:textColor="#CCFFFFFF"
+        android:textSize="11sp"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/fullscreen_clock_widget_dim_hint"
+        android:textColor="#99FFFFFF"
+        android:textSize="9sp"
+        android:fontFamily="sans-serif"
+        android:gravity="center"
+        android:layout_marginTop="1dp" />
+
+</LinearLayout>
