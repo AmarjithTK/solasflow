@@ -23,9 +23,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        window.decorView.setOnWindowFocusChangeListener { hasFocus ->
-            if (!hasFocus) return@setOnWindowFocusChangeListener
-            applyPendingBrightness()
+        window.decorView.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) applyPendingBrightness()
         }
         widgetChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WIDGET_CHANNEL)
         widgetChannel?.setMethodCallHandler { call, result ->
